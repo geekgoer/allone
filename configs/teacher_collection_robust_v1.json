@@ -1,0 +1,101 @@
+{
+  "random_seed": 17,
+  "vehicle_name": "Drone1",
+  "timing": {
+    "dt": 0.05,
+    "steps_per_episode": 700,
+    "episode_seconds": 35.0,
+    "episode_timeout_seconds": 90.0,
+    "reset_settle_seconds": 0.0,
+    "catastrophic_loop_period": 0.5
+  },
+  "initial_state": {
+    "count": 8,
+    "seed": 17,
+    "position_range": {
+      "x": [-0.6, 0.6],
+      "y": [-1.0, 1.0],
+      "z": [-2.4, -1.8]
+    },
+    "attitude_range": {
+      "roll": [-0.12, 0.12],
+      "pitch": [-0.12, 0.12],
+      "yaw": [-0.35, 0.35]
+    },
+    "velocity_range": {
+      "x": [0.0, 0.0],
+      "y": [0.0, 0.0],
+      "z": [0.0, 0.0]
+    },
+    "angular_velocity_range": {
+      "x": [0.0, 0.0],
+      "y": [0.0, 0.0],
+      "z": [0.0, 0.0]
+    }
+  },
+  "environment": {
+    "count": 60,
+    "seed": 17,
+    "epsilon_values": [0.0, 0.8, 1.6],
+    "speed_values": [1.5, 2.0, 2.5, 3.0, 3.5],
+    "gate_count": 5,
+    "x_start": 10.0,
+    "x_spacing": 10.0,
+    "x_spacing_values": [8.0, 10.0, 12.0],
+    "x_spacing_overrides": {
+      "5": 10.0,
+      "20": 10.0,
+      "35": 10.0,
+      "50": 10.0
+    },
+    "base_y_range": [-2.0, 2.0],
+    "base_z_range": [-3.0, -2.2],
+    "max_z": -2.0
+  },
+  "gate": {
+    "width": 4.0,
+    "height": 4.0,
+    "thickness": 0.15,
+    "asset": "EditorCube",
+    "spawn_in_simulation": false,
+    "approach_distance": 2.0,
+    "exit_distance": 1.0,
+    "threshold": 0.8,
+    "clearance": 0.25
+  },
+  "mpc": {
+    "dt": 0.05,
+    "horizon": 20,
+    "speed": 2.0
+  },
+  "bounds": {
+    "position_min": [-10.0, -25.0, -20.0],
+    "position_max": [75.0, 25.0, 2.0]
+  },
+  "airsim": {
+    "editor": "E:\\epicGamesStrg\\UE_4.27\\Engine\\Binaries\\Win64\\UE4Editor.exe",
+    "uproject": "F:\\Airsim\\AirSim\\Unreal\\Environments\\Blocks\\Blocks.uproject",
+    "map_asset": "/Game/FalconEmpty.FalconEmpty",
+    "rpc_host": "127.0.0.1",
+    "rpc_port": 41451,
+    "rpc_timeout": 10.0,
+    "startup_timeout": 120.0,
+    "retry_interval": 1.0,
+    "res_x": 1280,
+    "res_y": 720,
+    "null_rhi": true
+  },
+  "dataset": {
+    "root": "teacher_dataset_robust_v1",
+    "retry_count": 2,
+    "output_name": "teacher_dataset_robust_v1.npz",
+    "require_all_gates": true,
+    "required_gate_ids": [1, 2, 3, 4, 5],
+    "strategy": "nominal_mpc_diverse_routes",
+    "data_source_code": 0,
+    "record_environment_metadata": true,
+    "record_path_context": true,
+    "path_context_offsets": [0, 5, 10, 19],
+    "progress_every_steps": 20
+  }
+}

@@ -1,0 +1,133 @@
+{
+  "max_iterations": 256,
+  "rows": [
+    {
+      "index": 44726,
+      "ok": false,
+      "iterations": 584,
+      "delta": 0.9906718730926514,
+      "kkt": 247.04359436035156,
+      "method": "reference_continuation"
+    },
+    {
+      "index": 60757,
+      "ok": false,
+      "iterations": 601,
+      "delta": 1.9312646389007568,
+      "kkt": 1769.5341796875,
+      "method": "reference_continuation"
+    },
+    {
+      "index": 51144,
+      "ok": false,
+      "iterations": 586,
+      "delta": 0.487746000289917,
+      "kkt": 8.534117698669434,
+      "method": "reference_continuation"
+    },
+    {
+      "index": 57597,
+      "ok": false,
+      "iterations": 714,
+      "delta": 5.176364898681641,
+      "kkt": 97961.09375,
+      "method": "reference_continuation"
+    },
+    {
+      "index": 57573,
+      "ok": false,
+      "iterations": 605,
+      "delta": 0.9970722198486328,
+      "kkt": 239.5406494140625,
+      "method": "reference_continuation"
+    },
+    {
+      "index": 57585,
+      "ok": false,
+      "iterations": 566,
+      "delta": 0.318601131439209,
+      "kkt": 19.49578857421875,
+      "method": "reference_continuation"
+    },
+    {
+      "index": 35160,
+      "ok": false,
+      "iterations": 790,
+      "delta": 5.999999523162842,
+      "kkt": 81975.859375,
+      "method": "reference_continuation"
+    },
+    {
+      "index": 44718,
+      "ok": false,
+      "iterations": 552,
+      "delta": 0.19799566268920898,
+      "kkt": 0.7015805244445801,
+      "method": "reference_continuation"
+    },
+    {
+      "index": 35190,
+      "ok": false,
+      "iterations": 547,
+      "delta": 0.5970363616943359,
+      "kkt": 222.65606689453125,
+      "method": "reference_continuation"
+    },
+    {
+      "index": 44733,
+      "ok": false,
+      "iterations": 643,
+      "delta": 5.752269744873047,
+      "kkt": 90728.8203125,
+      "method": "reference_continuation"
+    },
+    {
+      "index": 44787,
+      "ok": false,
+      "iterations": 577,
+      "delta": 0.0076163411140441895,
+      "kkt": 0.002778901718556881,
+      "method": "reference_continuation"
+    },
+    {
+      "index": 63962,
+      "ok": false,
+      "iterations": 585,
+      "delta": 1.053640365600586,
+      "kkt": 215.44296264648438,
+      "method": "reference_continuation"
+    },
+    {
+      "index": 44756,
+      "ok": false,
+      "iterations": 553,
+      "delta": 0.44278812408447266,
+      "kkt": 3.9183623790740967,
+      "method": "reference_continuation"
+    },
+    {
+      "index": 54328,
+      "ok": false,
+      "iterations": 557,
+      "delta": 3.446845054626465,
+      "kkt": 24756.2421875,
+      "method": "reference_continuation"
+    },
+    {
+      "index": 41542,
+      "ok": false,
+      "iterations": 581,
+      "delta": 1.532853603363037,
+      "kkt": 2732.160888671875,
+      "method": "reference_continuation"
+    },
+    {
+      "index": 38386,
+      "ok": false,
+      "iterations": 556,
+      "delta": 0.5060791969299316,
+      "kkt": 13.2791748046875,
+      "method": "reference_continuation"
+    }
+  ]
+}

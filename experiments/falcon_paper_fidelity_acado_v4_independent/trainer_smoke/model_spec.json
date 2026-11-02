@@ -1,0 +1,50 @@
+{
+  "format_version": 1,
+  "model_name": "falcon_dnn_input12_depth10_width512",
+  "dtype": "float32",
+  "input_shape": [
+    1,
+    12
+  ],
+  "output_shape": [
+    1,
+    4
+  ],
+  "input_features": [
+    "gate_position_error_x",
+    "gate_position_error_y",
+    "gate_position_error_z",
+    "gate_attitude_error_x",
+    "gate_attitude_error_y",
+    "gate_attitude_error_z",
+    "velocity_x",
+    "velocity_y",
+    "velocity_z",
+    "acceleration_x",
+    "acceleration_y",
+    "acceleration_z"
+  ],
+  "output_features": [
+    "collective_thrust_acceleration",
+    "body_rate_x",
+    "body_rate_y",
+    "body_rate_z"
+  ],
+  "frame": "AirSim NED",
+  "sample_period_seconds": 0.05,
+  "depth": 10,
+  "hidden_layers": 9,
+  "width": 512,
+  "activation": "ReLU",
+  "output_activation": null,
+  "normalization_inside_model": false,
+  "batch_size": 1,
+  "normalization_file": "F:\\FalconReproduction\\airsim_control\\experiments\\falcon_paper_fidelity_acado_v4_independent\\dnn_dataset_smoke\\normalization.json",
+  "teacher_policy": "falcon_acado_12d_independent_state_queries_v2",
+  "path_context_offsets": [],
+  "input_contract": "falcon_track_p_gate_relative_12d_v1",
+  "checkpoint": "F:\\FalconReproduction\\airsim_control\\experiments\\falcon_paper_fidelity_acado_v4_independent\\trainer_smoke\\best_model.pt",
+  "reference_speed_values": [
+    5.0
+  ]
+}

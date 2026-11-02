@@ -1,0 +1,66 @@
+{
+  "dataset": "F:\\FalconReproduction\\airsim_control\\experiments\\paper_track_p_12d_5ms_v1\\fpga_shadow_historical5ms\\paper_style_sweep\\fast_4h_v1\\svr_dataset\\paper_style_episode_dataset_train_ready.csv",
+  "definition": "R is host state acquisition to AirSim command dispatch; values include injected delay",
+  "models": [
+    {
+      "model_name": "depth10_width1024",
+      "episodes": 108,
+      "R_p99_ms_max": 49.552440000000004,
+      "R_max_ms_p50": 19.856,
+      "R_max_ms_p95": 49.1126,
+      "R_max_ms_max": 49.64,
+      "recommended_wc_et_ms": 49.64,
+      "recommended_rule": "use maximum observed R_max_ms as conservative empirical WCET; replace with platform WCET when available"
+    },
+    {
+      "model_name": "depth10_width512",
+      "episodes": 108,
+      "R_p99_ms_max": 47.50992,
+      "R_max_ms_p50": 17.7625,
+      "R_max_ms_p95": 47.15595,
+      "R_max_ms_max": 47.995,
+      "recommended_wc_et_ms": 47.995,
+      "recommended_rule": "use maximum observed R_max_ms as conservative empirical WCET; replace with platform WCET when available"
+    },
+    {
+      "model_name": "depth22_width1024",
+      "episodes": 108,
+      "R_p99_ms_max": 54.625240000000005,
+      "R_max_ms_p50": 24.336,
+      "R_max_ms_p95": 53.9645,
+      "R_max_ms_max": 54.958,
+      "recommended_wc_et_ms": 54.958,
+      "recommended_rule": "use maximum observed R_max_ms as conservative empirical WCET; replace with platform WCET when available"
+    },
+    {
+      "model_name": "depth22_width512",
+      "episodes": 108,
+      "R_p99_ms_max": 49.8029,
+      "R_max_ms_p50": 19.226999999999997,
+      "R_max_ms_p95": 49.35929999999999,
+      "R_max_ms_max": 49.938,
+      "recommended_wc_et_ms": 49.938,
+      "recommended_rule": "use maximum observed R_max_ms as conservative empirical WCET; replace with platform WCET when available"
+    },
+    {
+      "model_name": "depth34_width1024",
+      "episodes": 96,
+      "R_p99_ms_max": 58.19476,
+      "R_max_ms_p50": 27.43,
+      "R_max_ms_p95": 57.870000000000005,
+      "R_max_ms_max": 58.608,
+      "recommended_wc_et_ms": 58.608,
+      "recommended_rule": "use maximum observed R_max_ms as conservative empirical WCET; replace with platform WCET when available"
+    },
+    {
+      "model_name": "depth34_width512",
+      "episodes": 108,
+      "R_p99_ms_max": 49.95996,
+      "R_max_ms_p50": 20.5165,
+      "R_max_ms_p95": 49.5699,
+      "R_max_ms_max": 50.931,
+      "recommended_wc_et_ms": 50.931,
+      "recommended_rule": "use maximum observed R_max_ms as conservative empirical WCET; replace with platform WCET when available"
+    }
+  ]
+}

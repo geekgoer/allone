@@ -1,0 +1,216 @@
+{
+  "schema_version": 1,
+  "status": "completed",
+  "created_at": "2026-09-15T15:16:54.001044+00:00",
+  "updated_at": "2026-09-15T15:17:20.811473+00:00",
+  "strategy": "falcon_paper_core_global_continuous_measured_start_diverse_acado_qpoases_v6",
+  "teacher_policy_version": "falcon_paper_core_global_continuous_measured_start_diverse_acado_qpoases_v6",
+  "fidelity_tier": "official_public_rpg_mpc_generated_acado_qpoases_solver",
+  "paper_protocol": {
+    "initial_states": 2,
+    "environmental_conditions": 2,
+    "seconds_per_episode": 5.0,
+    "sample_period_seconds": 0.05,
+    "prediction_period_seconds": 0.1,
+    "horizon": 20,
+    "expected_pairs": 400,
+    "published_pairs": 40000
+  },
+  "input_dimensions": 12,
+  "input_features": [
+    "reference_position_error_x",
+    "reference_position_error_y",
+    "reference_position_error_z",
+    "reference_attitude_error_x",
+    "reference_attitude_error_y",
+    "reference_attitude_error_z",
+    "reference_velocity_error_x",
+    "reference_velocity_error_y",
+    "reference_velocity_error_z",
+    "reference_acceleration_x",
+    "reference_acceleration_y",
+    "reference_acceleration_z"
+  ],
+  "input_contract": "falcon_track_p_trajectory_relative_12d_v1",
+  "output_dimensions": 4,
+  "output_features": [
+    "collective_thrust_acceleration",
+    "body_rate_x",
+    "body_rate_y",
+    "body_rate_z"
+  ],
+  "planner": {
+    "nominal_speed": 5.0,
+    "terminal_speed": 5.0,
+    "exit_distance": 1.0,
+    "minimum_duration": 0.8,
+    "maximum_duration": 8.0,
+    "maximum_speed": 8.0,
+    "maximum_acceleration": 8.0,
+    "feasibility_samples": 81,
+    "gravity": 9.8066,
+    "body_rate_difference_dt": 0.001
+  },
+  "trajectory": {
+    "mode": "global_continuous",
+    "start_velocity_mode": "measured",
+    "policy_version": "falcon_paper_core_global_continuous_measured_start_diverse_acado_qpoases_v6",
+    "final_exit_distance": 5.0,
+    "gate_role": "planning_constraints_and_passive_evaluation_only",
+    "continuity": "C2"
+  },
+  "mpc": {
+    "backend": "official_rpg_mpc_acado_qpoases",
+    "library": "../../native/acado_rpg_mpc/build/bin/libfalcon_acado_mpc.dll",
+    "horizon": 20,
+    "prediction_dt": 0.1,
+    "gravity": 9.8066,
+    "q_position_xy": 200.0,
+    "q_position_z": 500.0,
+    "q_attitude": 50.0,
+    "q_velocity": 10.0,
+    "q_perception": 0.0,
+    "r_thrust": 1.0,
+    "r_pitch_roll": 1.0,
+    "r_yaw": 1.0,
+    "min_thrust": 2.0,
+    "max_thrust": 20.0,
+    "max_body_rate_xy": 3.0,
+    "max_body_rate_z": 2.0
+  },
+  "fixed_hidden_parameters": {
+    "planner_config_is_constant": true,
+    "independently_randomized_reference_speed": false,
+    "reason": "prevents contradictory labels for the fixed 12-D input"
+  },
+  "config_file": "F:\\FalconReproduction\\airsim_control\\experiments\\falcon_paper_fidelity_acado_v6_diverse40k\\paper_core_config.json",
+  "config_sha256": "d0be39f638d51f5d576f21b5dd0d2662afacdceb5779eff86694c9d6002e3785",
+  "vehicle_name": "Drone1",
+  "initial_state_count": 2,
+  "environment_count": 2,
+  "episode_count": 4,
+  "steps_per_episode": 100,
+  "expected_samples": 400,
+  "rpc_restarts": 0,
+  "episodes": {
+    "episode_0000": {
+      "episode_id": 0,
+      "initial_state_id": 0,
+      "environment_id": 0,
+      "status": "completed",
+      "attempts": 1,
+      "sample_count": 100,
+      "file": "episodes\\episode_0000.npz",
+      "last_error": null
+    },
+    "episode_0001": {
+      "episode_id": 1,
+      "initial_state_id": 0,
+      "environment_id": 1,
+      "status": "completed",
+      "attempts": 1,
+      "sample_count": 100,
+      "file": "episodes\\episode_0001.npz",
+      "last_error": null
+    },
+    "episode_0002": {
+      "episode_id": 2,
+      "initial_state_id": 1,
+      "environment_id": 0,
+      "status": "completed",
+      "attempts": 1,
+      "sample_count": 100,
+      "file": "episodes\\episode_0002.npz",
+      "last_error": null
+    },
+    "episode_0003": {
+      "episode_id": 3,
+      "initial_state_id": 1,
+      "environment_id": 1,
+      "status": "completed",
+      "attempts": 1,
+      "sample_count": 100,
+      "file": "episodes\\episode_0003.npz",
+      "last_error": null
+    }
+  },
+  "final_dataset": "final\\falcon_paper_core_40k_falcon12_v6_diverse.npz",
+  "statistics": {
+    "samples": 400,
+    "X_shape": [
+      400,
+      12
+    ],
+    "U_shape": [
+      400,
+      4
+    ],
+    "X_min": -4.043356945544112,
+    "X_max": 3.9714389674276953,
+    "X_mean": 0.011800220104233422,
+    "X_std": 0.45555955465138404,
+    "X_min_per_dim": [
+      -0.10349071025848389,
+      -0.005007326602935791,
+      -0.07176457484731946,
+      -0.42023460358477616,
+      -0.2326678099407123,
+      -0.02913469382448326,
+      -1.4173771500128378,
+      -0.5172896304151675,
+      -0.39110357708180343,
+      -0.15498066594227833,
+      -4.043356945544112,
+      -1.5602511817688356
+    ],
+    "X_max_per_dim": [
+      0.8572764637995229,
+      0.2986115427080308,
+      0.022951494015533758,
+      0.2025445670296449,
+      0.529828621665506,
+      0.2416494931633346,
+      0.22647330168678081,
+      0.7414473967180433,
+      0.21828661553846307,
+      0.8199585900462683,
+      3.9714389674276953,
+      1.355729426987648
+    ],
+    "U_min": -3.000013828277588,
+    "U_max": 14.873920440673828,
+    "U_mean": 2.5183728546213344,
+    "U_std": 4.390948088002186,
+    "U_min_per_dim": [
+      8.20781135559082,
+      -2.2863945960998535,
+      -3.000013828277588,
+      -0.2184302806854248
+    ],
+    "U_max_per_dim": [
+      14.873920440673828,
+      3.0,
+      2.728910446166992,
+      0.5295301675796509
+    ],
+    "zero_input_dimensions": [],
+    "constant_input_dimensions": [],
+    "controls_identical": false,
+    "deadline_misses": 0,
+    "average_mpc_solve_time": 0.0006229725000048347,
+    "unique_initial_states": 2,
+    "unique_environments": 2,
+    "unique_episodes": 4,
+    "reference_speed_values": [
+      5.0
+    ],
+    "data_source_counts": {
+      "0": 400
+    },
+    "path_context_shape": [
+      400,
+      4,
+      3
+    ]
+  }
+}

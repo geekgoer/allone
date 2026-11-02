@@ -1,0 +1,97 @@
+{
+  "schema_version": 1,
+  "status": "completed",
+  "strategy": "falcon_acado_12d_receding_horizon_short_rollout_v1",
+  "paper_core": false,
+  "input_contract": "falcon_track_p_gate_relative_12d_v1",
+  "input_dimensions": 12,
+  "input_features": [
+    "gate_position_error_x",
+    "gate_position_error_y",
+    "gate_position_error_z",
+    "gate_attitude_error_x",
+    "gate_attitude_error_y",
+    "gate_attitude_error_z",
+    "velocity_x",
+    "velocity_y",
+    "velocity_z",
+    "acceleration_x",
+    "acceleration_y",
+    "acceleration_z"
+  ],
+  "output_dimensions": 4,
+  "output_features": [
+    "collective_thrust_acceleration",
+    "body_rate_x",
+    "body_rate_y",
+    "body_rate_z"
+  ],
+  "config_sha256": "fcbc479bab94a124c42f9e0994d1326494d99cad76b8a62555675085f4d1400a",
+  "families": [
+    "nominal_cruise",
+    "slow_speed_recovery",
+    "overspeed_recovery",
+    "lateral_recovery",
+    "vertical_recovery",
+    "combined_attitude_recovery"
+  ],
+  "completed_chunks": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "warning": "robustness extension; each row remains X_t -> first MPC control u0_t",
+  "completed_samples": 1000,
+  "rejected_rollouts": 44,
+  "control_bucket_counts": {
+    "interior": 902,
+    "near_limit": 68,
+    "saturated": 30
+  },
+  "updated_at": "2026-09-16T06:50:57.998326+00:00",
+  "mpc_backend": "official_rpg_mpc_acado_qpoases",
+  "planner_signature": {
+    "planner": "segment_time_quintic_pva_boundary_full_reference_v2",
+    "nominal_speed": 10.0,
+    "terminal_speed": 10.0,
+    "exit_distance": 1.0,
+    "minimum_duration": 0.8,
+    "maximum_duration": 8.0,
+    "maximum_speed": 15.0,
+    "maximum_acceleration": 12.0,
+    "feasibility_samples": 81,
+    "gravity": 9.8066,
+    "body_rate_difference_dt": 0.001
+  },
+  "sample_count": 1000,
+  "rollout_count": 200,
+  "rollout_steps": 5,
+  "control_dt_seconds": 0.05,
+  "prediction_dt_seconds": 0.1,
+  "horizon": 20,
+  "reference_speed_mps": 10.0,
+  "final_dataset": "final\\falcon_acado_short_rollout_10ms_smoke.npz",
+  "X_shape": [
+    1000,
+    12
+  ],
+  "U_shape": [
+    1000,
+    4
+  ],
+  "family_counts": {
+    "nominal_cruise": 170,
+    "slow_speed_recovery": 170,
+    "overspeed_recovery": 165,
+    "lateral_recovery": 165,
+    "vertical_recovery": 165,
+    "combined_attitude_recovery": 165
+  },
+  "saturated_fraction": 0.03,
+  "near_limit_fraction": 0.068,
+  "maximum_saturated_fraction": 0.03,
+  "maximum_near_limit_fraction": 0.3,
+  "mean_mpc_solve_time_seconds": 0.0005982573999790474
+}

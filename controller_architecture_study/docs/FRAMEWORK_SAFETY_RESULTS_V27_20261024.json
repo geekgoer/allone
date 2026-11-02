@@ -1,0 +1,19 @@
+{
+  "root": "F:\\FalconReproduction\\airsim_control\\controller_architecture_study\\results\\framework_runtime_v27_stable_static\\n7_net2",
+  "calibration_candidates": 52,
+  "reused_initial_search": "F:\\FalconReproduction\\airsim_control\\controller_architecture_study\\results\\framework_runtime_v26_fine_static\\n7_net2",
+  "collision_observation_valid": true,
+  "baseline_validation_candidates": 3,
+  "repeatedly_valid_static_candidates": 3,
+  "selection_status": "READY",
+  "discovery_complete": true,
+  "pairs": 16,
+  "verified_clean_safety_wins": 0,
+  "confirmation_complete": false,
+  "FPGA_verified": false,
+  "normal_budget_activation": {
+    "analyses": 523,
+    "physical_budget_binds": 0,
+    "mode_wait_limit_binds": 0
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "status": "completed",
+  "strategy": "hybrid_10ms_core_plus_phase_consistent_acado_extensions_v1",
+  "paper_relationship": "contains immutable paper-style 40k continuous core plus 120k disclosed robustness extension",
+  "input_contract": "falcon_track_p_trajectory_relative_12d_v1",
+  "input_dimensions": 12,
+  "input_features": [
+    "reference_position_error_x",
+    "reference_position_error_y",
+    "reference_position_error_z",
+    "reference_attitude_error_x",
+    "reference_attitude_error_y",
+    "reference_attitude_error_z",
+    "reference_velocity_error_x",
+    "reference_velocity_error_y",
+    "reference_velocity_error_z",
+    "reference_acceleration_x",
+    "reference_acceleration_y",
+    "reference_acceleration_z"
+  ],
+  "output_dimensions": 4,
+  "reference_speed_values": [
+    10.0
+  ],
+  "core_source": "F:\\FalconReproduction\\airsim_control\\experiments\\falcon_10ms_hybrid_160k_v1\\core_40k_airsim_acado_10ms_v2_safe_start\\final\\falcon_hybrid_core_40k_10ms_v2_safe_start.npz",
+  "extension_source": "F:\\FalconReproduction\\airsim_control\\experiments\\falcon_10ms_hybrid_160k_v1\\extensions_120k_phase_consistent_10ms_v4_environment_balanced\\final\\falcon_hybrid_extensions_120k_10ms_v4_environment_balanced.npz",
+  "final_dataset": "final\\falcon_hybrid_teacher_160k_10ms_v4_environment_balanced.npz",
+  "X_shape": [
+    160000,
+    12
+  ],
+  "U_shape": [
+    160000,
+    4
+  ],
+  "source_kind_counts": {
+    "0": 40000,
+    "1": 40000,
+    "2": 40000,
+    "3": 40000
+  },
+  "split_policy": "environment_id; environments 0..31 train, 32..35 validation, 36..39 test; no episode/rollout environment leakage",
+  "created_at": "2026-09-17T06:26:12.033323+00:00"
+}

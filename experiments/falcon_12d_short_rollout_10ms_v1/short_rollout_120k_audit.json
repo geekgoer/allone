@@ -1,0 +1,99 @@
+{
+  "status": "valid",
+  "teacher_root": "F:\\FalconReproduction\\airsim_control\\experiments\\falcon_12d_short_rollout_10ms_v1\\teacher_short_rollout_10ms_120k",
+  "final_dataset": "F:\\FalconReproduction\\airsim_control\\experiments\\falcon_12d_short_rollout_10ms_v1\\teacher_short_rollout_10ms_120k\\final\\falcon_acado_short_rollout_10ms_120k.npz",
+  "samples": 120000,
+  "X_shape": [
+    120000,
+    12
+  ],
+  "U_shape": [
+    120000,
+    4
+  ],
+  "rollouts": 24000,
+  "rollout_steps": 5,
+  "control_dt_seconds": 0.05,
+  "reference_speed_mps": 10.0,
+  "horizon": 20,
+  "prediction_dt_seconds": 0.1,
+  "family_counts": {
+    "nominal_cruise": 20000,
+    "slow_speed_recovery": 20000,
+    "overspeed_recovery": 20000,
+    "lateral_recovery": 20000,
+    "vertical_recovery": 20000,
+    "combined_attitude_recovery": 20000
+  },
+  "control_bucket_counts": {
+    "interior": 108839,
+    "near_limit": 7561,
+    "saturated": 3600
+  },
+  "saturated_fraction": 0.03,
+  "near_limit_fraction": 0.06300833333333333,
+  "limits": {
+    "maximum_saturated_fraction": 0.03,
+    "maximum_near_limit_fraction": 0.3
+  },
+  "speed_mps": {
+    "min": 3.5012852823402674,
+    "p01": 3.943621373141639,
+    "p50": 9.974596185065149,
+    "p99": 13.650304747019183,
+    "max": 14.004243530375225
+  },
+  "position_error_x": {
+    "min": 4.56753396987915,
+    "p01": 6.6430134773254395,
+    "p50": 18.583755493164062,
+    "p99": 27.375629425048828,
+    "max": 27.99991798400879
+  },
+  "control_per_output": {
+    "thrust": {
+      "min": 1.9999866485595703,
+      "p01": 6.979903697967529,
+      "p50": 9.877939224243164,
+      "p99": 12.70640754699707,
+      "max": 19.47759437561035
+    },
+    "body_rate_x": {
+      "min": -3.0000767707824707,
+      "p01": -2.000250816345215,
+      "p50": 0.0013884049840271473,
+      "p99": 2.066023826599121,
+      "max": 3.00008487701416
+    },
+    "body_rate_y": {
+      "min": -3.0000786781311035,
+      "p01": -3.0,
+      "p50": 0.03138558566570282,
+      "p99": 2.9999983310699463,
+      "max": 3.0001022815704346
+    },
+    "body_rate_z": {
+      "min": -2.0000123977661133,
+      "p01": -0.45829370617866516,
+      "p50": 0.0013505042297765613,
+      "p99": 0.4518180191516876,
+      "max": 2.0000572204589844
+    }
+  },
+  "transition_position_delta_m": {
+    "min": 0.17534703016281128,
+    "p01": 0.19654375314712524,
+    "p50": 0.4987904131412506,
+    "p99": 0.6827540397644043,
+    "max": 0.7002397775650024
+  },
+  "transition_velocity_delta_mps": {
+    "min": 0.0007208032766357064,
+    "p01": 0.009438928216695786,
+    "p50": 0.05997723340988159,
+    "p99": 0.25523412227630615,
+    "max": 0.48445647954940796
+  },
+  "mean_mpc_solve_ms": 0.7282841166684193,
+  "warnings": []
+}

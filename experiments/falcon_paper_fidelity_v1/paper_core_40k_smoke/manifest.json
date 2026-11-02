@@ -1,0 +1,129 @@
+{
+  "schema_version": 1,
+  "status": "incomplete",
+  "created_at": "2026-09-12T15:01:25.867207+00:00",
+  "updated_at": "2026-09-12T15:02:00.343754+00:00",
+  "strategy": "falcon_paper_core_quintic_casadi_nmpc_v1",
+  "teacher_policy_version": "falcon_paper_core_quintic_casadi_nmpc_v1",
+  "fidelity_tier": "paper_equations_and_public_rpg_mpc_defaults_not_author_acado_binary",
+  "paper_protocol": {
+    "initial_states": 2,
+    "environmental_conditions": 2,
+    "seconds_per_episode": 0.5,
+    "sample_period_seconds": 0.05,
+    "horizon": 20,
+    "expected_pairs": 40,
+    "published_pairs": 40000
+  },
+  "input_dimensions": 12,
+  "input_features": [
+    "gate_position_error_x",
+    "gate_position_error_y",
+    "gate_position_error_z",
+    "gate_attitude_error_x",
+    "gate_attitude_error_y",
+    "gate_attitude_error_z",
+    "velocity_x",
+    "velocity_y",
+    "velocity_z",
+    "acceleration_x",
+    "acceleration_y",
+    "acceleration_z"
+  ],
+  "input_contract": "falcon_track_p_gate_relative_12d_v1",
+  "output_dimensions": 4,
+  "output_features": [
+    "collective_thrust_acceleration",
+    "body_rate_x",
+    "body_rate_y",
+    "body_rate_z"
+  ],
+  "planner": {
+    "nominal_speed": 5.0,
+    "terminal_speed": 5.0,
+    "exit_distance": 1.0,
+    "minimum_duration": 0.8,
+    "maximum_duration": 8.0,
+    "maximum_speed": 8.0,
+    "maximum_acceleration": 6.0,
+    "feasibility_samples": 81
+  },
+  "mpc": {
+    "horizon": 20,
+    "gravity": 9.81,
+    "q_position_xy": 200.0,
+    "q_position_z": 500.0,
+    "q_attitude": 50.0,
+    "q_velocity": 10.0,
+    "r_thrust": 1.0,
+    "r_pitch_roll": 1.0,
+    "r_yaw": 1.0,
+    "min_thrust": 2.0,
+    "max_thrust": 20.0,
+    "max_body_rate_xy": 3.0,
+    "max_body_rate_z": 2.0,
+    "maximum_iterations": 50,
+    "tolerance": 1e-05
+  },
+  "fixed_hidden_parameters": {
+    "planner_config_is_constant": true,
+    "independently_randomized_reference_speed": false,
+    "reason": "prevents contradictory labels for the published 12-D input"
+  },
+  "config_file": "F:\\FalconReproduction\\airsim_control\\experiments\\falcon_paper_fidelity_v1\\paper_core_config.json",
+  "config_sha256": "aae1495408875ff65cc9283e07b996e3fa47dfa3b7fa52254130b2ad1a231a05",
+  "vehicle_name": "Drone1",
+  "initial_state_count": 2,
+  "environment_count": 2,
+  "episode_count": 4,
+  "steps_per_episode": 10,
+  "expected_samples": 40,
+  "rpc_restarts": 0,
+  "episodes": {
+    "episode_0000": {
+      "episode_id": 0,
+      "initial_state_id": 0,
+      "environment_id": 0,
+      "status": "failed",
+      "attempts": 3,
+      "sample_count": 0,
+      "file": "episodes\\episode_0000.npz",
+      "last_error": "EpisodeFailure: catastrophic loop overrun: 1.160s"
+    },
+    "episode_0001": {
+      "episode_id": 1,
+      "initial_state_id": 0,
+      "environment_id": 1,
+      "status": "failed",
+      "attempts": 3,
+      "sample_count": 0,
+      "file": "episodes\\episode_0001.npz",
+      "last_error": "EpisodeFailure: catastrophic loop overrun: 1.030s"
+    },
+    "episode_0002": {
+      "episode_id": 2,
+      "initial_state_id": 1,
+      "environment_id": 0,
+      "status": "completed",
+      "attempts": 2,
+      "sample_count": 10,
+      "file": "episodes\\episode_0002.npz",
+      "last_error": null
+    },
+    "episode_0003": {
+      "episode_id": 3,
+      "initial_state_id": 1,
+      "environment_id": 1,
+      "status": "failed",
+      "attempts": 3,
+      "sample_count": 0,
+      "file": "episodes\\episode_0003.npz",
+      "last_error": "EpisodeFailure: vehicle collision with Ground_5"
+    }
+  },
+  "failed_episode_ids": [
+    0,
+    1,
+    3
+  ]
+}

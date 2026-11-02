@@ -1,0 +1,8 @@
+{
+  "braking_deceleration_mps2": [2.0, 2.0],
+  "outward_acceleration_bound_mps2": [6.0, 5.0],
+  "response_lag_s": 0.08,
+  "forward_acceleration_bound_mps2": 6.0,
+  "maximum_horizon_s": 0.15,
+  "evidence": "Unverified prototype assumptions: b=2 is not a DNN guarantee; 6/5 match nominal QP acceleration limits, not certified plant bounds; 80ms is an assumed additional physical response lag, not measured or the computation response R. No physical safety certificate."
+}

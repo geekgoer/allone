@@ -1,0 +1,36 @@
+{
+  "format_version": 1,
+  "created_utc": "2026-09-22T05:30:34.028190+00:00",
+  "dataset": "F:\\FalconReproduction\\airsim_control\\experiments\\paper_track_p_12d_5ms_v1\\fpga_shadow_historical5ms\\svr_dataset\\phase1_all_periods_v2\\svr_episode_dataset_train_ready.csv",
+  "records_valid": 1976,
+  "source_directories": [
+    "closed_loop_current_full_r5",
+    "closed_loop_full_100ms_r5",
+    "closed_loop_full_30ms_r5",
+    "closed_loop_full_40ms_r5",
+    "closed_loop_full_50ms_delay10_r5",
+    "closed_loop_full_50ms_delay15_r5",
+    "closed_loop_full_50ms_delay20_r5",
+    "closed_loop_full_50ms_delay5_r5",
+    "closed_loop_full_60ms_r5",
+    "closed_loop_full_75ms_r5",
+    "closed_loop_full_80ms_r5"
+  ],
+  "test_split_group_policy": "GroupShuffleSplit by source_directory; no source directory appears in both splits",
+  "holdout_model": "svr_model_holdout.joblib",
+  "deployment_model": "svr_model_all_data.joblib",
+  "best_params": {
+    "C": 10000.0,
+    "epsilon": 0.01,
+    "gamma": 0.1
+  },
+  "features": [
+    "c_inverse_beta",
+    "period_ms",
+    "R_max_ms",
+    "epsilon"
+  ],
+  "target": "J_proxy",
+  "target_definition": "J_proxy = 1 / tracking_cost; engineering proxy, not the undisclosed exact paper J",
+  "R_definition": "R_max_ms measured per episode from state-to-command dispatch timestamps"
+}

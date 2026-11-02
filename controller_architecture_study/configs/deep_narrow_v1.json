@@ -1,0 +1,19 @@
+{
+  "protocol": "coarse_sweep.json",
+  "plain_seed_repeats": [
+    {"hidden_layers": 22, "hidden_width": 128, "seeds": [0]},
+    {"hidden_layers": 12, "hidden_width": 128, "seeds": [0]},
+    {"hidden_layers": 16, "hidden_width": 128, "seeds": [0]},
+    {"hidden_layers": 34, "hidden_width": 128, "seeds": [0]},
+    {"hidden_layers": 22, "hidden_width": 64, "seeds": [0]},
+    {"hidden_layers": 22, "hidden_width": 256, "seeds": [0]}
+  ],
+  "residual_tests": [
+    {"hidden_layers": 22, "hidden_width": 128, "seeds": [0]},
+    {"hidden_layers": 12, "hidden_width": 128, "seeds": [0]},
+    {"hidden_layers": 16, "hidden_width": 128, "seeds": [0]},
+    {"hidden_layers": 34, "hidden_width": 128, "seeds": [0]},
+    {"hidden_layers": 22, "hidden_width": 64, "seeds": [0]},
+    {"hidden_layers": 22, "hidden_width": 256, "seeds": [0]}
+  ]
+}

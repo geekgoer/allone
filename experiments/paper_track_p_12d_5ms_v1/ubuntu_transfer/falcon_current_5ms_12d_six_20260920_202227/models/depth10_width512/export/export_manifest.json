@@ -1,0 +1,51 @@
+{
+  "model": "F:\\FalconReproduction\\airsim_control\\experiments\\paper_track_p_12d_5ms_v1\\runs_retrain_depth10_width512_100_seed123\\best_model.pt",
+  "input_dimensions": 12,
+  "input_features": [
+    "gate_position_error_x",
+    "gate_position_error_y",
+    "gate_position_error_z",
+    "gate_attitude_error_x",
+    "gate_attitude_error_y",
+    "gate_attitude_error_z",
+    "velocity_x",
+    "velocity_y",
+    "velocity_z",
+    "acceleration_x",
+    "acceleration_y",
+    "acceleration_z"
+  ],
+  "teacher_policy": "track_p_independent_gate_state_mpc_queries_v1",
+  "input_contract": "[p_gate-p, r_gate-r, velocity, acceleration] in AirSim NED",
+  "reference_speed_values": [
+    5.0
+  ],
+  "weights": "weights_fp32.npz",
+  "model_spec": "model_spec.json",
+  "normalization": "normalization.json",
+  "golden_vectors": "golden_vectors.npz",
+  "golden_count": 1000,
+  "numpy_pytorch_max_abs_error": 1.430511474609375e-06,
+  "state_dict_keys": [
+    "0.bias",
+    "0.weight",
+    "10.bias",
+    "10.weight",
+    "12.bias",
+    "12.weight",
+    "14.bias",
+    "14.weight",
+    "16.bias",
+    "16.weight",
+    "18.bias",
+    "18.weight",
+    "2.bias",
+    "2.weight",
+    "4.bias",
+    "4.weight",
+    "6.bias",
+    "6.weight",
+    "8.bias",
+    "8.weight"
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "random_seed": 32025,
+  "timing": {
+    "dt": 0.05
+  },
+  "planner": {
+    "nominal_speed": 5.0,
+    "terminal_speed": 5.0,
+    "exit_distance": 1.0,
+    "minimum_duration": 0.8,
+    "maximum_duration": 8.0,
+    "maximum_speed": 8.0,
+    "maximum_acceleration": 8.0,
+    "feasibility_samples": 81,
+    "gravity": 9.8066,
+    "body_rate_difference_dt": 0.001
+  },
+  "mpc": {
+    "backend": "official_rpg_mpc_acado_qpoases",
+    "library": "../../native/acado_rpg_mpc/build/bin/libfalcon_acado_mpc.dll",
+    "horizon": 20,
+    "prediction_dt": 0.1,
+    "gravity": 9.8066,
+    "q_position_xy": 200.0,
+    "q_position_z": 500.0,
+    "q_attitude": 50.0,
+    "q_velocity": 10.0,
+    "q_perception": 0.0,
+    "r_thrust": 1.0,
+    "r_pitch_roll": 1.0,
+    "r_yaw": 1.0,
+    "min_thrust": 2.0,
+    "max_thrust": 20.0,
+    "max_body_rate_xy": 3.0,
+    "max_body_rate_z": 2.0
+  },
+  "dataset": {
+    "root": "teacher_state_queries_480k",
+    "output_name": "falcon_acado_independent_12d_480k.npz",
+    "sample_count": 480000,
+    "chunk_size": 5000,
+    "query_group_size": 100,
+    "max_sample_attempts": 100
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "policy": {
+    "min_iterations": 4,
+    "max_iterations": 64,
+    "delta_tolerance": 0.001,
+    "kkt_tolerance": 0.001,
+    "stable_iterations": 3,
+    "bound_tolerance": 0.001
+  },
+  "smoke": true,
+  "files": {
+    "F:\\FalconReproduction\\airsim_control\\experiments\\falcon_10ms_hybrid_160k_v1\\relabel_v4_consistent.py": "97894938b8751ae96b4adadd53b8d9ab693ed55375b4d693bed03c46f8a3a2c3",
+    "F:\\FalconReproduction\\airsim_control\\experiments\\falcon_10ms_hybrid_160k_v1\\hybrid_extension_config.json": "bb1e3fb30e9f2a3ab50338fb73a1ec72b26414d31d16320c6661672ff5567f81",
+    "F:\\FalconReproduction\\airsim_control\\native\\acado_rpg_mpc\\build\\bin\\libfalcon_acado_mpc.dll": "e078ccd2e8f3149f76fb31ae8280a2a164609c941fc5f883c915eb0cf57dbd60",
+    "F:\\FalconReproduction\\airsim_control\\experiments\\falcon_10ms_hybrid_160k_v1\\dnn_dataset_hybrid_160k_10ms_v4_environment_balanced\\split_manifest.json": "de541b08fc2ddc0197be72bf5a4a2f92fd3a4e51e83bb31ae8e0e18cc5e22e4e",
+    "F:\\FalconReproduction\\airsim_control\\falcon_paper_fidelity\\acado_mpc.py": "68cadd3d5fd380be74955d225bfad84a5fda32a96d9686ebbf062cd707686b88",
+    "F:\\FalconReproduction\\airsim_control\\falcon_paper_fidelity\\motion_primitive.py": "e5a6685fe601651533d6c9f60195071fecc4ed132e6c112f93daa912ab60987d",
+    "F:\\FalconReproduction\\airsim_control\\falcon_paper_fidelity\\phase_recovery_dataset.py": "f5c72f319a1a45429e6c9cecf856a1ff528a0a55c7e9dc81d0615e27d699c458",
+    "F:\\FalconReproduction\\airsim_control\\falcon_paper_fidelity\\contracts.py": "c66cb17ac44d3c7bf2df13a2656171ab99f51759fff9351168a41fad43d98f2c",
+    "F:\\FalconReproduction\\airsim_control\\experiments\\falcon_10ms_hybrid_160k_v1\\core_40k_airsim_acado_10ms_v2_safe_start\\final\\falcon_hybrid_core_40k_10ms_v2_safe_start.npz": "c9384ca6209d6f7ee899b33b029d5ce910b74f35ad0b4c2e0a476e1f824c7ebc",
+    "F:\\FalconReproduction\\airsim_control\\experiments\\falcon_10ms_hybrid_160k_v1\\core_40k_airsim_acado_10ms_v2_safe_start\\environments.json": "ff665efe1ca6a78522c92f653e6e75300bf26ce553d172e7ddee9dc813c2303a",
+    "F:\\FalconReproduction\\airsim_control\\experiments\\falcon_10ms_hybrid_160k_v1\\dnn_dataset_hybrid_160k_10ms_v4_environment_balanced\\train.npz": "523eb6a9136a9d30101469e64e244f6c0647929fadb8965578e71cac7c09fe5c",
+    "F:\\FalconReproduction\\airsim_control\\experiments\\falcon_10ms_hybrid_160k_v1\\dnn_dataset_hybrid_160k_10ms_v4_environment_balanced\\validation.npz": "b9c4f52e0bd6025e2af251bec8f803860ede7183acd3ac4197eba9608801700a"
+  }
+}

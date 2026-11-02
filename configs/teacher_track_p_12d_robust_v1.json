@@ -1,0 +1,88 @@
+{
+  "random_seed": 73,
+  "timing": {
+    "dt": 0.05
+  },
+  "environment": {
+    "count": 60,
+    "seed": 73,
+    "epsilon_values": [0.0, 0.8, 1.6],
+    "speed_values": [2.0],
+    "gate_count": 5,
+    "x_start": 10.0,
+    "x_spacing": 10.0,
+    "x_start_values": [8.0, 9.0, 10.0, 11.0],
+    "x_spacing_values": [7.0, 8.5, 10.0, 11.5, 13.0],
+    "base_y_range": [-3.0, 3.0],
+    "base_z_range": [-4.0, -2.2],
+    "max_z": -2.0
+  },
+  "sampling": {
+    "edge_probability": 0.30,
+    "edge_band_fraction": 0.15,
+    "max_total_speed": 7.0,
+    "max_total_acceleration": 6.0,
+    "families": [
+      {
+        "name": "nominal_tracking",
+        "probability": 0.25,
+        "gate_position_error": [[0.20, 12.0], [-0.35, 0.35], [-0.35, 0.35]],
+        "gate_attitude_error": [[-0.08, 0.08], [-0.08, 0.08], [-0.15, 0.15]],
+        "velocity": [[0.5, 3.2], [-0.4, 0.4], [-0.4, 0.4]],
+        "acceleration": [[-1.0, 1.0], [-1.0, 1.0], [-1.0, 1.0]]
+      },
+      {
+        "name": "lateral_recovery",
+        "probability": 0.18,
+        "gate_position_error": [[0.10, 14.0], [-2.75, 2.75], [-0.70, 0.70]],
+        "gate_attitude_error": [[-0.18, 0.18], [-0.18, 0.18], [-0.40, 0.40]],
+        "velocity": [[-0.5, 4.5], [-2.8, 2.8], [-0.9, 0.9]],
+        "acceleration": [[-3.0, 3.0], [-3.5, 3.5], [-2.0, 2.0]]
+      },
+      {
+        "name": "vertical_recovery",
+        "probability": 0.17,
+        "gate_position_error": [[0.10, 14.0], [-0.70, 0.70], [-2.20, 2.20]],
+        "gate_attitude_error": [[-0.20, 0.20], [-0.20, 0.20], [-0.35, 0.35]],
+        "velocity": [[-0.5, 4.5], [-0.9, 0.9], [-2.5, 2.5]],
+        "acceleration": [[-3.0, 3.0], [-2.0, 2.0], [-4.0, 4.0]]
+      },
+      {
+        "name": "attitude_recovery",
+        "probability": 0.13,
+        "gate_position_error": [[0.10, 14.0], [-1.20, 1.20], [-1.00, 1.00]],
+        "gate_attitude_error": [[-0.40, 0.40], [-0.40, 0.40], [-0.70, 0.70]],
+        "velocity": [[-0.5, 4.5], [-1.5, 1.5], [-1.3, 1.3]],
+        "acceleration": [[-3.0, 3.0], [-3.0, 3.0], [-3.0, 3.0]]
+      },
+      {
+        "name": "near_gate_fast",
+        "probability": 0.12,
+        "gate_position_error": [[0.05, 2.50], [-1.60, 1.60], [-1.30, 1.30]],
+        "gate_attitude_error": [[-0.30, 0.30], [-0.30, 0.30], [-0.55, 0.55]],
+        "velocity": [[2.0, 6.5], [-2.2, 2.2], [-1.8, 1.8]],
+        "acceleration": [[-4.0, 4.0], [-4.0, 4.0], [-4.0, 4.0]]
+      },
+      {
+        "name": "combined_recovery",
+        "probability": 0.15,
+        "gate_position_error": [[0.10, 16.0], [-3.00, 3.00], [-2.40, 2.40]],
+        "gate_attitude_error": [[-0.45, 0.45], [-0.45, 0.45], [-0.80, 0.80]],
+        "velocity": [[-2.5, 6.0], [-3.2, 3.2], [-2.8, 2.8]],
+        "acceleration": [[-4.5, 4.5], [-4.5, 4.5], [-4.5, 4.5]]
+      }
+    ]
+  },
+  "mpc": {
+    "horizon": 20,
+    "reference_speed": 2.0,
+    "max_horizontal_accel": 4.0,
+    "max_thrust_accel": 18.0,
+    "max_body_rate": 3.0
+  },
+  "dataset": {
+    "root": "teacher_dataset_track_p_12d_robust_v1",
+    "output_name": "teacher_dataset_track_p_12d_robust_v1.npz",
+    "samples_per_environment": 8000
+  }
+}

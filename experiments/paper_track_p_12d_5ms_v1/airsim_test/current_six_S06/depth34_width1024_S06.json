@@ -1,0 +1,58 @@
+{
+  "controller": "cpu_dnn",
+  "model": "F:\\FalconReproduction\\airsim_control\\experiments\\paper_track_p_12d_5ms_v1\\runs_resume_depth34_width1024_lr5e-5_300_seed42\\controller_scripted.pt",
+  "normalization": "F:\\FalconReproduction\\airsim_control\\experiments\\paper_track_p_12d_5ms_v1\\runs_resume_depth34_width1024_lr5e-5_300_seed42\\normalization.json",
+  "input_target": "gate",
+  "gate_attitude_encoding": "rotation_vector",
+  "input_contract": "[p_gate-p, r_gate-r, velocity, acceleration] in AirSim NED",
+  "vehicle_name": "Drone1",
+  "epsilon": 1.6,
+  "seed": 953,
+  "gate_count": 5,
+  "samples": 224,
+  "deadline_misses": 2,
+  "initial_collision_flag": true,
+  "completed": true,
+  "crossings": [
+    {
+      "gate": 1.0,
+      "lateral_offset": -6.0479916242732836e-05,
+      "vertical_offset": -0.02403045519782898
+    },
+    {
+      "gate": 2.0,
+      "lateral_offset": -0.00830938434065352,
+      "vertical_offset": 0.09758829810499758
+    },
+    {
+      "gate": 3.0,
+      "lateral_offset": 0.057688246948591315,
+      "vertical_offset": -0.11185071524832502
+    },
+    {
+      "gate": 4.0,
+      "lateral_offset": -0.03904704762472644,
+      "vertical_offset": 0.10945813041602293
+    },
+    {
+      "gate": 5.0,
+      "lateral_offset": -0.06082940692758747,
+      "vertical_offset": -0.11555839099180876
+    }
+  ],
+  "csv": "F:\\FalconReproduction\\airsim_control\\data\\dnn_Drone1_gates_20260920T120505Z.csv",
+  "fpga_jsonl": "F:\\FalconReproduction\\airsim_control\\experiments\\paper_track_p_12d_5ms_v1\\runs_resume_depth34_width1024_lr5e-5_300_seed42\\cpu_dnn_Drone1_20260920T120505Z.jsonl",
+  "backend": {
+    "mode": "cpu_dnn",
+    "cycles": 224,
+    "fpga_fresh": 0,
+    "fallbacks": 0,
+    "clipped_cycles": 0,
+    "rtt_us": null,
+    "dpu_time_us": null,
+    "server_total_us": null,
+    "fpga_vs_cpu": null,
+    "client_stats": null
+  },
+  "elapsed_seconds": 11.306635500004631
+}

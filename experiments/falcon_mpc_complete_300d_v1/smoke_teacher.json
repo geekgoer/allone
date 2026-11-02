@@ -1,0 +1,33 @@
+{
+  "status": "PASS",
+  "input_contract": "falcon_mpc_complete_solver_window_300d_v1",
+  "shape": [
+    300
+  ],
+  "finite": true,
+  "quaternion_sign_invariant_max_abs": 0.0,
+  "first_reference_control": [
+    9.80863923080057,
+    0.0,
+    -0.0,
+    -0.02
+  ],
+  "teacher": {
+    "control": [
+      9.189192771911621,
+      -3.0,
+      -3.0,
+      1.5280003547668457
+    ],
+    "iterations": 11,
+    "final_control_delta": 0.0005060434341430664,
+    "converged": true,
+    "diagnostics": {
+      "kkt": 1.6570368188695284e-06,
+      "objective": 185.87014770507812,
+      "qp_nwsr": 0.0
+    },
+    "repeatability_max_abs": 1.3113021850585938e-06,
+    "pass": true
+  }
+}

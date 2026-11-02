@@ -1,0 +1,10 @@
+{
+  "models": [
+    {"model_id": "depth10_width512", "run_dir": "experiments/paper_track_p_12d_5ms_v1/runs_retrain_depth10_width512_100_seed123"},
+    {"model_id": "depth10_width1024", "run_dir": "experiments/paper_track_p_12d_5ms_v1/runs_progressive_200_to_700_batch512_seed42/depth10_width1024"},
+    {"model_id": "depth22_width512", "run_dir": "experiments/paper_track_p_12d_5ms_v1/runs_progressive_200_to_700_batch512_seed42/depth22_width512"},
+    {"model_id": "depth22_width1024", "run_dir": "experiments/paper_track_p_12d_5ms_v1/runs_progressive_200_to_700_batch512_seed42/depth22_width1024"},
+    {"model_id": "depth34_width512", "run_dir": "experiments/paper_track_p_12d_5ms_v1/runs_progressive_200_to_700_batch512_seed42/depth34_width512"},
+    {"model_id": "depth34_width1024", "run_dir": "experiments/paper_track_p_12d_5ms_v1/runs_resume_depth34_width1024_lr5e-5_300_seed42"}
+  ]
+}

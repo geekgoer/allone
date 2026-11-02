@@ -1,0 +1,81 @@
+{
+  "input_dim": 237,
+  "input_contract": "decision_convex_local_relative_pv_237d_v1",
+  "group_width": 128,
+  "depth_choices": [
+    1,
+    3,
+    5,
+    7,
+    9,
+    11,
+    13,
+    15,
+    17,
+    19,
+    21,
+    23,
+    25,
+    27,
+    29,
+    31,
+    33
+  ],
+  "width_choices": [
+    128,
+    256,
+    384,
+    512,
+    640,
+    768,
+    896,
+    1024
+  ],
+  "seed": 0,
+  "batch_size": 512,
+  "evaluation_batch_size": 512,
+  "cpu_threads": 4,
+  "weight_decay": 0.00001,
+  "gradient_clip_norm": 1,
+  "kd_weight": 0.1,
+  "max_anchor_weight": 0.25,
+  "consistency_weight": 0.01,
+  "consistency_train_quantile": 0.5,
+  "consistency_calibration_samples": 4096,
+  "maximum_validation_degradation": 1.05,
+  "stages": [
+    {
+      "name": "heads",
+      "epochs": 200,
+      "backbone_lr": 0,
+      "head_lr": 0.0001,
+      "maximum_head_lr": 0.000005,
+      "min_lr_ratio": 0.1
+    },
+    {
+      "name": "joint",
+      "epochs": 4800,
+      "backbone_lr": 0.000001,
+      "head_lr": 0.00003,
+      "min_lr_ratio": 0.01
+    }
+  ],
+  "data_dir": "controller_architecture_study/results/decision_convex_recovery_v1/datasets/features_recovery",
+  "teacher_checkpoint": "controller_architecture_study/results/decision_convex_residual33_long5000_v1/residual_mlp_h33_w1024_seed0/best_model.pt",
+  "teacher_sha256": "e5ec3156f3b532a1d003e5c32a20be88ebe2b8d776a0097fd01ff8f7d5b824f7",
+  "sample_counts": {
+    "train": 153600,
+    "validation": 9600
+  },
+  "dataset_file_sha256": {
+    "train.npz": "974e26269053bc9bda664c125332b69623818b8c0b9189470275fb32d37eb1f8",
+    "validation.npz": "62da58b5ded2cfbf79e2f00d7ac526fad18b8004a936f2fe8073cb1ed3919a18",
+    "normalization.json": "fe9c44ee80aef1cf97138536a66a4ee3a126f459f2ef963370db354ada8f19ac"
+  },
+  "initial_supernet_checkpoint": "controller_architecture_study/results/incremental_supernet_237d_v3_recovery600/best_model.pt",
+  "initial_supernet_sha256": "633e725abb71a04d11d9785609ec91db63c81b915e19fa17cb4c013978e86d90",
+  "maximum_label_weight": 1,
+  "maximum_first_selection": false,
+  "grid_first_maximum_guard_factor": 1.1,
+  "full_grid_training": true
+}

@@ -1,0 +1,54 @@
+{
+  "format_version": 1,
+  "created_utc": "2026-09-22T14:49:10.457319+00:00",
+  "dataset": "F:\\FalconReproduction\\airsim_control\\experiments\\paper_track_p_12d_5ms_v1\\fpga_shadow_historical5ms\\paper_style_sweep\\fast_4h_v1\\svr_dataset\\paper_style_episode_dataset_train_ready.csv",
+  "target": "J_paper_style",
+  "features": [
+    "c",
+    "period_ms",
+    "R_max_ms",
+    "epsilon"
+  ],
+  "normalization": "only c, T and R use train/all-data maximum normalization; epsilon and target unchanged",
+  "records_valid": 636,
+  "train_records": 504,
+  "test_records": 132,
+  "train_groups": [
+    "T030ms_delay0ms",
+    "T030ms_delay6ms",
+    "T060ms_delay0ms",
+    "T060ms_delay12ms",
+    "T060ms_delay24ms",
+    "T100ms_delay0ms",
+    "T100ms_delay40ms"
+  ],
+  "test_groups": [
+    "T030ms_delay12ms",
+    "T100ms_delay20ms"
+  ],
+  "best_params": {
+    "C": 1.0,
+    "gamma": 0.1,
+    "epsilon": 5e-05
+  },
+  "best_cv_rmse": 0.0003195533792404976,
+  "best_cv_rmse_std": 5.7399541742818266e-05,
+  "train_metrics": {
+    "count": 504,
+    "mse": 9.41105007296015e-08,
+    "rmse": 0.00030677434822618644,
+    "mae": 0.00023326273751912602,
+    "r2": 0.686915875696436,
+    "mape_percent": 7.142705495799105,
+    "smape_percent": 6.9405474971724574
+  },
+  "test_metrics": {
+    "count": 132,
+    "mse": 7.770402326582511e-08,
+    "rmse": 0.000278754413894785,
+    "mae": 0.00021613499558681385,
+    "r2": 0.7204902925988843,
+    "mape_percent": 6.724547758702523,
+    "smape_percent": 6.62691226206358
+  }
+}

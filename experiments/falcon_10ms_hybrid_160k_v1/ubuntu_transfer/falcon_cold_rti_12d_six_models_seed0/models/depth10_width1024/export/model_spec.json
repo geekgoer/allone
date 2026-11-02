@@ -1,0 +1,121 @@
+{
+  "format_version": 1,
+  "model_name": "falcon_dnn_input12_depth10_width1024",
+  "dtype": "float32",
+  "input_shape": [
+    1,
+    12
+  ],
+  "output_shape": [
+    1,
+    4
+  ],
+  "input_features": [
+    "reference_position_error_x",
+    "reference_position_error_y",
+    "reference_position_error_z",
+    "reference_attitude_error_x",
+    "reference_attitude_error_y",
+    "reference_attitude_error_z",
+    "reference_velocity_error_x",
+    "reference_velocity_error_y",
+    "reference_velocity_error_z",
+    "reference_acceleration_x",
+    "reference_acceleration_y",
+    "reference_acceleration_z"
+  ],
+  "output_features": [
+    "collective_thrust_acceleration",
+    "body_rate_x",
+    "body_rate_y",
+    "body_rate_z"
+  ],
+  "frame": "AirSim NED",
+  "sample_period_seconds": 0.05,
+  "depth": 10,
+  "hidden_layers": 9,
+  "width": 1024,
+  "activation": "ReLU",
+  "output_activation": null,
+  "normalization_inside_model": false,
+  "batch_size": 1,
+  "normalization_file": "normalization.json",
+  "teacher_policy": "fully_initialized_acado_then_exactly_one_rti_step_v1",
+  "path_context_offsets": [],
+  "input_contract": "falcon_track_p_trajectory_relative_12d_v1",
+  "reference_speed_values": [
+    10.0
+  ],
+  "layers": [
+    {
+      "index": 0,
+      "type": "Linear",
+      "in_features": 12,
+      "out_features": 1024,
+      "activation_after": true
+    },
+    {
+      "index": 1,
+      "type": "Linear",
+      "in_features": 1024,
+      "out_features": 1024,
+      "activation_after": true
+    },
+    {
+      "index": 2,
+      "type": "Linear",
+      "in_features": 1024,
+      "out_features": 1024,
+      "activation_after": true
+    },
+    {
+      "index": 3,
+      "type": "Linear",
+      "in_features": 1024,
+      "out_features": 1024,
+      "activation_after": true
+    },
+    {
+      "index": 4,
+      "type": "Linear",
+      "in_features": 1024,
+      "out_features": 1024,
+      "activation_after": true
+    },
+    {
+      "index": 5,
+      "type": "Linear",
+      "in_features": 1024,
+      "out_features": 1024,
+      "activation_after": true
+    },
+    {
+      "index": 6,
+      "type": "Linear",
+      "in_features": 1024,
+      "out_features": 1024,
+      "activation_after": true
+    },
+    {
+      "index": 7,
+      "type": "Linear",
+      "in_features": 1024,
+      "out_features": 1024,
+      "activation_after": true
+    },
+    {
+      "index": 8,
+      "type": "Linear",
+      "in_features": 1024,
+      "out_features": 1024,
+      "activation_after": true
+    },
+    {
+      "index": 9,
+      "type": "Linear",
+      "in_features": 1024,
+      "out_features": 4,
+      "activation_after": false
+    }
+  ]
+}

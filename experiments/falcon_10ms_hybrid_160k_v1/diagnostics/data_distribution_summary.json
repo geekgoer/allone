@@ -1,0 +1,229 @@
+{
+  "provenance": {
+    "core": "F:\\FalconReproduction\\airsim_control\\experiments\\falcon_10ms_hybrid_160k_v1\\core_40k_airsim_acado_10ms_v2_safe_start\\final\\falcon_hybrid_core_40k_10ms_v2_safe_start.npz",
+    "v2_partial_root": "F:\\FalconReproduction\\airsim_control\\experiments\\falcon_10ms_hybrid_160k_v1\\extensions_120k_phase_consistent_10ms_v2_safe_start",
+    "v3_smoke": "F:\\FalconReproduction\\airsim_control\\experiments\\falcon_10ms_hybrid_160k_v1\\extensions_120k_phase_consistent_10ms_v3_bucket_balanced_smoke\\final\\falcon_hybrid_extensions_smoke.npz",
+    "v3_final": "F:\\FalconReproduction\\airsim_control\\experiments\\falcon_10ms_hybrid_160k_v1\\extensions_120k_phase_consistent_10ms_v3_bucket_balanced\\final\\falcon_hybrid_extensions_120k_10ms_v3_bucket_balanced.npz"
+  },
+  "datasets": [
+    {
+      "name": "40k AirSim core",
+      "samples": 40000,
+      "finite": true,
+      "reference_position_error_m": {
+        "min": 0.003566011201709243,
+        "p01": 0.031035915862811094,
+        "p50": 0.08498916950930535,
+        "p99": 0.3347088210407213,
+        "max": 0.6900178662593527
+      },
+      "reference_attitude_error_rad": {
+        "min": 9.661206886684841e-05,
+        "p01": 0.013316093654800881,
+        "p50": 0.0816175834199763,
+        "p99": 0.45692269275464276,
+        "max": 0.7726522176864269
+      },
+      "reference_velocity_error_mps": {
+        "min": 3.9723952859198146e-05,
+        "p01": 0.0007118279345397074,
+        "p50": 0.14167911077701106,
+        "p99": 0.9390000120811511,
+        "max": 1.6445142255334089
+      },
+      "reference_acceleration_mps2": {
+        "min": 0.0,
+        "p01": 0.0,
+        "p50": 2.3717308933665606,
+        "p99": 9.028428195751516,
+        "max": 11.157352242144214
+      },
+      "control_bucket_counts": {
+        "interior": 28292,
+        "near_limit": 5174,
+        "saturated": 6534
+      },
+      "control_bucket_fraction": {
+        "interior": 0.7073,
+        "near_limit": 0.12935,
+        "saturated": 0.16335
+      },
+      "control_per_output": {
+        "thrust": {
+          "min": 1.9999570846557617,
+          "p01": 3.0245223307609557,
+          "p50": 10.127900123596191,
+          "p99": 20.0,
+          "max": 20.000022888183594
+        },
+        "body_rate_x": {
+          "min": -3.0000929832458496,
+          "p01": -3.0,
+          "p50": -6.977071507208166e-06,
+          "p99": 3.0,
+          "max": 3.000066041946411
+        },
+        "body_rate_y": {
+          "min": -3.0000762939453125,
+          "p01": -2.451993474960327,
+          "p50": 0.002835964784026146,
+          "p99": 3.0,
+          "max": 3.0000853538513184
+        },
+        "body_rate_z": {
+          "min": -2.0000133514404297,
+          "p01": -0.62394571185112,
+          "p50": -8.680091195856221e-05,
+          "p99": 0.5877178579568884,
+          "max": 2.0000033378601074
+        }
+      }
+    },
+    {
+      "name": "old v2 partial (failed)",
+      "samples": 4000,
+      "finite": true,
+      "reference_position_error_m": {
+        "min": 0.016570715603127357,
+        "p01": 0.07396250660514765,
+        "p50": 0.39531129799844755,
+        "p99": 2.001933655861969,
+        "max": 2.92912750572985
+      },
+      "reference_attitude_error_rad": {
+        "min": 0.009753324959330782,
+        "p01": 0.033750669611500535,
+        "p50": 0.19082855376571298,
+        "p99": 0.6747639486324473,
+        "max": 1.0049573101467986
+      },
+      "reference_velocity_error_mps": {
+        "min": 0.07989939266132928,
+        "p01": 0.2125204730794774,
+        "p50": 1.4370360279601766,
+        "p99": 10.194589260278791,
+        "max": 10.548713322877537
+      },
+      "reference_acceleration_mps2": {
+        "min": 0.0,
+        "p01": 0.0,
+        "p50": 2.357778944048508,
+        "p99": 9.030874322884054,
+        "max": 10.896027104113902
+      },
+      "control_bucket_counts": {
+        "interior": 373,
+        "near_limit": 404,
+        "saturated": 3223
+      },
+      "control_bucket_fraction": {
+        "interior": 0.09325,
+        "near_limit": 0.101,
+        "saturated": 0.80575
+      },
+      "control_per_output": {
+        "thrust": {
+          "min": 1.9999198913574219,
+          "p01": 1.9999847412109375,
+          "p50": 10.130011081695557,
+          "p99": 20.000019073486328,
+          "max": 20.000076293945312
+        },
+        "body_rate_x": {
+          "min": -3.000070571899414,
+          "p01": -3.0000228977203367,
+          "p50": -0.11047793179750443,
+          "p99": 3.000028374195099,
+          "max": 3.0000762939453125
+        },
+        "body_rate_y": {
+          "min": -3.000080108642578,
+          "p01": -3.0000381469726562,
+          "p50": -1.0225104689598083,
+          "p99": 3.000025749206543,
+          "max": 3.0000782012939453
+        },
+        "body_rate_z": {
+          "min": -2.0,
+          "p01": -1.285420969724655,
+          "p50": -0.00020352964202174917,
+          "p99": 1.349090276956558,
+          "max": 2.000000238418579
+        }
+      }
+    },
+    {
+      "name": "new v3 smoke",
+      "samples": 3600,
+      "finite": true,
+      "reference_position_error_m": {
+        "min": 0.011712107088766409,
+        "p01": 0.04397403216016461,
+        "p50": 0.198065532138392,
+        "p99": 0.73401239752584,
+        "max": 1.2087775675774
+      },
+      "reference_attitude_error_rad": {
+        "min": 0.013168174433243428,
+        "p01": 0.03231437769472834,
+        "p50": 0.13536663413453123,
+        "p99": 0.39932457359718904,
+        "max": 0.8138716925526855
+      },
+      "reference_velocity_error_mps": {
+        "min": 0.014699543801501382,
+        "p01": 0.10759983218889664,
+        "p50": 0.526019559854706,
+        "p99": 3.8368375637865086,
+        "max": 10.356767265432165
+      },
+      "reference_acceleration_mps2": {
+        "min": 0.0,
+        "p01": 0.0,
+        "p50": 2.1881959523184986,
+        "p99": 9.026567571365286,
+        "max": 10.16256551098599
+      },
+      "control_bucket_counts": {
+        "interior": 3243,
+        "near_limit": 285,
+        "saturated": 72
+      },
+      "control_bucket_fraction": {
+        "interior": 0.9008333333333334,
+        "near_limit": 0.07916666666666666,
+        "saturated": 0.02
+      },
+      "control_per_output": {
+        "thrust": {
+          "min": 1.9999313354492188,
+          "p01": 3.3615795469284055,
+          "p50": 10.416533470153809,
+          "p99": 17.5059771156311,
+          "max": 20.000015258789062
+        },
+        "body_rate_x": {
+          "min": -3.000027656555176,
+          "p01": -2.7853763246536256,
+          "p50": -0.05093272030353546,
+          "p99": 2.7843562102317763,
+          "max": 3.000047206878662
+        },
+        "body_rate_y": {
+          "min": -3.0000782012939453,
+          "p01": -3.0,
+          "p50": 0.13073909282684326,
+          "p99": 2.6883175659179677,
+          "max": 3.000027656555176
+        },
+        "body_rate_z": {
+          "min": -1.4753859043121338,
+          "p01": -0.6219861727952957,
+          "p50": 0.0034569173585623503,
+          "p99": 0.6062395137548445,
+          "max": 1.7339695692062378
+        }
+      }
+    }
+  ]
+}

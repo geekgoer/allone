@@ -1,0 +1,20 @@
+{
+  "scope": "Gate-neighborhood budget shadow; no control or period changes; not a safety certificate",
+  "formula_source": "D:/杂用/组会/20260923/组会.pptx, slide 1",
+  "monitor_half_depth_m": 2.0,
+  "lateral_error_rate_bound_mps": 3.0,
+  "vertical_error_rate_bound_mps": 3.0,
+  "response_floor_ms": 30.0,
+  "response_margin_ms": 5.0,
+  "response_history_size": 32,
+  "candidate_periods_ms": [50.0, 75.0, 100.0],
+  "assumptions": [
+    "Gate geometry and clearance are inherited from the flight harness, not a newly calibrated airframe envelope.",
+    "The 0.25m clearance is an effective body-radius-plus-margin assumption, not a measured drone width.",
+    "Both 3m/s error-rate bounds must hold until the next command arrives; sampled checks cannot prove this.",
+    "R_next is estimated by max(30ms, maximum of the last 32 already dispatched responses plus 5ms); this is not WCET.",
+    "The first-slide lateral formula is extended separately to the vertical opening; forward speed is not the error-rate bound.",
+    "Only a +/-2m longitudinal gate neighborhood is monitored; no constraint is claimed for the rest of the route.",
+    "Host sample-request and async command-dispatch timestamps approximate sampling and actuation; sensor age and actual actuator acknowledgement are unavailable."
+  ]
+}

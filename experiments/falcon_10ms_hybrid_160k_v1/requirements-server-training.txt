@@ -1,0 +1,6 @@
+# NVIDIA Linux server training environment for the 12-D hybrid 160k dataset.
+# PyTorch 2.4.1 CUDA 12.1 wheels support both RTX 2080 Ti (11 GB) and RTX
+# 3080 Ti class GPUs when the installed NVIDIA driver supports CUDA 12.1.
+--extra-index-url https://download.pytorch.org/whl/cu121
+numpy==1.26.4
+torch==2.4.1+cu121

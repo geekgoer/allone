@@ -1,0 +1,10 @@
+{
+  "hover_throttle": 0.6,
+  "hover_thrust_accel": 9.81,
+  "thrust_accel_per_throttle": 19.62,
+  "min_throttle": 0.0,
+  "max_throttle": 1.0,
+  "calibration_complete": true,
+  "vehicle_name": "",
+  "notes": "Measured NED velocity bracket; slope remains an engineering assumption."
+}

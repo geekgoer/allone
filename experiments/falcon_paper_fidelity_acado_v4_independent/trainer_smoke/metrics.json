@@ -1,0 +1,142 @@
+{
+  "format_version": 2,
+  "depth": 10,
+  "width": 512,
+  "input_dimensions": 12,
+  "input_features": [
+    "gate_position_error_x",
+    "gate_position_error_y",
+    "gate_position_error_z",
+    "gate_attitude_error_x",
+    "gate_attitude_error_y",
+    "gate_attitude_error_z",
+    "velocity_x",
+    "velocity_y",
+    "velocity_z",
+    "acceleration_x",
+    "acceleration_y",
+    "acceleration_z"
+  ],
+  "teacher_policy": "falcon_acado_12d_independent_state_queries_v2",
+  "input_contract": "falcon_track_p_gate_relative_12d_v1",
+  "reference_speed_values": [
+    5.0
+  ],
+  "initialization": "kaiming_relu_hidden_xavier_output_v1",
+  "selection_metric": "normalized_mse",
+  "metric_definition": {
+    "physical_mse": "mean((U_pred_physical-U_true_physical)^2) over all samples and four outputs",
+    "normalized_mse": "mean((U_pred_normalized-U_true_normalized)^2) over all samples and four outputs",
+    "training_objective": "normalized_mse"
+  },
+  "parameters": 2109956,
+  "device": "cpu",
+  "seed": 0,
+  "epochs_completed": 2,
+  "best_epoch": 2,
+  "training_complete": true,
+  "termination_reason": "maximum_epochs",
+  "stopped_early": false,
+  "early_stopping": {
+    "enabled": false,
+    "patience": 0,
+    "minimum_epochs": 0,
+    "minimum_absolute_improvement": 0.0,
+    "requires_minimum_learning_rate": false
+  },
+  "learning_rate_schedule": {
+    "type": "constant",
+    "initial_learning_rate": 0.0001,
+    "final_learning_rate": 0.0001,
+    "plateau_patience": 0,
+    "plateau_factor": 0.3,
+    "plateau_relative_threshold": 0.0001,
+    "plateau_cooldown": 0,
+    "minimum_learning_rate": 1e-06
+  },
+  "validation": {
+    "samples": 10,
+    "mse": 2.255826473236084,
+    "mae": 1.1052236557006836,
+    "rmse": 1.5019408464431763,
+    "max_abs_error": 3.4556655883789062,
+    "mse_per_output": {
+      "collective_thrust_acceleration": 4.426623344421387,
+      "body_rate_x": 3.3790860176086426,
+      "body_rate_y": 0.885822594165802,
+      "body_rate_z": 0.331773579120636
+    },
+    "mae_per_output": {
+      "collective_thrust_acceleration": 1.8500220775604248,
+      "body_rate_x": 1.4680185317993164,
+      "body_rate_y": 0.7134827375411987,
+      "body_rate_z": 0.38937124609947205
+    }
+  },
+  "test": {
+    "samples": 20,
+    "mse": 3.863442897796631,
+    "mae": 1.335235357284546,
+    "rmse": 1.965564250946045,
+    "max_abs_error": 7.172568321228027,
+    "mse_per_output": {
+      "collective_thrust_acceleration": 6.330215930938721,
+      "body_rate_x": 3.364046096801758,
+      "body_rate_y": 5.477705955505371,
+      "body_rate_z": 0.2818036675453186
+    },
+    "mae_per_output": {
+      "collective_thrust_acceleration": 1.9079475402832031,
+      "body_rate_x": 1.5504257678985596,
+      "body_rate_y": 1.4727802276611328,
+      "body_rate_z": 0.40978798270225525
+    }
+  },
+  "validation_normalized": {
+    "samples": 10,
+    "mse": 0.9413094520568848,
+    "mae": 0.7121554017066956,
+    "rmse": 0.9702110290527344,
+    "max_abs_error": 3.8278379440307617,
+    "mse_per_output": {
+      "collective_thrust_acceleration": 0.5736430287361145,
+      "body_rate_x": 0.834248423576355,
+      "body_rate_y": 0.48599082231521606,
+      "body_rate_z": 1.871355652809143
+    },
+    "mae_per_output": {
+      "collective_thrust_acceleration": 0.665980339050293,
+      "body_rate_x": 0.7294234037399292,
+      "body_rate_y": 0.5284746289253235,
+      "body_rate_z": 0.9247432947158813
+    }
+  },
+  "test_normalized": {
+    "samples": 20,
+    "mse": 1.5614030361175537,
+    "mae": 0.8803296089172363,
+    "rmse": 1.2495611906051636,
+    "max_abs_error": 4.288420677185059,
+    "mse_per_output": {
+      "collective_thrust_acceleration": 0.8203281164169312,
+      "body_rate_x": 0.8305355310440063,
+      "body_rate_y": 3.0052456855773926,
+      "body_rate_z": 1.5895025730133057
+    },
+    "mae_per_output": {
+      "collective_thrust_acceleration": 0.68683260679245,
+      "body_rate_x": 0.7703695893287659,
+      "body_rate_y": 1.0908842086791992,
+      "body_rate_z": 0.9732323884963989
+    }
+  },
+  "health": {
+    "validation_mean_baseline_mse": 2.21274471282959,
+    "validation_model_to_baseline_mse_ratio": 1.0194698286506818,
+    "maximum_allowed_ratio": null,
+    "passed": true
+  },
+  "elapsed_seconds": 0.20652359997620806,
+  "test_used_for_early_stopping": false,
+  "data_dir": "F:\\FalconReproduction\\airsim_control\\experiments\\falcon_paper_fidelity_acado_v4_independent\\dnn_dataset_smoke"
+}

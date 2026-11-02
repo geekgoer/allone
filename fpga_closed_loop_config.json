@@ -1,0 +1,10 @@
+{
+  "host": "192.168.77.2",
+  "port": 5005,
+  "udp_timeout_ms": 10.0,
+  "retries": 1,
+  "warmup_count": 20,
+  "fallback": "cpu_dnn",
+  "normalization": "dnn_runs/iid_path_v1_depth10_width512/normalization.json",
+  "cpu_model": "dnn_runs/iid_path_v1_depth10_width512/controller_scripted.pt"
+}

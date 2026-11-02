@@ -1,0 +1,78 @@
+{
+  "random_seed": 102026,
+  "source": {
+    "dataset": "core_40k_airsim_acado_10ms_v2_safe_start/final/falcon_hybrid_core_40k_10ms_v2_safe_start.npz",
+    "environments": "core_40k_airsim_acado_10ms_v2_safe_start/environments.json",
+    "reconstruction_tolerance": 0.00001
+  },
+  "timing": {"dt": 0.05},
+  "planner": {
+    "nominal_speed": 10.0,
+    "terminal_speed": 10.0,
+    "exit_distance": 1.0,
+    "minimum_duration": 0.8,
+    "maximum_duration": 8.0,
+    "maximum_speed": 15.0,
+    "maximum_acceleration": 12.0,
+    "feasibility_samples": 81,
+    "gravity": 9.8066,
+    "body_rate_difference_dt": 0.001
+  },
+  "trajectory": {"start_velocity_mode": "nominal_gate_axis", "final_exit_distance": 5.0},
+  "mpc": {
+    "backend": "official_rpg_mpc_acado_qpoases",
+    "library": "../../native/acado_rpg_mpc/build/bin/libfalcon_acado_mpc.dll",
+    "horizon": 20,
+    "prediction_dt": 0.1,
+    "gravity": 9.8066,
+    "q_position_xy": 200.0,
+    "q_position_z": 500.0,
+    "q_attitude": 50.0,
+    "q_velocity": 10.0,
+    "q_perception": 0.0,
+    "r_thrust": 1.0,
+    "r_pitch_roll": 1.0,
+    "r_yaw": 1.0,
+    "min_thrust": 2.0,
+    "max_thrust": 20.0,
+    "max_body_rate_xy": 3.0,
+    "max_body_rate_z": 2.0
+  },
+  "sampling": {
+    "maximum_total_speed": 15.0,
+    "maximum_total_acceleration": 12.0,
+    "maximum_saturated_fraction": 0.03,
+    "environment_balanced_buckets": true,
+    "saturation_tolerance": 0.001,
+    "near_limit_fraction": 0.15,
+    "maximum_attempts_per_candidate": 120,
+    "control_bucket_slots": {"interior": 90, "near_limit": 7, "saturated": 3},
+    "short_rollout_control_bucket_slots": {"interior": 90, "near_limit": 10},
+    "control_bucket_eligible_families": {
+      "interior": ["cruise_jitter"],
+      "near_limit": ["lateral_recovery", "vertical_recovery"],
+      "saturated": ["launch_recovery", "speed_recovery", "combined_recovery"]
+    },
+    "short_rollout_eligible_families": {
+      "interior": ["cruise_jitter"],
+      "near_limit": ["lateral_recovery", "vertical_recovery"]
+    },
+    "families": [
+      {"name": "launch_recovery", "position_std": [0.12, 0.15, 0.12], "position_limit": [0.35, 0.45, 0.40], "attitude_std": [0.04, 0.04, 0.06], "attitude_limit": [0.12, 0.12, 0.18], "velocity_std": [0.50, 0.25, 0.25], "velocity_limit": [1.50, 0.75, 0.75], "acceleration_std": [0.70, 0.60, 0.60], "acceleration_limit": [2.00, 1.80, 1.80]},
+      {"name": "cruise_jitter", "position_std": [0.10, 0.12, 0.12], "position_limit": [0.35, 0.40, 0.40], "attitude_std": [0.04, 0.04, 0.07], "attitude_limit": [0.12, 0.12, 0.20], "velocity_std": [0.60, 0.35, 0.35], "velocity_limit": [1.80, 1.00, 1.00], "acceleration_std": [0.80, 0.70, 0.70], "acceleration_limit": [2.40, 2.00, 2.00]},
+      {"name": "lateral_recovery", "position_std": [0.12, 0.70, 0.18], "position_limit": [0.40, 2.00, 0.60], "attitude_std": [0.08, 0.06, 0.12], "attitude_limit": [0.25, 0.20, 0.38], "velocity_std": [0.55, 1.10, 0.40], "velocity_limit": [1.80, 3.00, 1.30], "acceleration_std": [1.00, 1.50, 0.90], "acceleration_limit": [3.00, 4.50, 3.00]},
+      {"name": "vertical_recovery", "position_std": [0.12, 0.18, 0.60], "position_limit": [0.40, 0.60, 1.70], "attitude_std": [0.06, 0.10, 0.09], "attitude_limit": [0.20, 0.30, 0.28], "velocity_std": [0.55, 0.40, 0.90], "velocity_limit": [1.80, 1.30, 2.50], "acceleration_std": [0.90, 0.90, 1.60], "acceleration_limit": [3.00, 3.00, 5.00]},
+      {"name": "speed_recovery", "position_std": [0.20, 0.30, 0.28], "position_limit": [0.70, 0.90, 0.80], "attitude_std": [0.09, 0.09, 0.12], "attitude_limit": [0.25, 0.25, 0.35], "velocity_std": [2.20, 0.85, 0.70], "velocity_limit": [6.00, 2.40, 2.10], "acceleration_std": [1.60, 1.20, 1.20], "acceleration_limit": [4.50, 3.50, 3.50]},
+      {"name": "combined_recovery", "position_std": [0.28, 0.90, 0.70], "position_limit": [0.90, 2.50, 1.90], "attitude_std": [0.20, 0.20, 0.28], "attitude_limit": [0.50, 0.50, 0.75], "velocity_std": [2.00, 1.30, 1.10], "velocity_limit": [5.50, 3.50, 3.00], "acceleration_std": [1.80, 1.80, 1.80], "acceleration_limit": [5.00, 5.00, 5.00]}
+    ]
+  },
+  "dataset": {
+    "root": "extensions_120k_phase_consistent_10ms_v4_environment_balanced",
+    "output_name": "falcon_hybrid_extensions_120k_10ms_v4_environment_balanced.npz",
+    "chunk_size": 2000,
+    "recovery_queries": 40000,
+    "short_rollout_count": 8000,
+    "short_rollout_steps": 5,
+    "critical_phase_queries": 40000
+  }
+}

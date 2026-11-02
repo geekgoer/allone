@@ -1,0 +1,36 @@
+{
+  "models": [
+    1,
+    6
+  ],
+  "scenario": "S02",
+  "repeats": 2,
+  "startup_duration_s": 2.0,
+  "delay_ms": 0.0,
+  "plan": [
+    {
+      "period_ms": 30,
+      "profile": "constant"
+    },
+    {
+      "period_ms": 30,
+      "profile": "smooth-start"
+    },
+    {
+      "period_ms": 60,
+      "profile": "smooth-start"
+    },
+    {
+      "period_ms": 60,
+      "profile": "constant"
+    },
+    {
+      "period_ms": 100,
+      "profile": "constant"
+    },
+    {
+      "period_ms": 100,
+      "profile": "smooth-start"
+    }
+  ]
+}

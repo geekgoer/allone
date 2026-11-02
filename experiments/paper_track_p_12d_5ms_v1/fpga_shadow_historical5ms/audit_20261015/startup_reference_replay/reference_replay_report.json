@@ -1,0 +1,217 @@
+{
+  "status": "offline_evaluation_only",
+  "flights": 216,
+  "reference": {
+    "version": "initial_velocity_quintic_start_polyline_v1",
+    "startup_duration_s": 2.0
+  },
+  "definition": "Identical recorded actual states; initial position/velocity from first recorded sample; same waypoint geometry and orientation reference.",
+  "limitation": "This does not predict a changed flight or establish a causal improvement in control; original SVR labels are unchanged.",
+  "mean_original_J": 0.0031252458807929065,
+  "mean_smooth_J": 0.03492321827599998,
+  "period_30_to_100_original_mean_change_percent": 7.290716593601846,
+  "period_30_to_100_smooth_mean_change_percent": -16.808505452347614,
+  "period_smooth_increasing_fraction": 0.08333333333333333,
+  "paired_changes": [
+    {
+      "model_id": 1,
+      "scenario_id": "S02",
+      "repeat_index": 0,
+      "original_J_change_percent": 8.901411249261182,
+      "smooth_J_change_percent": -18.355889966027817
+    },
+    {
+      "model_id": 1,
+      "scenario_id": "S02",
+      "repeat_index": 1,
+      "original_J_change_percent": 7.880148835073841,
+      "smooth_J_change_percent": -16.83415107299672
+    },
+    {
+      "model_id": 1,
+      "scenario_id": "S03",
+      "repeat_index": 0,
+      "original_J_change_percent": 13.156572154942769,
+      "smooth_J_change_percent": -30.582785510648513
+    },
+    {
+      "model_id": 1,
+      "scenario_id": "S03",
+      "repeat_index": 1,
+      "original_J_change_percent": 10.959797621819423,
+      "smooth_J_change_percent": -25.619355469815865
+    },
+    {
+      "model_id": 2,
+      "scenario_id": "S02",
+      "repeat_index": 0,
+      "original_J_change_percent": 13.763456987737488,
+      "smooth_J_change_percent": -35.30231407027215
+    },
+    {
+      "model_id": 2,
+      "scenario_id": "S02",
+      "repeat_index": 1,
+      "original_J_change_percent": 7.016205395375152,
+      "smooth_J_change_percent": -15.775281658962491
+    },
+    {
+      "model_id": 2,
+      "scenario_id": "S03",
+      "repeat_index": 0,
+      "original_J_change_percent": 8.505519297670915,
+      "smooth_J_change_percent": -22.519508466021286
+    },
+    {
+      "model_id": 2,
+      "scenario_id": "S03",
+      "repeat_index": 1,
+      "original_J_change_percent": 5.487117841849765,
+      "smooth_J_change_percent": -13.643437668416514
+    },
+    {
+      "model_id": 3,
+      "scenario_id": "S02",
+      "repeat_index": 0,
+      "original_J_change_percent": 6.3435646743338125,
+      "smooth_J_change_percent": -13.667097517528203
+    },
+    {
+      "model_id": 3,
+      "scenario_id": "S02",
+      "repeat_index": 1,
+      "original_J_change_percent": 11.117803762009038,
+      "smooth_J_change_percent": -26.663597329586153
+    },
+    {
+      "model_id": 3,
+      "scenario_id": "S03",
+      "repeat_index": 0,
+      "original_J_change_percent": 10.035111184115797,
+      "smooth_J_change_percent": -25.755209055441817
+    },
+    {
+      "model_id": 3,
+      "scenario_id": "S03",
+      "repeat_index": 1,
+      "original_J_change_percent": 9.952335862547091,
+      "smooth_J_change_percent": -24.819802873363763
+    },
+    {
+      "model_id": 4,
+      "scenario_id": "S02",
+      "repeat_index": 0,
+      "original_J_change_percent": 0.8300895752524351,
+      "smooth_J_change_percent": 5.95613921688487
+    },
+    {
+      "model_id": 4,
+      "scenario_id": "S02",
+      "repeat_index": 1,
+      "original_J_change_percent": 10.491810589180318,
+      "smooth_J_change_percent": -23.62904027820132
+    },
+    {
+      "model_id": 4,
+      "scenario_id": "S03",
+      "repeat_index": 0,
+      "original_J_change_percent": 10.154666210146623,
+      "smooth_J_change_percent": -25.110938510232707
+    },
+    {
+      "model_id": 4,
+      "scenario_id": "S03",
+      "repeat_index": 1,
+      "original_J_change_percent": 10.854356848926084,
+      "smooth_J_change_percent": -25.703097889118474
+    },
+    {
+      "model_id": 5,
+      "scenario_id": "S02",
+      "repeat_index": 0,
+      "original_J_change_percent": 11.55649358770341,
+      "smooth_J_change_percent": -26.80265644067008
+    },
+    {
+      "model_id": 5,
+      "scenario_id": "S02",
+      "repeat_index": 1,
+      "original_J_change_percent": 3.8327971108134795,
+      "smooth_J_change_percent": -4.053351370093294
+    },
+    {
+      "model_id": 5,
+      "scenario_id": "S03",
+      "repeat_index": 0,
+      "original_J_change_percent": 9.904589020556642,
+      "smooth_J_change_percent": -24.84964875132959
+    },
+    {
+      "model_id": 5,
+      "scenario_id": "S03",
+      "repeat_index": 1,
+      "original_J_change_percent": 6.39289506736338,
+      "smooth_J_change_percent": -14.064399979268272
+    },
+    {
+      "model_id": 6,
+      "scenario_id": "S02",
+      "repeat_index": 0,
+      "original_J_change_percent": -1.2910220436828546,
+      "smooth_J_change_percent": -3.3012220126985015
+    },
+    {
+      "model_id": 6,
+      "scenario_id": "S02",
+      "repeat_index": 1,
+      "original_J_change_percent": -10.303790041607098,
+      "smooth_J_change_percent": 22.178838907267618
+    },
+    {
+      "model_id": 6,
+      "scenario_id": "S03",
+      "repeat_index": 0,
+      "original_J_change_percent": 4.85363693494798,
+      "smooth_J_change_percent": -6.765117186635883
+    },
+    {
+      "model_id": 6,
+      "scenario_id": "S03",
+      "repeat_index": 1,
+      "original_J_change_percent": 4.581630520107605,
+      "smooth_J_change_percent": -7.721205903165762
+    }
+  ],
+  "model_means_T60_epsilon08": [
+    {
+      "model_id": 1,
+      "original_J": 0.0030237622333332543,
+      "smooth_reference_J_diagnostic": 0.035676589300585024
+    },
+    {
+      "model_id": 2,
+      "original_J": 0.0028212648051305234,
+      "smooth_reference_J_diagnostic": 0.0463653728740958
+    },
+    {
+      "model_id": 3,
+      "original_J": 0.002942217935210548,
+      "smooth_reference_J_diagnostic": 0.03981421346051961
+    },
+    {
+      "model_id": 4,
+      "original_J": 0.002960023327764554,
+      "smooth_reference_J_diagnostic": 0.03825429473188818
+    },
+    {
+      "model_id": 5,
+      "original_J": 0.0029533450275247113,
+      "smooth_reference_J_diagnostic": 0.038768945526737084
+    },
+    {
+      "model_id": 6,
+      "original_J": 0.004306728819313686,
+      "smooth_reference_J_diagnostic": 0.011774184520527467
+    }
+  ]
+}

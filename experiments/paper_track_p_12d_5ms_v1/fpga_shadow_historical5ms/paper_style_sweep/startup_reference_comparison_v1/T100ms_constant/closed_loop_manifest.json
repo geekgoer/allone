@@ -1,0 +1,74 @@
+{
+  "format_version": 2,
+  "created_utc": "2026-10-15T06:37:43.308336+00:00",
+  "phase": "FPGA actuated",
+  "protocol": "FLCN/v2",
+  "endpoint": {
+    "host": "192.168.77.2",
+    "port": 5008
+  },
+  "period_ms": 100,
+  "actuation_delay_ms": 0.0,
+  "models": [
+    {
+      "model_id": 1,
+      "model_name": "depth10_width512"
+    },
+    {
+      "model_id": 6,
+      "model_name": "depth34_width1024"
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "S02",
+      "epsilon": 0.8,
+      "seed": 917,
+      "initial_state_id": 2
+    }
+  ],
+  "repeats": 2,
+  "fallback_policy": "same-cycle linear MPC teacher whenever FPGA response is missing or late",
+  "latency_definition": "R_cycle = host state-acquisition to host AirSim-command dispatch; AirSim exposes no exact physics-application timestamp",
+  "episode_R_definition": "R_max_ms in the SVR dataset is the measured maximum state-to-command-dispatch latency over one episode",
+  "actuation_delay_definition": "sleep after command selection and before AirSim command dispatch; it is added to the native response path and included in R_max_ms",
+  "tracking_cost_definition": "sum((||position_error||^2 + 0.25||velocity_error||^2)*0.1)",
+  "paper_metric": {
+    "version": "falcon_eq4_wx_identity_route_mean_v1",
+    "paper_equation": "J = 1 / sum_{k=0}^{K} ||psi(k)-psi_ref(k)||^2_Wx",
+    "K": 20,
+    "window_samples": 21,
+    "state_order": [
+      "px",
+      "py",
+      "pz",
+      "vx",
+      "vy",
+      "vz",
+      "qw",
+      "qx",
+      "qy",
+      "qz"
+    ],
+    "Wx_diagonal": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "quaternion_rule": "normalize actual/reference quaternions and flip reference sign when dot(actual, reference) < 0",
+    "sample_alignment": "actual state and route reference evaluated at the same cycle timestamp",
+    "route_aggregation": "non-overlapping complete 21-sample window costs are averaged, then J_paper_style is their reciprocal; trailing incomplete samples are discarded"
+  },
+  "reference_profile": {
+    "version": "constant_speed_polyline_v1",
+    "startup_duration_s": 0.0
+  },
+  "experiment_id": "historical5ms_fpga_closed_loop_100ms_delay0p0ms_20261015T063743Z"
+}

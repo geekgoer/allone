@@ -1,0 +1,14 @@
+{
+  "root": "F:\\FalconReproduction\\airsim_control\\controller_architecture_study\\results\\framework_runtime_v23_precise_release\\n7_net2",
+  "calibration_candidates": 40,
+  "selection_status": "READY",
+  "discovery_complete": true,
+  "pairs": 16,
+  "verified_clean_safety_wins": 0,
+  "confirmation_complete": false,
+  "FPGA_verified": false,
+  "normal_budget_activation": {
+    "analyses": 456,
+    "physical_budget_binds": 0
+  }
+}

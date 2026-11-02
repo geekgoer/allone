@@ -1,0 +1,127 @@
+{
+  "schema_version": 1,
+  "status": "complete",
+  "created_at": "2026-09-15T13:04:58.963776+00:00",
+  "strategy": "falcon_acado_12d_phase_consistent_recovery_v1",
+  "paper_core": false,
+  "paper_relationship": "disclosed robustness extension to the continuous 40k protocol",
+  "input_contract": "falcon_paper_gate_relative_euler_12d_v1",
+  "input_dimensions": 12,
+  "input_features": [
+    "gate_position_error_x",
+    "gate_position_error_y",
+    "gate_position_error_z",
+    "gate_euler_error_roll",
+    "gate_euler_error_pitch",
+    "gate_euler_error_yaw",
+    "velocity_x",
+    "velocity_y",
+    "velocity_z",
+    "acceleration_x",
+    "acceleration_y",
+    "acceleration_z"
+  ],
+  "output_dimensions": 4,
+  "output_features": [
+    "collective_thrust_acceleration",
+    "body_rate_x",
+    "body_rate_y",
+    "body_rate_z"
+  ],
+  "config_sha256": "e36830f47e71de4a7a68cb9e21ff90bb34ceb05af244d4d0d3c774ab7d92d904",
+  "sample_count": 1200,
+  "chunk_size": 1200,
+  "completed_chunks": [
+    0
+  ],
+  "families": [
+    "nominal_jitter",
+    "lateral_recovery",
+    "vertical_recovery",
+    "attitude_recovery",
+    "speed_recovery",
+    "combined_recovery"
+  ],
+  "source_dataset": "F:\\FalconReproduction\\airsim_control\\experiments\\falcon_paper_fidelity_acado_v5_phase_consistent\\paper_core_40k_falcon12_v5_stable\\final\\falcon_paper_core_40k_falcon12_v5_stable.npz",
+  "source_environments": "F:\\FalconReproduction\\airsim_control\\experiments\\falcon_paper_fidelity_acado_v5_phase_consistent\\paper_core_40k_falcon12_v5_stable\\environments.json",
+  "procrastination_guard": "future references stay attached to source trajectory phase; no trajectory is replanned from a perturbed state",
+  "trajectory_reconstruction_max_abs": 5.3290705182007514e-14,
+  "planner_signature": {
+    "planner": "segment_time_quintic_pva_boundary_full_reference_v2",
+    "nominal_speed": 5.0,
+    "terminal_speed": 5.0,
+    "exit_distance": 1.0,
+    "minimum_duration": 0.8,
+    "maximum_duration": 8.0,
+    "maximum_speed": 8.0,
+    "maximum_acceleration": 8.0,
+    "feasibility_samples": 81,
+    "gravity": 9.8066,
+    "body_rate_difference_dt": 0.001
+  },
+  "control_bucket_names": [
+    "interior",
+    "near_limit",
+    "saturated"
+  ],
+  "control_bucket_slots": {
+    "interior": 12,
+    "near_limit": 5,
+    "saturated": 3
+  },
+  "control_bucket_eligible_families": {
+    "interior": [
+      "nominal_jitter",
+      "lateral_recovery",
+      "vertical_recovery",
+      "attitude_recovery",
+      "speed_recovery",
+      "combined_recovery"
+    ],
+    "near_limit": [
+      "lateral_recovery",
+      "vertical_recovery",
+      "attitude_recovery",
+      "speed_recovery",
+      "combined_recovery"
+    ],
+    "saturated": [
+      "attitude_recovery",
+      "speed_recovery",
+      "combined_recovery"
+    ]
+  },
+  "completed_samples": 1200,
+  "updated_at": "2026-09-15T13:05:28.003349+00:00",
+  "final_dataset": "final\\falcon_phase_recovery_80k_v5_stable_v2_smoke.npz",
+  "statistics": {
+    "X_shape": [
+      1200,
+      12
+    ],
+    "U_shape": [
+      1200,
+      4
+    ],
+    "family_counts": {
+      "nominal_jitter": 527,
+      "lateral_recovery": 95,
+      "vertical_recovery": 185,
+      "attitude_recovery": 177,
+      "speed_recovery": 127,
+      "combined_recovery": 89
+    },
+    "saturated_fraction": 0.15,
+    "control_bucket_counts": {
+      "interior": 720,
+      "near_limit": 300,
+      "saturated": 180
+    },
+    "mean_rejected_attempts": 2.6133333333333333,
+    "mean_mpc_solve_ms": 0.6437864166665955,
+    "reference_speed_values": [
+      5.0
+    ],
+    "minimum_source_step": 2
+  }
+}

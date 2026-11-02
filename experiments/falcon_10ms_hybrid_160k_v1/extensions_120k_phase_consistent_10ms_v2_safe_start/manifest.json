@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "status": "running",
+  "strategy": "hybrid_10ms_phase_consistent_acado_extensions_v1",
+  "paper_core": false,
+  "relationship": "augmentation for the immutable 40k AirSim/ACADO core",
+  "input_contract": "falcon_track_p_trajectory_relative_12d_v1",
+  "input_dimensions": 12,
+  "input_features": [
+    "reference_position_error_x",
+    "reference_position_error_y",
+    "reference_position_error_z",
+    "reference_attitude_error_x",
+    "reference_attitude_error_y",
+    "reference_attitude_error_z",
+    "reference_velocity_error_x",
+    "reference_velocity_error_y",
+    "reference_velocity_error_z",
+    "reference_acceleration_x",
+    "reference_acceleration_y",
+    "reference_acceleration_z"
+  ],
+  "output_dimensions": 4,
+  "output_features": [
+    "collective_thrust_acceleration",
+    "body_rate_x",
+    "body_rate_y",
+    "body_rate_z"
+  ],
+  "config_sha256": "6a2a84ef3a3a4276ffb050fa540d2aac4b1e24d0766adbd57e079d3a0be0d28e",
+  "source_dataset": "F:\\FalconReproduction\\airsim_control\\experiments\\falcon_10ms_hybrid_160k_v1\\core_40k_airsim_acado_10ms_v2_safe_start\\final\\falcon_hybrid_core_40k_10ms_v2_safe_start.npz",
+  "completed_chunks": [
+    0,
+    1
+  ],
+  "section_counts": {
+    "recovery_queries": 40000,
+    "short_rollout_samples": 40000,
+    "critical_phase_queries": 40000
+  },
+  "created_at": "2026-09-16T15:00:22.914468+00:00",
+  "completed_samples": 4000,
+  "updated_at": "2026-09-16T15:00:52.072616+00:00"
+}

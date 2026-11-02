@@ -1,0 +1,21 @@
+{
+  "host": "192.168.77.2",
+  "port": 5006,
+  "protocol": "FLCN/v2",
+  "model_id": 1,
+  "control_period_s": 0.05,
+  "udp_timeout_ms": 30.0,
+  "retries": 1,
+  "warmup_count": 20,
+  "fallback": "cpu_dnn",
+  "closed_loop_opt_in": false,
+  "input_contract": "falcon_track_p_gate_relative_12d_v1",
+  "input_mode": "normalized",
+  "output_mode": "physical",
+  "safety_bounds": {
+    "collective_thrust_acceleration": [2.0, 20.0],
+    "body_rate_x": [-3.0, 3.0],
+    "body_rate_y": [-3.0, 3.0],
+    "body_rate_z": [-2.0, 2.0]
+  }
+}

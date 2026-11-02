@@ -1,0 +1,53 @@
+{
+  "status": "PASS",
+  "controller": "ACADO/qpOASES",
+  "trajectory": "global_continuous_C2_quintic",
+  "initial_state_id": 8,
+  "environment_id": 38,
+  "difficulty": "hard",
+  "nominal_speed_mps": 5.0,
+  "valid_crossings": 5,
+  "gate_count": 5,
+  "crossings": [
+    {
+      "gate": 1,
+      "valid": true,
+      "speed_mps": 4.963596669566661,
+      "lateral_m": -0.0017114766087789057,
+      "vertical_m": -0.0089297706031215
+    },
+    {
+      "gate": 2,
+      "valid": true,
+      "speed_mps": 4.999041203438378,
+      "lateral_m": -0.000998278310974765,
+      "vertical_m": -0.007443507345100908
+    },
+    {
+      "gate": 3,
+      "valid": true,
+      "speed_mps": 4.999853816518484,
+      "lateral_m": 6.887717341808042e-06,
+      "vertical_m": -0.025511109343983485
+    },
+    {
+      "gate": 4,
+      "valid": true,
+      "speed_mps": 5.000682449163699,
+      "lateral_m": -0.00042795773193171627,
+      "vertical_m": 0.015239285695007876
+    },
+    {
+      "gate": 5,
+      "valid": true,
+      "speed_mps": 5.03868710262606,
+      "lateral_m": 0.0008863511998886686,
+      "vertical_m": -0.004721142227472885
+    }
+  ],
+  "samples": 300,
+  "deadline_misses": 0,
+  "mean_solve_ms": 0.925383333475717,
+  "max_solve_ms": 2.6738000015029684,
+  "final_speed_mps": 9.314256273411381e-05
+}

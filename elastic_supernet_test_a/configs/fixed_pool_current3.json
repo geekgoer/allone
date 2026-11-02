@@ -1,0 +1,20 @@
+{
+  "models": [
+    {
+      "name": "depth10_width512",
+      "checkpoint": "experiments/paper_track_p_12d_5ms_v1/runs_serial_v2/paper_track_p_12d_5ms_v1_serial_v2_depth10_width512/best_model.pt",
+      "normalization": "experiments/paper_track_p_12d_5ms_v1/dnn_dataset/normalization.json"
+    },
+    {
+      "name": "depth10_width1024",
+      "checkpoint": "experiments/paper_track_p_12d_5ms_v1/runs_serial_v2/paper_track_p_12d_5ms_v1_serial_v2_depth10_width1024/best_model.pt",
+      "normalization": "experiments/paper_track_p_12d_5ms_v1/dnn_dataset/normalization.json"
+    },
+    {
+      "name": "depth22_width512",
+      "checkpoint": "experiments/paper_track_p_12d_5ms_v1/runs_serial_v2/paper_track_p_12d_5ms_v1_serial_v2_depth22_width512/best_model.pt",
+      "normalization": "experiments/paper_track_p_12d_5ms_v1/dnn_dataset/normalization.json"
+    }
+  ]
+}
+

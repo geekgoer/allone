@@ -1,0 +1,166 @@
+{
+  "schema_version": 1,
+  "status": "complete",
+  "created_at": "2026-09-15T13:08:11.998074+00:00",
+  "strategy": "falcon_acado_12d_phase_consistent_recovery_v1",
+  "paper_core": false,
+  "paper_relationship": "disclosed robustness extension to the continuous 40k protocol",
+  "input_contract": "falcon_paper_gate_relative_euler_12d_v1",
+  "input_dimensions": 12,
+  "input_features": [
+    "gate_position_error_x",
+    "gate_position_error_y",
+    "gate_position_error_z",
+    "gate_euler_error_roll",
+    "gate_euler_error_pitch",
+    "gate_euler_error_yaw",
+    "velocity_x",
+    "velocity_y",
+    "velocity_z",
+    "acceleration_x",
+    "acceleration_y",
+    "acceleration_z"
+  ],
+  "output_dimensions": 4,
+  "output_features": [
+    "collective_thrust_acceleration",
+    "body_rate_x",
+    "body_rate_y",
+    "body_rate_z"
+  ],
+  "config_sha256": "43e101b1823481b0731134381366d75980a8e64ba69dde671267ca717ea2e5ba",
+  "sample_count": 80000,
+  "chunk_size": 2000,
+  "completed_chunks": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39
+  ],
+  "families": [
+    "nominal_jitter",
+    "lateral_recovery",
+    "vertical_recovery",
+    "attitude_recovery",
+    "speed_recovery",
+    "combined_recovery"
+  ],
+  "source_dataset": "F:\\FalconReproduction\\airsim_control\\experiments\\falcon_paper_fidelity_acado_v5_phase_consistent\\paper_core_40k_falcon12_v5_stable\\final\\falcon_paper_core_40k_falcon12_v5_stable.npz",
+  "source_environments": "F:\\FalconReproduction\\airsim_control\\experiments\\falcon_paper_fidelity_acado_v5_phase_consistent\\paper_core_40k_falcon12_v5_stable\\environments.json",
+  "procrastination_guard": "future references stay attached to source trajectory phase; no trajectory is replanned from a perturbed state",
+  "trajectory_reconstruction_max_abs": 5.3290705182007514e-14,
+  "planner_signature": {
+    "planner": "segment_time_quintic_pva_boundary_full_reference_v2",
+    "nominal_speed": 5.0,
+    "terminal_speed": 5.0,
+    "exit_distance": 1.0,
+    "minimum_duration": 0.8,
+    "maximum_duration": 8.0,
+    "maximum_speed": 8.0,
+    "maximum_acceleration": 8.0,
+    "feasibility_samples": 81,
+    "gravity": 9.8066,
+    "body_rate_difference_dt": 0.001
+  },
+  "control_bucket_names": [
+    "interior",
+    "near_limit",
+    "saturated"
+  ],
+  "control_bucket_slots": {
+    "interior": 12,
+    "near_limit": 5,
+    "saturated": 3
+  },
+  "control_bucket_eligible_families": {
+    "interior": [
+      "nominal_jitter",
+      "lateral_recovery",
+      "vertical_recovery",
+      "attitude_recovery",
+      "speed_recovery",
+      "combined_recovery"
+    ],
+    "near_limit": [
+      "lateral_recovery",
+      "vertical_recovery",
+      "attitude_recovery",
+      "speed_recovery",
+      "combined_recovery"
+    ],
+    "saturated": [
+      "attitude_recovery",
+      "speed_recovery",
+      "combined_recovery"
+    ]
+  },
+  "completed_samples": 80000,
+  "updated_at": "2026-09-15T13:32:33.406359+00:00",
+  "final_dataset": "final\\falcon_phase_recovery_80k_v5_stable_v2.npz",
+  "statistics": {
+    "X_shape": [
+      80000,
+      12
+    ],
+    "U_shape": [
+      80000,
+      4
+    ],
+    "family_counts": {
+      "nominal_jitter": 35091,
+      "lateral_recovery": 6107,
+      "vertical_recovery": 11667,
+      "attitude_recovery": 12012,
+      "speed_recovery": 8998,
+      "combined_recovery": 6125
+    },
+    "saturated_fraction": 0.15,
+    "control_bucket_counts": {
+      "interior": 48000,
+      "near_limit": 20000,
+      "saturated": 12000
+    },
+    "mean_rejected_attempts": 2.5548625,
+    "mean_mpc_solve_ms": 0.634618493750611,
+    "reference_speed_values": [
+      5.0
+    ],
+    "minimum_source_step": 2
+  }
+}

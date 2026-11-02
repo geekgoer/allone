@@ -1,0 +1,51 @@
+{
+  "model": "F:\\FalconReproduction\\airsim_control\\experiments\\falcon_10ms_hybrid_160k_v1\\runs_cold_rti_progressive_200_to_700_batch512_seed0\\seed_0\\depth10_width1024\\best_model.pt",
+  "input_dimensions": 12,
+  "input_features": [
+    "reference_position_error_x",
+    "reference_position_error_y",
+    "reference_position_error_z",
+    "reference_attitude_error_x",
+    "reference_attitude_error_y",
+    "reference_attitude_error_z",
+    "reference_velocity_error_x",
+    "reference_velocity_error_y",
+    "reference_velocity_error_z",
+    "reference_acceleration_x",
+    "reference_acceleration_y",
+    "reference_acceleration_z"
+  ],
+  "teacher_policy": "fully_initialized_acado_then_exactly_one_rti_step_v1",
+  "input_contract": "falcon_track_p_trajectory_relative_12d_v1",
+  "reference_speed_values": [
+    10.0
+  ],
+  "weights": "weights_fp32.npz",
+  "model_spec": "model_spec.json",
+  "normalization": "normalization.json",
+  "golden_vectors": "golden_vectors.npz",
+  "golden_count": 1000,
+  "numpy_pytorch_max_abs_error": 1.1026859283447266e-06,
+  "state_dict_keys": [
+    "0.bias",
+    "0.weight",
+    "10.bias",
+    "10.weight",
+    "12.bias",
+    "12.weight",
+    "14.bias",
+    "14.weight",
+    "16.bias",
+    "16.weight",
+    "18.bias",
+    "18.weight",
+    "2.bias",
+    "2.weight",
+    "4.bias",
+    "4.weight",
+    "6.bias",
+    "6.weight",
+    "8.bias",
+    "8.weight"
+  ]
+}

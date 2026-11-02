@@ -1,0 +1,121 @@
+{
+  "format_version": 1,
+  "model_name": "falcon_dnn_input12_depth10_width512",
+  "dtype": "float32",
+  "input_shape": [
+    1,
+    12
+  ],
+  "output_shape": [
+    1,
+    4
+  ],
+  "input_features": [
+    "gate_position_error_x",
+    "gate_position_error_y",
+    "gate_position_error_z",
+    "gate_attitude_error_x",
+    "gate_attitude_error_y",
+    "gate_attitude_error_z",
+    "velocity_x",
+    "velocity_y",
+    "velocity_z",
+    "acceleration_x",
+    "acceleration_y",
+    "acceleration_z"
+  ],
+  "output_features": [
+    "collective_thrust_acceleration",
+    "body_rate_x",
+    "body_rate_y",
+    "body_rate_z"
+  ],
+  "frame": "AirSim NED",
+  "sample_period_seconds": 0.05,
+  "depth": 10,
+  "hidden_layers": 9,
+  "width": 512,
+  "activation": "ReLU",
+  "output_activation": null,
+  "normalization_inside_model": false,
+  "batch_size": 1,
+  "normalization_file": "normalization.json",
+  "teacher_policy": "track_p_independent_gate_state_mpc_queries_v1",
+  "path_context_offsets": [],
+  "input_contract": "[p_gate-p, r_gate-r, velocity, acceleration] in AirSim NED",
+  "reference_speed_values": [
+    5.0
+  ],
+  "layers": [
+    {
+      "index": 0,
+      "type": "Linear",
+      "in_features": 12,
+      "out_features": 512,
+      "activation_after": true
+    },
+    {
+      "index": 1,
+      "type": "Linear",
+      "in_features": 512,
+      "out_features": 512,
+      "activation_after": true
+    },
+    {
+      "index": 2,
+      "type": "Linear",
+      "in_features": 512,
+      "out_features": 512,
+      "activation_after": true
+    },
+    {
+      "index": 3,
+      "type": "Linear",
+      "in_features": 512,
+      "out_features": 512,
+      "activation_after": true
+    },
+    {
+      "index": 4,
+      "type": "Linear",
+      "in_features": 512,
+      "out_features": 512,
+      "activation_after": true
+    },
+    {
+      "index": 5,
+      "type": "Linear",
+      "in_features": 512,
+      "out_features": 512,
+      "activation_after": true
+    },
+    {
+      "index": 6,
+      "type": "Linear",
+      "in_features": 512,
+      "out_features": 512,
+      "activation_after": true
+    },
+    {
+      "index": 7,
+      "type": "Linear",
+      "in_features": 512,
+      "out_features": 512,
+      "activation_after": true
+    },
+    {
+      "index": 8,
+      "type": "Linear",
+      "in_features": 512,
+      "out_features": 512,
+      "activation_after": true
+    },
+    {
+      "index": 9,
+      "type": "Linear",
+      "in_features": 512,
+      "out_features": 4,
+      "activation_after": false
+    }
+  ]
+}

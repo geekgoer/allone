@@ -1,0 +1,28 @@
+{
+  "status": "PASS",
+  "policy_version": "falcon_paper_core_global_continuous_quintic_acado_qpoases_v3",
+  "input_contract": "falcon_track_p_trajectory_relative_12d_v1",
+  "input_dimensions": 12,
+  "initial_states": 10,
+  "environments": 40,
+  "trajectories_checked": 400,
+  "gate_boundaries_checked": 2000,
+  "trajectory_duration_seconds": {
+    "min": 11.374111832918167,
+    "mean": 11.680409421691417,
+    "max": 12.03718717600427
+  },
+  "segment_duration_seconds": {
+    "min": 1.4375,
+    "mean": 1.9467349036152366,
+    "max": 2.497934279254086
+  },
+  "maximum_boundary_discontinuity": {
+    "position": 2.941064403536311e-14,
+    "velocity": 3.5582604638779944e-14,
+    "acceleration": 5.739584601870544e-14
+  },
+  "frozen_position_with_nonzero_velocity_pairs": 0,
+  "gate_data_visible_to_controller": false,
+  "final_stop_only_after_last_gate": true
+}

@@ -1,0 +1,9 @@
+{
+  "protocol": "coarse_sweep.json",
+  "plain_seed_repeats": [
+    {"hidden_layers": 22, "hidden_width": 128, "seeds": [0]}
+  ],
+  "residual_tests": [
+    {"hidden_layers": 22, "hidden_width": 128, "seeds": [0]}
+  ]
+}

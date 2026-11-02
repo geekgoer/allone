@@ -1,0 +1,6 @@
+# Windows x64, CPython 3.11. No PyTorch/CUDA or Vitis installation is needed.
+# AirSim 1.8.1 client source is included under vendor/airsim (with its license).
+numpy==1.26.4
+msgpack-python==0.5.6
+msgpack-rpc-python==0.4.1
+tornado==4.5.3

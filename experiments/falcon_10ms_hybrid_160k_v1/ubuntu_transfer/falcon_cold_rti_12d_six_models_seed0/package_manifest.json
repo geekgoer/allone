@@ -1,0 +1,52 @@
+{
+  "package": "falcon_cold_rti_12d_six_models_seed0",
+  "source_dataset": "F:\\FalconReproduction\\airsim_control\\experiments\\falcon_10ms_hybrid_160k_v1\\dnn_dataset_v4_cold_rti_labels_v1",
+  "source_runs": "F:\\FalconReproduction\\airsim_control\\experiments\\falcon_10ms_hybrid_160k_v1\\runs_cold_rti_progressive_200_to_700_batch512_seed0",
+  "input_dimensions": 12,
+  "output_dimensions": 4,
+  "teacher_policy": "fully_initialized_acado_then_exactly_one_rti_step_v1",
+  "models": [
+    {
+      "name": "depth10_width512",
+      "depth": 10,
+      "width": 512,
+      "epochs": 200
+    },
+    {
+      "name": "depth22_width512",
+      "depth": 22,
+      "width": 512,
+      "epochs": 300
+    },
+    {
+      "name": "depth10_width1024",
+      "depth": 10,
+      "width": 1024,
+      "epochs": 400
+    },
+    {
+      "name": "depth34_width512",
+      "depth": 34,
+      "width": 512,
+      "epochs": 500
+    },
+    {
+      "name": "depth22_width1024",
+      "depth": 22,
+      "width": 1024,
+      "epochs": 600
+    },
+    {
+      "name": "depth34_width1024",
+      "depth": 34,
+      "width": 1024,
+      "epochs": 700
+    }
+  ],
+  "golden_count_per_model": 1000,
+  "omitted": [
+    "latest_checkpoint.pt",
+    "raw collection shards",
+    "AirSim"
+  ]
+}

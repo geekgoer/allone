@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "status": "running",
+  "created_at": "2026-09-15T13:00:12.592900+00:00",
+  "strategy": "falcon_acado_12d_phase_consistent_recovery_v1",
+  "paper_core": false,
+  "paper_relationship": "disclosed robustness extension to the continuous 40k protocol",
+  "input_contract": "falcon_paper_gate_relative_euler_12d_v1",
+  "input_dimensions": 12,
+  "input_features": [
+    "gate_position_error_x",
+    "gate_position_error_y",
+    "gate_position_error_z",
+    "gate_euler_error_roll",
+    "gate_euler_error_pitch",
+    "gate_euler_error_yaw",
+    "velocity_x",
+    "velocity_y",
+    "velocity_z",
+    "acceleration_x",
+    "acceleration_y",
+    "acceleration_z"
+  ],
+  "output_dimensions": 4,
+  "output_features": [
+    "collective_thrust_acceleration",
+    "body_rate_x",
+    "body_rate_y",
+    "body_rate_z"
+  ],
+  "config_sha256": "c2f5b1f93be8bab6fdf67b5c8bceffc47cfc9878ce1b2a91b67b4695aa33fd11",
+  "sample_count": 80000,
+  "chunk_size": 2000,
+  "completed_chunks": [],
+  "families": [
+    "nominal_jitter",
+    "lateral_recovery",
+    "vertical_recovery",
+    "attitude_recovery",
+    "speed_recovery",
+    "combined_recovery"
+  ],
+  "source_dataset": "F:\\FalconReproduction\\airsim_control\\experiments\\falcon_paper_fidelity_acado_v5_phase_consistent\\paper_core_40k_falcon12_v5_stable\\final\\falcon_paper_core_40k_falcon12_v5_stable.npz",
+  "source_environments": "F:\\FalconReproduction\\airsim_control\\experiments\\falcon_paper_fidelity_acado_v5_phase_consistent\\paper_core_40k_falcon12_v5_stable\\environments.json",
+  "procrastination_guard": "future references stay attached to source trajectory phase; no trajectory is replanned from a perturbed state",
+  "trajectory_reconstruction_max_abs": 5.3290705182007514e-14,
+  "planner_signature": {
+    "planner": "segment_time_quintic_pva_boundary_full_reference_v2",
+    "nominal_speed": 5.0,
+    "terminal_speed": 5.0,
+    "exit_distance": 1.0,
+    "minimum_duration": 0.8,
+    "maximum_duration": 8.0,
+    "maximum_speed": 8.0,
+    "maximum_acceleration": 8.0,
+    "feasibility_samples": 81,
+    "gravity": 9.8066,
+    "body_rate_difference_dt": 0.001
+  }
+}

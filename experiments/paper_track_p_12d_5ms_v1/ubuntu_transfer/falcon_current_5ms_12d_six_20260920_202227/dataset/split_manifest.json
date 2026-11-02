@@ -1,0 +1,159 @@
+{
+  "source": "F:\\FalconReproduction\\airsim_control\\experiments\\paper_track_p_12d_5ms_v1\\teacher_dataset\\final\\teacher_dataset_track_p_12d_5ms_v1.npz",
+  "source_manifest": "F:\\FalconReproduction\\airsim_control\\experiments\\paper_track_p_12d_5ms_v1\\teacher_dataset\\manifest.json",
+  "teacher_policy": "track_p_independent_gate_state_mpc_queries_v1",
+  "input_contract": "[p_gate-p, r_gate-r, velocity, acceleration] in AirSim NED",
+  "split_unit": "environment_id",
+  "split_ratio": {
+    "train": 0.8,
+    "validation": 0.1,
+    "test": 0.1
+  },
+  "input_dimensions": 12,
+  "input_features": [
+    "gate_position_error_x",
+    "gate_position_error_y",
+    "gate_position_error_z",
+    "gate_attitude_error_x",
+    "gate_attitude_error_y",
+    "gate_attitude_error_z",
+    "velocity_x",
+    "velocity_y",
+    "velocity_z",
+    "acceleration_x",
+    "acceleration_y",
+    "acceleration_z"
+  ],
+  "output_dimensions": 4,
+  "reference_speed_values": [
+    5.0
+  ],
+  "stored_arrays": [
+    "X",
+    "U",
+    "state_X",
+    "teacher_state_X",
+    "current_position",
+    "gate_position",
+    "gate_orientation",
+    "reference_first_position",
+    "reference_last_position",
+    "reference_speed",
+    "target_gate_id",
+    "sample_family",
+    "environment_id",
+    "episode_id",
+    "initial_state_id",
+    "step_id",
+    "data_source",
+    "mpc_solve_time"
+  ],
+  "optional_arrays": [
+    "reference_speed",
+    "data_source"
+  ],
+  "splits": {
+    "train": {
+      "samples": 384000,
+      "episodes": 48,
+      "initial_states": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "environments": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47
+      ]
+    },
+    "validation": {
+      "samples": 48000,
+      "episodes": 6,
+      "initial_states": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "environments": [
+        48,
+        49,
+        50,
+        51,
+        52,
+        53
+      ]
+    },
+    "test": {
+      "samples": 48000,
+      "episodes": 6,
+      "initial_states": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "environments": [
+        54,
+        55,
+        56,
+        57,
+        58,
+        59
+      ]
+    }
+  }
+}

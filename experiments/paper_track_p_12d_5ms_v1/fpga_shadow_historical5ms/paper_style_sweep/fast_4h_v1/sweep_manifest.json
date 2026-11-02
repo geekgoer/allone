@@ -1,0 +1,162 @@
+{
+  "format_version": 1,
+  "created_utc": "2026-09-22T07:49:17.767497+00:00",
+  "updated_utc": "2026-09-22T11:06:50.628472+00:00",
+  "status": "complete",
+  "active_run": null,
+  "configuration": {
+    "python": "F:\\Airsim\\AirSim\\PythonClient\\.venv\\Scripts\\python.exe",
+    "benchmark_config": "F:\\FalconReproduction\\airsim_control\\experiments\\paper_track_p_12d_5ms_v1\\physical_benchmark_v1\\benchmark_config.json",
+    "fpga_config": "F:\\FalconReproduction\\airsim_control\\experiments\\paper_track_p_12d_5ms_v1\\fpga_shadow_historical5ms\\fpga_current5ms_config.json",
+    "model_manifest": "F:\\FalconReproduction\\airsim_control\\experiments\\paper_track_p_12d_5ms_v1\\ubuntu_transfer\\falcon_current_5ms_12d_six_20260920_202227\\package_manifest.json",
+    "paper_metric_version": "falcon_eq4_wx_identity_route_mean_v1",
+    "scenario_set": "full",
+    "model_ids": "1,2,3,4,5,6",
+    "repeats": 2,
+    "expected_episodes_per_run": 72,
+    "periods_ms": [
+      30,
+      60,
+      100
+    ],
+    "delay_fractions": [
+      0.0,
+      0.2,
+      0.4
+    ],
+    "plan": [
+      {
+        "run_id": "T030ms_delay0ms",
+        "period_ms": 30,
+        "delay_fraction": 0.0,
+        "actuation_delay_ms": 0.0
+      },
+      {
+        "run_id": "T030ms_delay6ms",
+        "period_ms": 30,
+        "delay_fraction": 0.2,
+        "actuation_delay_ms": 6.0
+      },
+      {
+        "run_id": "T030ms_delay12ms",
+        "period_ms": 30,
+        "delay_fraction": 0.4,
+        "actuation_delay_ms": 12.0
+      },
+      {
+        "run_id": "T060ms_delay0ms",
+        "period_ms": 60,
+        "delay_fraction": 0.0,
+        "actuation_delay_ms": 0.0
+      },
+      {
+        "run_id": "T060ms_delay12ms",
+        "period_ms": 60,
+        "delay_fraction": 0.2,
+        "actuation_delay_ms": 12.0
+      },
+      {
+        "run_id": "T060ms_delay24ms",
+        "period_ms": 60,
+        "delay_fraction": 0.4,
+        "actuation_delay_ms": 24.0
+      },
+      {
+        "run_id": "T100ms_delay0ms",
+        "period_ms": 100,
+        "delay_fraction": 0.0,
+        "actuation_delay_ms": 0.0
+      },
+      {
+        "run_id": "T100ms_delay20ms",
+        "period_ms": 100,
+        "delay_fraction": 0.2,
+        "actuation_delay_ms": 20.0
+      },
+      {
+        "run_id": "T100ms_delay40ms",
+        "period_ms": 100,
+        "delay_fraction": 0.4,
+        "actuation_delay_ms": 40.0
+      }
+    ]
+  },
+  "runs": {
+    "T030ms_delay0ms": {
+      "complete": true,
+      "episodes_requested": 72,
+      "episodes_completed": 72,
+      "fallback_count": 0,
+      "deadline_miss_count": 0,
+      "timeout_count": 0
+    },
+    "T030ms_delay6ms": {
+      "complete": true,
+      "episodes_requested": 72,
+      "episodes_completed": 72,
+      "fallback_count": 0,
+      "deadline_miss_count": 0,
+      "timeout_count": 0
+    },
+    "T030ms_delay12ms": {
+      "complete": true,
+      "episodes_requested": 72,
+      "episodes_completed": 72,
+      "fallback_count": 0,
+      "deadline_miss_count": 324,
+      "timeout_count": 0
+    },
+    "T060ms_delay0ms": {
+      "complete": true,
+      "episodes_requested": 72,
+      "episodes_completed": 72,
+      "fallback_count": 0,
+      "deadline_miss_count": 0,
+      "timeout_count": 0
+    },
+    "T060ms_delay12ms": {
+      "complete": true,
+      "episodes_requested": 72,
+      "episodes_completed": 72,
+      "fallback_count": 0,
+      "deadline_miss_count": 0,
+      "timeout_count": 0
+    },
+    "T060ms_delay24ms": {
+      "complete": true,
+      "episodes_requested": 72,
+      "episodes_completed": 72,
+      "fallback_count": 0,
+      "deadline_miss_count": 0,
+      "timeout_count": 0
+    },
+    "T100ms_delay0ms": {
+      "complete": true,
+      "episodes_requested": 72,
+      "episodes_completed": 72,
+      "fallback_count": 0,
+      "deadline_miss_count": 0,
+      "timeout_count": 0
+    },
+    "T100ms_delay20ms": {
+      "complete": true,
+      "episodes_requested": 72,
+      "episodes_completed": 72,
+      "fallback_count": 0,
+      "deadline_miss_count": 0,
+      "timeout_count": 0
+    },
+    "T100ms_delay40ms": {
+      "complete": true,
+      "episodes_requested": 72,
+      "episodes_completed": 72,
+      "fallback_count": 0,
+      "deadline_miss_count": 0,
+      "timeout_count": 0
+    }
+  },
+  "completed_utc": "2026-09-22T11:06:50.628472+00:00",
+  "dataset": "F:\\FalconReproduction\\airsim_control\\experiments\\paper_track_p_12d_5ms_v1\\fpga_shadow_historical5ms\\paper_style_sweep\\fast_4h_v1\\svr_dataset\\paper_style_episode_dataset_train_ready.csv",
+  "records_total": 648,
+  "records_valid_for_svr": 636
+}

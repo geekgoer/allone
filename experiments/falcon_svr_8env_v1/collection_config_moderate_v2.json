@@ -1,0 +1,32 @@
+{
+  "format_version": 1,
+  "benchmark_config": "experiments/paper_track_p_12d_5ms_v1/physical_benchmark_v1/benchmark_config.json",
+  "model_manifest": "experiments/paper_track_p_12d_5ms_v1/ubuntu_transfer/falcon_current_5ms_12d_six_20260920_202227/package_manifest.json",
+  "fpga_config": "experiments/paper_track_p_12d_5ms_v1/fpga_shadow_historical5ms/fpga_current5ms_config.json",
+  "input_quantization_scales": {"1": 32, "2": 32, "3": 32, "4": 32, "5": 32, "6": 32},
+  "periods_ms": [60, 70, 80, 90, 100, 120, 140, 160],
+  "target_responses_ms": [25, 30, 35, 40, 45, 50],
+  "variants": 2,
+  "plan_seed": 20261015,
+  "profile_requests_per_model": 100,
+  "profile_warmup_requests": 5,
+  "profile_guard_ms": 3.0,
+  "profile_udp_timeout_ms": 100.0,
+  "response_tolerance_ms": 3.0,
+  "rpc_timeout_seconds": 8.0,
+  "max_episode_seconds": 25.0,
+  "base_z": -3.0,
+  "gate_count": 5,
+  "x_start": 10.0,
+  "initial_state_ids": [0, 1],
+  "environments": [
+    {"id": "E01", "name": "straight", "x_spacing_m": 10.0, "lateral_step_m": 0.0, "vertical_step_m": 0.0},
+    {"id": "E02", "name": "gentle_zigzag", "x_spacing_m": 10.0, "lateral_step_m": 0.8, "vertical_step_m": 0.0},
+    {"id": "E03", "name": "mixed_moderate", "x_spacing_m": 10.0, "lateral_step_m": 1.2, "vertical_step_m": 0.4},
+    {"id": "E04", "name": "wide_zigzag", "x_spacing_m": 8.0, "lateral_step_m": 2.4, "vertical_step_m": 0.4},
+    {"id": "E05", "name": "moderate_turns", "x_spacing_m": 8.0, "lateral_step_m": 2.6, "vertical_step_m": 0.4},
+    {"id": "E06", "name": "closer_turns", "x_spacing_m": 7.0, "lateral_step_m": 2.8, "vertical_step_m": 0.5},
+    {"id": "E07", "name": "tight_turns", "x_spacing_m": 6.0, "lateral_step_m": 3.0, "vertical_step_m": 0.5},
+    {"id": "E08", "name": "challenging_turns", "x_spacing_m": 5.0, "lateral_step_m": 3.2, "vertical_step_m": 0.6}
+  ]
+}

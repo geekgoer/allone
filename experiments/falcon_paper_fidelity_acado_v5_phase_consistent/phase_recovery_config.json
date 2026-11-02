@@ -1,0 +1,108 @@
+{
+  "random_seed": 52025,
+  "source": {
+    "dataset": "paper_core_40k_falcon12_v5_stable/final/falcon_paper_core_40k_falcon12_v5_stable.npz",
+    "environments": "paper_core_40k_falcon12_v5_stable/environments.json",
+    "reconstruction_tolerance": 1e-5
+  },
+  "timing": {"dt": 0.05},
+  "planner": {
+    "nominal_speed": 5.0,
+    "terminal_speed": 5.0,
+    "exit_distance": 1.0,
+    "minimum_duration": 0.8,
+    "maximum_duration": 8.0,
+    "maximum_speed": 8.0,
+    "maximum_acceleration": 8.0,
+    "feasibility_samples": 81,
+    "gravity": 9.8066,
+    "body_rate_difference_dt": 0.001
+  },
+  "trajectory": {
+    "start_velocity_mode": "nominal_gate_axis",
+    "final_exit_distance": 5.0
+  },
+  "mpc": {
+    "backend": "official_rpg_mpc_acado_qpoases",
+    "library": "../../native/acado_rpg_mpc/build/bin/libfalcon_acado_mpc.dll",
+    "horizon": 20,
+    "prediction_dt": 0.1,
+    "gravity": 9.8066,
+    "q_position_xy": 200.0,
+    "q_position_z": 500.0,
+    "q_attitude": 50.0,
+    "q_velocity": 10.0,
+    "q_perception": 0.0,
+    "r_thrust": 1.0,
+    "r_pitch_roll": 1.0,
+    "r_yaw": 1.0,
+    "min_thrust": 2.0,
+    "max_thrust": 20.0,
+    "max_body_rate_xy": 3.0,
+    "max_body_rate_z": 2.0
+  },
+  "sampling": {
+    "minimum_source_step": 2,
+    "maximum_total_speed": 9.0,
+    "maximum_total_acceleration": 10.0,
+    "control_bucket_slots": {"interior": 12, "near_limit": 5, "saturated": 3},
+    "control_bucket_eligible_families": {
+      "interior": ["nominal_jitter", "lateral_recovery", "vertical_recovery", "attitude_recovery", "speed_recovery", "combined_recovery"],
+      "near_limit": ["lateral_recovery", "vertical_recovery", "attitude_recovery", "speed_recovery", "combined_recovery"],
+      "saturated": ["attitude_recovery", "speed_recovery", "combined_recovery"]
+    },
+    "saturation_tolerance": 0.001,
+    "near_limit_fraction": 0.15,
+    "maximum_attempts_per_sample": 500,
+    "families": [
+      {
+        "name": "nominal_jitter",
+        "position_std": [0.08, 0.08, 0.08], "position_limit": [0.20, 0.20, 0.20],
+        "attitude_std": [0.025, 0.025, 0.04], "attitude_limit": [0.08, 0.08, 0.12],
+        "velocity_std": [0.20, 0.15, 0.15], "velocity_limit": [0.60, 0.45, 0.45],
+        "acceleration_std": [0.40, 0.40, 0.40], "acceleration_limit": [1.20, 1.20, 1.20]
+      },
+      {
+        "name": "lateral_recovery",
+        "position_std": [0.12, 0.65, 0.18], "position_limit": [0.35, 1.60, 0.50],
+        "attitude_std": [0.08, 0.05, 0.12], "attitude_limit": [0.22, 0.16, 0.35],
+        "velocity_std": [0.35, 0.85, 0.30], "velocity_limit": [1.00, 2.20, 0.90],
+        "acceleration_std": [0.70, 1.20, 0.70], "acceleration_limit": [2.00, 3.20, 2.00]
+      },
+      {
+        "name": "vertical_recovery",
+        "position_std": [0.12, 0.18, 0.50], "position_limit": [0.35, 0.50, 1.25],
+        "attitude_std": [0.05, 0.09, 0.08], "attitude_limit": [0.16, 0.25, 0.24],
+        "velocity_std": [0.35, 0.30, 0.70], "velocity_limit": [1.00, 0.90, 1.90],
+        "acceleration_std": [0.70, 0.70, 1.30], "acceleration_limit": [2.00, 2.00, 3.50]
+      },
+      {
+        "name": "attitude_recovery",
+        "position_std": [0.15, 0.30, 0.25], "position_limit": [0.45, 0.80, 0.70],
+        "attitude_std": [0.16, 0.16, 0.24], "attitude_limit": [0.42, 0.42, 0.65],
+        "velocity_std": [0.45, 0.50, 0.45], "velocity_limit": [1.30, 1.40, 1.30],
+        "acceleration_std": [0.90, 0.90, 0.90], "acceleration_limit": [2.50, 2.50, 2.50]
+      },
+      {
+        "name": "speed_recovery",
+        "position_std": [0.18, 0.30, 0.25], "position_limit": [0.50, 0.80, 0.70],
+        "attitude_std": [0.07, 0.07, 0.10], "attitude_limit": [0.20, 0.20, 0.30],
+        "velocity_std": [1.55, 0.75, 0.65], "velocity_limit": [4.00, 2.00, 1.80],
+        "acceleration_std": [1.30, 1.00, 1.00], "acceleration_limit": [3.50, 2.80, 2.80]
+      },
+      {
+        "name": "combined_recovery",
+        "position_std": [0.25, 0.85, 0.65], "position_limit": [0.70, 2.10, 1.60],
+        "attitude_std": [0.18, 0.18, 0.26], "attitude_limit": [0.48, 0.48, 0.72],
+        "velocity_std": [1.50, 1.15, 0.95], "velocity_limit": [4.00, 3.00, 2.50],
+        "acceleration_std": [1.60, 1.60, 1.60], "acceleration_limit": [4.20, 4.20, 4.20]
+      }
+    ]
+  },
+  "dataset": {
+    "root": "phase_recovery_80k_falcon12_v5_stable_v2",
+    "output_name": "falcon_phase_recovery_80k_v5_stable_v2.npz",
+    "sample_count": 80000,
+    "chunk_size": 2000
+  }
+}

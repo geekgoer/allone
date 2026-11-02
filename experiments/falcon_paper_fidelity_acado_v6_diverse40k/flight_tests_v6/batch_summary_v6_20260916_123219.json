@@ -1,0 +1,6 @@
+﻿{
+    "variant":  "v6",
+    "model":  "depth10_width512",
+    "exit_code":  1,
+    "report":  "F:\\FalconReproduction\\airsim_control\\experiments\\falcon_paper_fidelity_acado_v6_diverse40k\\flight_tests_v6\\depth10_width512_seed0.json"
+}

@@ -1,0 +1,271 @@
+{
+  "episodes_requested": 24,
+  "episodes_recorded": 24,
+  "clean_fpga_episodes": 24,
+  "trials": [
+    {
+      "period_ms": 30,
+      "reference_profile": "constant",
+      "model_id": 1,
+      "repeat_index": 0,
+      "completed": true,
+      "clean_fpga_episode": true,
+      "J_paper_style": 0.0028725508696201274,
+      "R_max_ms": 6.075,
+      "error": null
+    },
+    {
+      "period_ms": 30,
+      "reference_profile": "constant",
+      "model_id": 1,
+      "repeat_index": 1,
+      "completed": true,
+      "clean_fpga_episode": true,
+      "J_paper_style": 0.002899377461848818,
+      "R_max_ms": 5.238,
+      "error": null
+    },
+    {
+      "period_ms": 30,
+      "reference_profile": "constant",
+      "model_id": 6,
+      "repeat_index": 0,
+      "completed": true,
+      "clean_fpga_episode": true,
+      "J_paper_style": 0.004313125332048796,
+      "R_max_ms": 16.765,
+      "error": null
+    },
+    {
+      "period_ms": 30,
+      "reference_profile": "constant",
+      "model_id": 6,
+      "repeat_index": 1,
+      "completed": true,
+      "clean_fpga_episode": true,
+      "J_paper_style": 0.004409710870147376,
+      "R_max_ms": 17.163,
+      "error": null
+    },
+    {
+      "period_ms": 30,
+      "reference_profile": "smooth-start",
+      "model_id": 1,
+      "repeat_index": 0,
+      "completed": true,
+      "clean_fpga_episode": true,
+      "J_paper_style": 0.03503543349376193,
+      "R_max_ms": 6.26,
+      "error": null
+    },
+    {
+      "period_ms": 30,
+      "reference_profile": "smooth-start",
+      "model_id": 1,
+      "repeat_index": 1,
+      "completed": true,
+      "clean_fpga_episode": true,
+      "J_paper_style": 0.0359001340326935,
+      "R_max_ms": 6.271,
+      "error": null
+    },
+    {
+      "period_ms": 30,
+      "reference_profile": "smooth-start",
+      "model_id": 6,
+      "repeat_index": 0,
+      "completed": true,
+      "clean_fpga_episode": true,
+      "J_paper_style": 0.013204836102836844,
+      "R_max_ms": 16.902,
+      "error": null
+    },
+    {
+      "period_ms": 30,
+      "reference_profile": "smooth-start",
+      "model_id": 6,
+      "repeat_index": 1,
+      "completed": true,
+      "clean_fpga_episode": true,
+      "J_paper_style": 0.014418994276879269,
+      "R_max_ms": 16.34,
+      "error": null
+    },
+    {
+      "period_ms": 60,
+      "reference_profile": "smooth-start",
+      "model_id": 1,
+      "repeat_index": 0,
+      "completed": true,
+      "clean_fpga_episode": true,
+      "J_paper_style": 0.032389776678007284,
+      "R_max_ms": 6.683,
+      "error": null
+    },
+    {
+      "period_ms": 60,
+      "reference_profile": "smooth-start",
+      "model_id": 1,
+      "repeat_index": 1,
+      "completed": true,
+      "clean_fpga_episode": true,
+      "J_paper_style": 0.030506811110497897,
+      "R_max_ms": 6.772,
+      "error": null
+    },
+    {
+      "period_ms": 60,
+      "reference_profile": "smooth-start",
+      "model_id": 6,
+      "repeat_index": 0,
+      "completed": true,
+      "clean_fpga_episode": true,
+      "J_paper_style": 0.012850909364940676,
+      "R_max_ms": 19.092,
+      "error": null
+    },
+    {
+      "period_ms": 60,
+      "reference_profile": "smooth-start",
+      "model_id": 6,
+      "repeat_index": 1,
+      "completed": true,
+      "clean_fpga_episode": true,
+      "J_paper_style": 0.012250379970807104,
+      "R_max_ms": 17.229,
+      "error": null
+    },
+    {
+      "period_ms": 60,
+      "reference_profile": "constant",
+      "model_id": 1,
+      "repeat_index": 0,
+      "completed": true,
+      "clean_fpga_episode": true,
+      "J_paper_style": 0.0031295108192554155,
+      "R_max_ms": 7.277,
+      "error": null
+    },
+    {
+      "period_ms": 60,
+      "reference_profile": "constant",
+      "model_id": 1,
+      "repeat_index": 1,
+      "completed": true,
+      "clean_fpga_episode": true,
+      "J_paper_style": 0.0031263821869971322,
+      "R_max_ms": 6.519,
+      "error": null
+    },
+    {
+      "period_ms": 60,
+      "reference_profile": "constant",
+      "model_id": 6,
+      "repeat_index": 0,
+      "completed": true,
+      "clean_fpga_episode": true,
+      "J_paper_style": 0.004476446892614244,
+      "R_max_ms": 17.531,
+      "error": null
+    },
+    {
+      "period_ms": 60,
+      "reference_profile": "constant",
+      "model_id": 6,
+      "repeat_index": 1,
+      "completed": true,
+      "clean_fpga_episode": true,
+      "J_paper_style": 0.004398174144732149,
+      "R_max_ms": 18.756,
+      "error": null
+    },
+    {
+      "period_ms": 100,
+      "reference_profile": "constant",
+      "model_id": 1,
+      "repeat_index": 0,
+      "completed": true,
+      "clean_fpga_episode": true,
+      "J_paper_style": 0.003173338911573938,
+      "R_max_ms": 9.631,
+      "error": null
+    },
+    {
+      "period_ms": 100,
+      "reference_profile": "constant",
+      "model_id": 1,
+      "repeat_index": 1,
+      "completed": true,
+      "clean_fpga_episode": true,
+      "J_paper_style": 0.0030853725092555902,
+      "R_max_ms": 8.929,
+      "error": null
+    },
+    {
+      "period_ms": 100,
+      "reference_profile": "constant",
+      "model_id": 6,
+      "repeat_index": 0,
+      "completed": true,
+      "clean_fpga_episode": true,
+      "J_paper_style": 0.004221712349936607,
+      "R_max_ms": 20.286,
+      "error": null
+    },
+    {
+      "period_ms": 100,
+      "reference_profile": "constant",
+      "model_id": 6,
+      "repeat_index": 1,
+      "completed": true,
+      "clean_fpga_episode": true,
+      "J_paper_style": 0.004207243411592898,
+      "R_max_ms": 20.432,
+      "error": null
+    },
+    {
+      "period_ms": 100,
+      "reference_profile": "smooth-start",
+      "model_id": 1,
+      "repeat_index": 0,
+      "completed": true,
+      "clean_fpga_episode": true,
+      "J_paper_style": 0.02853406455024345,
+      "R_max_ms": 9.061,
+      "error": null
+    },
+    {
+      "period_ms": 100,
+      "reference_profile": "smooth-start",
+      "model_id": 1,
+      "repeat_index": 1,
+      "completed": true,
+      "clean_fpga_episode": true,
+      "J_paper_style": 0.02991888778520519,
+      "R_max_ms": 8.628,
+      "error": null
+    },
+    {
+      "period_ms": 100,
+      "reference_profile": "smooth-start",
+      "model_id": 6,
+      "repeat_index": 0,
+      "completed": true,
+      "clean_fpga_episode": true,
+      "J_paper_style": 0.012764816428409055,
+      "R_max_ms": 20.047,
+      "error": null
+    },
+    {
+      "period_ms": 100,
+      "reference_profile": "smooth-start",
+      "model_id": 6,
+      "repeat_index": 1,
+      "completed": true,
+      "clean_fpga_episode": true,
+      "J_paper_style": 0.012960840100456755,
+      "R_max_ms": 19.644,
+      "error": null
+    }
+  ]
+}

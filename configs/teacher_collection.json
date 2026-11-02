@@ -1,0 +1,83 @@
+{
+  "random_seed": 0,
+  "vehicle_name": "Drone1",
+  "timing": {
+    "dt": 0.05,
+    "steps_per_episode": 100,
+    "episode_seconds": 5.0,
+    "episode_timeout_seconds": 10.0,
+    "reset_settle_seconds": 0.0,
+    "catastrophic_loop_period": 0.5
+  },
+  "initial_state": {
+    "count": 10,
+    "seed": 0,
+    "position_range": {
+      "x": [-0.5, 0.5],
+      "y": [-0.5, 0.5],
+      "z": [-2.2, -1.8]
+    },
+    "attitude_range": {
+      "roll": [-0.08, 0.08],
+      "pitch": [-0.08, 0.08],
+      "yaw": [-0.2, 0.2]
+    },
+    "velocity_range": {
+      "x": [0.0, 0.0],
+      "y": [0.0, 0.0],
+      "z": [0.0, 0.0]
+    },
+    "angular_velocity_range": {
+      "x": [0.0, 0.0],
+      "y": [0.0, 0.0],
+      "z": [0.0, 0.0]
+    }
+  },
+  "environment": {
+    "count": 40,
+    "seed": 0,
+    "epsilon_values": [0.0, 0.8, 1.6],
+    "gate_count": 5,
+    "x_start": 10.0,
+    "x_spacing": 10.0,
+    "base_y_range": [-1.0, 1.0],
+    "base_z_range": [-3.0, -2.2],
+    "max_z": -2.0
+  },
+  "gate": {
+    "width": 4.0,
+    "height": 4.0,
+    "thickness": 0.15,
+    "asset": "EditorCube",
+    "approach_distance": 2.0,
+    "exit_distance": 1.0,
+    "threshold": 0.8,
+    "clearance": 0.25
+  },
+  "mpc": {
+    "dt": 0.05,
+    "horizon": 20,
+    "speed": 2.0
+  },
+  "bounds": {
+    "position_min": [-10.0, -20.0, -20.0],
+    "position_max": [70.0, 20.0, 2.0]
+  },
+  "airsim": {
+    "editor": "E:\\epicGamesStrg\\UE_4.27\\Engine\\Binaries\\Win64\\UE4Editor.exe",
+    "uproject": "F:\\Airsim\\AirSim\\Unreal\\Environments\\Blocks\\Blocks.uproject",
+    "map_asset": "/Game/FalconEmpty.FalconEmpty",
+    "rpc_host": "127.0.0.1",
+    "rpc_port": 41451,
+    "rpc_timeout": 10.0,
+    "startup_timeout": 120.0,
+    "retry_interval": 1.0,
+    "res_x": 1280,
+    "res_y": 720
+  },
+  "dataset": {
+    "root": "teacher_dataset_continuous_v2",
+    "retry_count": 2,
+    "output_name": "teacher_dataset_continuous_v2.npz"
+  }
+}

@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "purpose": "Pre-generation specification for deterministic MPC-complete 300-D imitation data.",
+  "random_seed": 20260917,
+  "source": {
+    "core_dataset": "../falcon_10ms_hybrid_160k_v1/core_40k_airsim_acado_10ms_v2_safe_start/final/falcon_hybrid_core_40k_10ms_v2_safe_start.npz",
+    "environments": "../falcon_10ms_hybrid_160k_v1/core_40k_airsim_acado_10ms_v2_safe_start/environments.json",
+    "split": "environment_split_300d.json",
+    "reconstruction_tolerance": 1e-5
+  },
+  "timing": {"control_dt": 0.05, "prediction_dt": 0.1, "horizon": 20},
+  "planner": {
+    "nominal_speed": 10.0,
+    "terminal_speed": 10.0,
+    "exit_distance": 1.0,
+    "minimum_duration": 0.8,
+    "maximum_duration": 8.0,
+    "maximum_speed": 15.0,
+    "maximum_acceleration": 12.0,
+    "feasibility_samples": 81,
+    "gravity": 9.8066,
+    "body_rate_difference_dt": 0.001
+  },
+  "trajectory": {"start_velocity_mode": "nominal_gate_axis", "final_exit_distance": 5.0},
+  "mpc": {
+    "library": "../../native/acado_rpg_mpc/build/bin/libfalcon_acado_mpc.dll",
+    "horizon": 20,
+    "prediction_dt": 0.1,
+    "gravity": 9.8066,
+    "q_position_xy": 200.0,
+    "q_position_z": 500.0,
+    "q_attitude": 50.0,
+    "q_velocity": 10.0,
+    "q_perception": 0.0,
+    "r_thrust": 1.0,
+    "r_pitch_roll": 1.0,
+    "r_yaw": 1.0,
+    "min_thrust": 2.0,
+    "max_thrust": 20.0,
+    "max_body_rate_xy": 3.0,
+    "max_body_rate_z": 2.0
+  },
+  "teacher": {
+    "minimum_refinement_steps": 4,
+    "maximum_refinement_steps": 16,
+    "convergence_tolerance": 0.001,
+    "minimum_converged_fraction": 0.995,
+    "maximum_p99_control_delta": 0.001,
+    "repeatability_tolerance": 5e-5
+  },
+  "planned_dataset": {
+    "samples_per_environment": {"core": 1000, "independent_recovery": 1500, "short_rollout": 1000},
+    "rollout_steps": 5,
+    "total_samples": 140000,
+    "split_samples": {"train": 112000, "validation": 14000, "test": 14000}
+  },
+  "dataset": {
+    "root": "teacher_dataset_300d_140k_v1",
+    "output_name": "falcon_mpc_complete_300d_140k_v1.npz",
+    "chunk_size": 2000,
+    "maximum_attempts_per_query": 30,
+    "extension_saturation_slot_period": 5,
+    "note": "One slot per period may retain a naturally saturated extension label; all other extension candidates must be interior or near-limit."
+  },
+  "recovery_sampling": {
+    "perturbation_scale": 0.25,
+    "note": "All recovery-family standard deviations and limits are scaled uniformly. Core labels remain unmodified."
+  },
+  "saturation_policy": {
+    "absolute_tolerance": 0.001,
+    "near_limit_fraction": 0.15,
+    "maximum_total_fraction": 0.25,
+    "maximum_nominal_core_fraction": 0.20,
+    "note": "Saturation is measured from actual converged ACADO labels; it is capped, never requested as a quota."
+  },
+  "preflight": {"queries_per_environment": 14, "repeatability_queries": 40},
+  "families": [
+    {"name": "nominal_jitter", "position_std": [0.08, 0.08, 0.08], "position_limit": [0.20, 0.20, 0.20], "attitude_std": [0.025, 0.025, 0.04], "attitude_limit": [0.08, 0.08, 0.12], "velocity_std": [0.20, 0.15, 0.15], "velocity_limit": [0.60, 0.45, 0.45], "acceleration_std": [0.40, 0.40, 0.40], "acceleration_limit": [1.20, 1.20, 1.20]},
+    {"name": "lateral_recovery", "position_std": [0.12, 0.65, 0.18], "position_limit": [0.35, 1.60, 0.50], "attitude_std": [0.08, 0.05, 0.12], "attitude_limit": [0.22, 0.16, 0.35], "velocity_std": [0.35, 0.85, 0.30], "velocity_limit": [1.00, 2.20, 0.90], "acceleration_std": [0.70, 1.20, 0.70], "acceleration_limit": [2.00, 3.20, 2.00]},
+    {"name": "vertical_recovery", "position_std": [0.12, 0.18, 0.50], "position_limit": [0.35, 0.50, 1.25], "attitude_std": [0.05, 0.09, 0.08], "attitude_limit": [0.16, 0.25, 0.24], "velocity_std": [0.35, 0.30, 0.70], "velocity_limit": [1.00, 0.90, 1.90], "acceleration_std": [0.70, 0.70, 1.30], "acceleration_limit": [2.00, 2.00, 3.50]},
+    {"name": "attitude_recovery", "position_std": [0.15, 0.30, 0.25], "position_limit": [0.45, 0.80, 0.70], "attitude_std": [0.16, 0.16, 0.24], "attitude_limit": [0.42, 0.42, 0.65], "velocity_std": [0.45, 0.50, 0.45], "velocity_limit": [1.30, 1.40, 1.30], "acceleration_std": [0.90, 0.90, 0.90], "acceleration_limit": [2.50, 2.50, 2.50]},
+    {"name": "speed_recovery", "position_std": [0.18, 0.30, 0.25], "position_limit": [0.50, 0.80, 0.70], "attitude_std": [0.07, 0.07, 0.10], "attitude_limit": [0.20, 0.20, 0.30], "velocity_std": [1.55, 0.75, 0.65], "velocity_limit": [4.00, 2.00, 1.80], "acceleration_std": [1.30, 1.00, 1.00], "acceleration_limit": [3.50, 2.80, 2.80]},
+    {"name": "combined_recovery", "position_std": [0.25, 0.85, 0.65], "position_limit": [0.70, 2.10, 1.60], "attitude_std": [0.18, 0.18, 0.26], "attitude_limit": [0.48, 0.48, 0.72], "velocity_std": [1.50, 1.15, 0.95], "velocity_limit": [4.00, 3.00, 2.50], "acceleration_std": [1.60, 1.60, 1.60], "acceleration_limit": [4.20, 4.20, 4.20]}
+  ]
+}

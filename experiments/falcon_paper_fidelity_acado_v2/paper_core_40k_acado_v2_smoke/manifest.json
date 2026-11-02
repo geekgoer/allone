@@ -1,0 +1,208 @@
+{
+  "schema_version": 1,
+  "status": "completed",
+  "created_at": "2026-09-13T03:09:21.944856+00:00",
+  "updated_at": "2026-09-13T03:09:46.698150+00:00",
+  "strategy": "falcon_paper_core_segment_quintic_full_reference_acado_qpoases_v2",
+  "teacher_policy_version": "falcon_paper_core_segment_quintic_full_reference_acado_qpoases_v2",
+  "fidelity_tier": "official_public_rpg_mpc_generated_acado_qpoases_solver",
+  "paper_protocol": {
+    "initial_states": 2,
+    "environmental_conditions": 2,
+    "seconds_per_episode": 5.0,
+    "sample_period_seconds": 0.05,
+    "prediction_period_seconds": 0.1,
+    "horizon": 20,
+    "expected_pairs": 400,
+    "published_pairs": 40000
+  },
+  "input_dimensions": 12,
+  "input_features": [
+    "gate_position_error_x",
+    "gate_position_error_y",
+    "gate_position_error_z",
+    "gate_attitude_error_x",
+    "gate_attitude_error_y",
+    "gate_attitude_error_z",
+    "velocity_x",
+    "velocity_y",
+    "velocity_z",
+    "acceleration_x",
+    "acceleration_y",
+    "acceleration_z"
+  ],
+  "input_contract": "falcon_track_p_gate_relative_12d_v1",
+  "output_dimensions": 4,
+  "output_features": [
+    "collective_thrust_acceleration",
+    "body_rate_x",
+    "body_rate_y",
+    "body_rate_z"
+  ],
+  "planner": {
+    "nominal_speed": 5.0,
+    "terminal_speed": 5.0,
+    "exit_distance": 1.0,
+    "minimum_duration": 0.8,
+    "maximum_duration": 8.0,
+    "maximum_speed": 8.0,
+    "maximum_acceleration": 8.0,
+    "feasibility_samples": 81,
+    "gravity": 9.8066,
+    "body_rate_difference_dt": 0.001
+  },
+  "mpc": {
+    "backend": "official_rpg_mpc_acado_qpoases",
+    "library": "../../native/acado_rpg_mpc/build/bin/libfalcon_acado_mpc.dll",
+    "horizon": 20,
+    "prediction_dt": 0.1,
+    "gravity": 9.8066,
+    "q_position_xy": 200.0,
+    "q_position_z": 500.0,
+    "q_attitude": 50.0,
+    "q_velocity": 10.0,
+    "q_perception": 0.0,
+    "r_thrust": 1.0,
+    "r_pitch_roll": 1.0,
+    "r_yaw": 1.0,
+    "min_thrust": 2.0,
+    "max_thrust": 20.0,
+    "max_body_rate_xy": 3.0,
+    "max_body_rate_z": 2.0
+  },
+  "fixed_hidden_parameters": {
+    "planner_config_is_constant": true,
+    "independently_randomized_reference_speed": false,
+    "reason": "prevents contradictory labels for the published 12-D input"
+  },
+  "config_file": "F:\\FalconReproduction\\airsim_control\\experiments\\falcon_paper_fidelity_acado_v2\\paper_core_config.json",
+  "config_sha256": "28960baa0cd9daa2c5c422ce480eb0d0a138cf3853591a927c24c4627a2c0571",
+  "vehicle_name": "Drone1",
+  "initial_state_count": 2,
+  "environment_count": 2,
+  "episode_count": 4,
+  "steps_per_episode": 100,
+  "expected_samples": 400,
+  "rpc_restarts": 0,
+  "episodes": {
+    "episode_0000": {
+      "episode_id": 0,
+      "initial_state_id": 0,
+      "environment_id": 0,
+      "status": "completed",
+      "attempts": 2,
+      "sample_count": 100,
+      "file": "episodes\\episode_0000.npz",
+      "last_error": null
+    },
+    "episode_0001": {
+      "episode_id": 1,
+      "initial_state_id": 0,
+      "environment_id": 1,
+      "status": "completed",
+      "attempts": 2,
+      "sample_count": 100,
+      "file": "episodes\\episode_0001.npz",
+      "last_error": null
+    },
+    "episode_0002": {
+      "episode_id": 2,
+      "initial_state_id": 1,
+      "environment_id": 0,
+      "status": "completed",
+      "attempts": 1,
+      "sample_count": 100,
+      "file": "episodes\\episode_0002.npz",
+      "last_error": null
+    },
+    "episode_0003": {
+      "episode_id": 3,
+      "initial_state_id": 1,
+      "environment_id": 1,
+      "status": "completed",
+      "attempts": 1,
+      "sample_count": 100,
+      "file": "episodes\\episode_0003.npz",
+      "last_error": null
+    }
+  },
+  "final_dataset": "final\\falcon_paper_core_40k_acado_v2.npz",
+  "statistics": {
+    "samples": 400,
+    "X_shape": [
+      400,
+      12
+    ],
+    "U_shape": [
+      400,
+      4
+    ],
+    "X_min": -7.554139137268066,
+    "X_max": 10.333038836717606,
+    "X_mean": 0.9479480194995256,
+    "X_std": 2.6070313718074973,
+    "X_min_per_dim": [
+      0.049358367919921875,
+      -0.7982052669253286,
+      -0.8684839755310523,
+      -0.27727314715350054,
+      -0.7010709262625103,
+      -0.06043487118042976,
+      0.15337349474430084,
+      -0.6858201026916504,
+      -0.6904603242874146,
+      -7.554139137268066,
+      -2.4810070991516113,
+      -2.1512346267700195
+    ],
+    "X_max_per_dim": [
+      10.333038836717606,
+      2.672103297743578,
+      0.04813699424128659,
+      0.24821211465363813,
+      0.6418395094533668,
+      0.30895065737221794,
+      6.761419296264648,
+      2.0433342456817627,
+      0.5483396053314209,
+      6.895058631896973,
+      2.839567184448242,
+      1.5990896224975586
+    ],
+    "U_min": -3.000056505203247,
+    "U_max": 12.787433624267578,
+    "U_mean": 2.7193362261862783,
+    "U_std": 4.818951885445215,
+    "U_min_per_dim": [
+      8.775611877441406,
+      -0.5765287280082703,
+      -3.000056505203247,
+      -0.23923753201961517
+    ],
+    "U_max_per_dim": [
+      12.787433624267578,
+      1.2724597454071045,
+      1.4191639423370361,
+      0.9520761370658875
+    ],
+    "zero_input_dimensions": [],
+    "constant_input_dimensions": [],
+    "controls_identical": false,
+    "deadline_misses": 0,
+    "average_mpc_solve_time": 0.000597746999883384,
+    "unique_initial_states": 2,
+    "unique_environments": 2,
+    "unique_episodes": 4,
+    "reference_speed_values": [
+      5.0
+    ],
+    "data_source_counts": {
+      "0": 400
+    },
+    "path_context_shape": [
+      400,
+      4,
+      3
+    ]
+  }
+}

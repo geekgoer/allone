@@ -1,0 +1,21 @@
+{
+  "model": "F:\\FalconReproduction\\airsim_control\\experiments\\paper_track_p_12d_5ms_v1\\fpga_shadow_historical5ms\\svr_runs\\fast_4h_v1_seed42_small_epsilon\\svr_model_all_data.joblib",
+  "dataset": "F:\\FalconReproduction\\airsim_control\\experiments\\paper_track_p_12d_5ms_v1\\fpga_shadow_historical5ms\\paper_style_sweep\\fast_4h_v1\\svr_dataset\\paper_style_episode_dataset_train_ready.csv",
+  "epsilon": 0.8,
+  "figure": "F:\\FalconReproduction\\airsim_control\\experiments\\paper_track_p_12d_5ms_v1\\fpga_shadow_historical5ms\\svr_runs\\fast_4h_v1_seed42_small_epsilon\\cube_plot\\falcon_performance_cube_epsilon_0p8.png",
+  "axes": {
+    "x": "c normalized",
+    "y": "T normalized",
+    "z": "R normalized",
+    "color": "J"
+  },
+  "observed_J_range": [
+    0.00260342997239566,
+    0.004498269495980907
+  ],
+  "predicted_J_range": [
+    0.002605255821464973,
+    0.004468715009065864
+  ],
+  "points": 212
+}

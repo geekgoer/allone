@@ -1,0 +1,40 @@
+{
+  "paper": "SCENIC Table III",
+  "paper_source": "C:/Users/chen/Documents/论文/无人机/SCENIC - Capability and Scheduling Co-Design for Intelligent Controller on Heterogeneous Platforms_RTSS_CCF-A_2024.pdf",
+  "architecture_note": "Paper Li is mapped to hidden_layers=Li-1 because this project counts hidden FC layers and adds one output FC layer.",
+  "input_dim": 12,
+  "output_dim": 4,
+  "model_type": "plain_mlp",
+  "activation": "relu",
+  "residual": false,
+  "data_dir": "experiments/paper_track_p_12d_5ms_v1/dnn_dataset",
+  "seed": 0,
+  "optimizer": "adam",
+  "learning_rate": 0.0001,
+  "batch_size": 512,
+  "max_epochs": 500,
+  "patience": 50,
+  "min_epochs": 100,
+  "gradient_clip_norm": 1.0,
+  "selection_metric": "validation_normalized_mse",
+  "architectures": [
+    {"index": 1, "paper_L": 13, "hidden_layers": 12, "hidden_width": 1024, "paper_test_loss": 0.017},
+    {"index": 2, "paper_L": 11, "hidden_layers": 10, "hidden_width": 1024, "paper_test_loss": 0.018},
+    {"index": 3, "paper_L": 11, "hidden_layers": 10, "hidden_width": 512, "paper_test_loss": 0.022},
+    {"index": 4, "paper_L": 9, "hidden_layers": 8, "hidden_width": 1024, "paper_test_loss": 0.020},
+    {"index": 5, "paper_L": 9, "hidden_layers": 8, "hidden_width": 512, "paper_test_loss": 0.023},
+    {"index": 6, "paper_L": 9, "hidden_layers": 8, "hidden_width": 256, "paper_test_loss": 0.026},
+    {"index": 7, "paper_L": 7, "hidden_layers": 6, "hidden_width": 1024, "paper_test_loss": 0.023},
+    {"index": 8, "paper_L": 7, "hidden_layers": 6, "hidden_width": 256, "paper_test_loss": 0.027},
+    {"index": 9, "paper_L": 7, "hidden_layers": 6, "hidden_width": 128, "paper_test_loss": 0.030},
+    {"index": 10, "paper_L": 5, "hidden_layers": 4, "hidden_width": 1024, "paper_test_loss": 0.027},
+    {"index": 11, "paper_L": 5, "hidden_layers": 4, "hidden_width": 128, "paper_test_loss": 0.033},
+    {"index": 12, "paper_L": 3, "hidden_layers": 2, "hidden_width": 1024, "paper_test_loss": 0.034}
+  ],
+  "already_trained_in_previous_coarse_sweep": [
+    [10, 512],
+    [6, 256],
+    [6, 128],
+    [4, 128]
+  ]
+}

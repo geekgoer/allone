@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "status": "completed",
+  "strategy": "hybrid_10ms_phase_consistent_acado_extensions_v1",
+  "paper_core": false,
+  "relationship": "augmentation for the immutable 40k AirSim/ACADO core",
+  "input_contract": "falcon_track_p_trajectory_relative_12d_v1",
+  "input_dimensions": 12,
+  "input_features": [
+    "reference_position_error_x",
+    "reference_position_error_y",
+    "reference_position_error_z",
+    "reference_attitude_error_x",
+    "reference_attitude_error_y",
+    "reference_attitude_error_z",
+    "reference_velocity_error_x",
+    "reference_velocity_error_y",
+    "reference_velocity_error_z",
+    "reference_acceleration_x",
+    "reference_acceleration_y",
+    "reference_acceleration_z"
+  ],
+  "output_dimensions": 4,
+  "output_features": [
+    "collective_thrust_acceleration",
+    "body_rate_x",
+    "body_rate_y",
+    "body_rate_z"
+  ],
+  "config_sha256": "577b317d73c90b08edbf9d996054c074fe94bdd3150a1c127fccf8db7351d962",
+  "source_dataset": "F:\\FalconReproduction\\airsim_control\\experiments\\falcon_10ms_hybrid_160k_v1\\core_40k_airsim_acado_10ms_v2_safe_start\\final\\falcon_hybrid_core_40k_10ms_v2_safe_start.npz",
+  "completed_chunks": [
+    0,
+    1,
+    2
+  ],
+  "section_counts": {
+    "recovery_queries": 1200,
+    "short_rollout_samples": 1200,
+    "critical_phase_queries": 1200
+  },
+  "created_at": "2026-09-17T02:09:53.678641+00:00",
+  "completed_samples": 3600,
+  "updated_at": "2026-09-17T02:11:35.030532+00:00",
+  "final_dataset": "final\\falcon_hybrid_extensions_smoke.npz",
+  "X_shape": [
+    3600,
+    12
+  ],
+  "U_shape": [
+    3600,
+    4
+  ],
+  "trajectory_reconstruction_max_abs": 1.1368683772161603e-13,
+  "source_kind_counts": {
+    "1": 1200,
+    "2": 1200,
+    "3": 1200
+  },
+  "saturated_fraction": 0.02,
+  "family_counts": {
+    "launch_recovery": 36,
+    "cruise_jitter": 3260,
+    "lateral_recovery": 122,
+    "vertical_recovery": 146,
+    "speed_recovery": 30,
+    "combined_recovery": 6
+  },
+  "mean_mpc_solve_time_seconds": 0.0007334060555796088
+}

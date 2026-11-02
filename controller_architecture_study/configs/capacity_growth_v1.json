@@ -1,0 +1,27 @@
+{
+  "description": "Stage 2: same-function width/depth growth and equal-budget baseline continuation; no test selection.",
+  "overrides": {
+    "learning_rate": 0.00001,
+    "batch_size": 512,
+    "max_epochs": 150,
+    "min_epochs": 50,
+    "patience": 50,
+    "log_every": 1,
+    "preserve_initial_best": true,
+    "evaluation_splits": ["train", "validation"]
+  },
+  "jobs": [
+    {
+      "name": "plain_mlp_h8_w256_seed0",
+      "checkpoint": "controller_architecture_study/results/capacity_finetune_v1/plain_mlp_h8_w256_seed0/best_model.pt"
+    },
+    {
+      "name": "plain_mlp_h8_w512_seed0",
+      "checkpoint": "controller_architecture_study/results/capacity_growth_v1/initializations/plain_mlp_h8_w512_seed0/best_model.pt"
+    },
+    {
+      "name": "plain_mlp_h12_w256_seed0",
+      "checkpoint": "controller_architecture_study/results/capacity_growth_v1/initializations/plain_mlp_h12_w256_seed0/best_model.pt"
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "policy": "fully_initialized_acado_then_exactly_one_rti_step_v1",
+  "input_contract": "falcon_track_p_trajectory_relative_12d_v1",
+  "config_sha256": "bb1e3fb30e9f2a3ab50338fb73a1ec72b26414d31d16320c6661672ff5567f81",
+  "dll_sha256": "e078ccd2e8f3149f76fb31ae8280a2a164609c941fc5f883c915eb0cf57dbd60",
+  "source_sha256": {
+    "train.npz": "523eb6a9136a9d30101469e64e244f6c0647929fadb8965578e71cac7c09fe5c",
+    "validation.npz": "b9c4f52e0bd6025e2af251bec8f803860ede7183acd3ac4197eba9608801700a",
+    "test.npz": "e779f71335951164812aa23abaaa31f9335d4ff6c681b48e8304a04f362b1a9f"
+  }
+}

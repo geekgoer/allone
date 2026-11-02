@@ -1,0 +1,33 @@
+{
+  "model": "F:\\FalconReproduction\\airsim_control\\experiments\\paper_track_p_12d_5ms_v1\\fpga_shadow_historical5ms\\svr_runs\\fast_4h_v1_seed42\\svr_model_all_data.joblib",
+  "dataset": "F:\\FalconReproduction\\airsim_control\\experiments\\paper_track_p_12d_5ms_v1\\fpga_shadow_historical5ms\\paper_style_sweep\\fast_4h_v1\\svr_dataset\\paper_style_episode_dataset_train_ready.csv",
+  "figures": [
+    "F:\\FalconReproduction\\airsim_control\\experiments\\paper_track_p_12d_5ms_v1\\fpga_shadow_historical5ms\\svr_runs\\fast_4h_v1_seed42\\cube_plots\\svr_cube_epsilon_0p0.png",
+    "F:\\FalconReproduction\\airsim_control\\experiments\\paper_track_p_12d_5ms_v1\\fpga_shadow_historical5ms\\svr_runs\\fast_4h_v1_seed42\\cube_plots\\svr_cube_epsilon_0p8.png",
+    "F:\\FalconReproduction\\airsim_control\\experiments\\paper_track_p_12d_5ms_v1\\fpga_shadow_historical5ms\\svr_runs\\fast_4h_v1_seed42\\cube_plots\\svr_cube_epsilon_1p6.png"
+  ],
+  "axes": {
+    "c": [
+      3516.904131288382,
+      3777.4591675102615,
+      4214.9168057287,
+      7568.590236466279,
+      8091.383968764571,
+      11156.377701133919
+    ],
+    "T_ms": [
+      30.0,
+      60.0,
+      100.0
+    ],
+    "R_range_ms": [
+      5.108,
+      58.608
+    ]
+  },
+  "prediction_range": [
+    0.0039587581961026165,
+    0.0039587581961026165
+  ],
+  "warning": "This model's holdout R2 is negative and its predictions are nearly constant; figures are diagnostic, not evidence of a valid learned design surface."
+}

@@ -1,0 +1,37 @@
+{
+  "format_version": 1,
+  "created_utc": "2026-09-22T13:38:45.096716+00:00",
+  "dataset": "F:\\FalconReproduction\\airsim_control\\experiments\\paper_track_p_12d_5ms_v1\\fpga_shadow_historical5ms\\paper_style_sweep\\fast_4h_v1\\svr_dataset\\paper_style_episode_dataset_train_ready.csv",
+  "dataset_sha256": "e7a0f1caefd1c02e2c80dab105d8e2a98865c167dfc82421f2a06033ea9341ec",
+  "target": "J_paper_style",
+  "features": [
+    "c",
+    "period_ms",
+    "R_max_ms",
+    "epsilon"
+  ],
+  "split_group": "source_directory",
+  "seed": 42,
+  "test_size": 0.2,
+  "cv_splits": 5,
+  "train_groups": [
+    "T030ms_delay0ms",
+    "T030ms_delay6ms",
+    "T060ms_delay0ms",
+    "T060ms_delay12ms",
+    "T060ms_delay24ms",
+    "T100ms_delay0ms",
+    "T100ms_delay40ms"
+  ],
+  "test_groups": [
+    "T030ms_delay12ms",
+    "T100ms_delay20ms"
+  ],
+  "best_params": {
+    "C": 0.1,
+    "gamma": "scale",
+    "epsilon": 0.05
+  },
+  "J_definition": "average complete K=20 window costs, then reciprocal; Wx=I_10",
+  "old_J_proxy_is_not_used": true
+}

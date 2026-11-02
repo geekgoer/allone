@@ -1,0 +1,17 @@
+{
+  "upstream_repository": "https://github.com/uzh-rpg/rpg_mpc",
+  "upstream_commit": "33263db209105f716e204acc6481834fbd9bc778",
+  "generated_solver_directory": "third_party/rpg_mpc/model/quadrotor_mpc_codegen",
+  "code_generator": "ACADO Toolkit",
+  "qp_solver": "qpOASES",
+  "hessian_approximation": "GAUSS_NEWTON",
+  "discretization": "MULTIPLE_SHOOTING",
+  "condensing": "FULL_CONDENSING_N2",
+  "integrator": "INT_IRK_GL4",
+  "precision": "single",
+  "horizon_nodes": 20,
+  "prediction_dt_seconds": 0.1,
+  "prediction_horizon_seconds": 2.0,
+  "falcon_control_period_seconds": 0.05,
+  "important_limit": "This is the public rpg_mpc generated solver cited by FALCON, not the unreleased author ACADO binary or PAMPC planner implementation."
+}

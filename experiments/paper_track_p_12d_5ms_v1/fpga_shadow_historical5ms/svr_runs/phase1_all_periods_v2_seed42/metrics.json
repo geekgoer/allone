@@ -1,0 +1,60 @@
+{
+  "format_version": 1,
+  "created_utc": "2026-09-22T05:30:34.025185+00:00",
+  "dataset": "F:\\FalconReproduction\\airsim_control\\experiments\\paper_track_p_12d_5ms_v1\\fpga_shadow_historical5ms\\svr_dataset\\phase1_all_periods_v2\\svr_episode_dataset_train_ready.csv",
+  "records_valid": 1976,
+  "features": [
+    "c_inverse_beta",
+    "period_ms",
+    "R_max_ms",
+    "epsilon"
+  ],
+  "target": "J_proxy",
+  "split_group": "source_directory",
+  "seed": 42,
+  "train_groups": [
+    "closed_loop_full_100ms_r5",
+    "closed_loop_full_30ms_r5",
+    "closed_loop_full_40ms_r5",
+    "closed_loop_full_50ms_delay10_r5",
+    "closed_loop_full_50ms_delay20_r5",
+    "closed_loop_full_50ms_delay5_r5",
+    "closed_loop_full_60ms_r5",
+    "closed_loop_full_80ms_r5"
+  ],
+  "test_groups": [
+    "closed_loop_current_full_r5",
+    "closed_loop_full_50ms_delay15_r5",
+    "closed_loop_full_75ms_r5"
+  ],
+  "train_records": 1436,
+  "test_records": 540,
+  "search": {
+    "best_params": {
+      "C": 10000.0,
+      "epsilon": 0.01,
+      "gamma": 0.1
+    },
+    "best_cv_rmse_scaled": 0.40534118642781847,
+    "cv_splits": 5,
+    "grid_size": 120
+  },
+  "train_metrics": {
+    "count": 1436,
+    "mse": 2.390925911584604e-07,
+    "rmse": 0.0004889709512419531,
+    "mae": 0.00032748011398880657,
+    "r2": 0.8420515963594565,
+    "mape_percent": 5.259594701471953,
+    "smape_percent": 5.02364217419161
+  },
+  "test_metrics": {
+    "count": 540,
+    "mse": 2.477307624149474e-07,
+    "rmse": 0.0004977255894716961,
+    "mae": 0.0003363381547546394,
+    "r2": 0.8340669910934102,
+    "mape_percent": 5.362135826803608,
+    "smape_percent": 5.12720089709825
+  }
+}

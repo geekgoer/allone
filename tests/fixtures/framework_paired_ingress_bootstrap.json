@@ -1,0 +1,133 @@
+{
+  "source": "controller_architecture_study\\results\\context_seven_development_pairs_v8_20261026\\i6_pos_v1.2\\adaptive",
+  "source_report_sha256": "66d441cf72d5c5f159f1a7f4270071da6c74cd7578891c9d46b0e196586cf6b1",
+  "future": {
+    "Drone1": {
+      "sample_id": "Drone1:0",
+      "vehicle": "Drone1",
+      "model": "plain_mlp_h9_w512_seed0",
+      "priority": 0,
+      "deadline_s": 0.08,
+      "input_age_limit_s": 0.03,
+      "stage": "input",
+      "planned_release_s": 0.0
+    },
+    "Drone2": {
+      "sample_id": "Drone2:0",
+      "vehicle": "Drone2",
+      "model": "plain_mlp_h9_w512_seed0",
+      "priority": 1,
+      "deadline_s": 0.08,
+      "input_age_limit_s": 0.03,
+      "stage": "input",
+      "planned_release_s": 0.0
+    },
+    "Drone3": {
+      "sample_id": "Drone3:0",
+      "vehicle": "Drone3",
+      "model": "plain_mlp_h9_w512_seed0",
+      "priority": 2,
+      "deadline_s": 0.08,
+      "input_age_limit_s": 0.03,
+      "stage": "input",
+      "planned_release_s": 0.0
+    },
+    "Drone4": {
+      "sample_id": "Drone4:0",
+      "vehicle": "Drone4",
+      "model": "plain_mlp_h9_w512_seed0",
+      "priority": 3,
+      "deadline_s": 0.08,
+      "input_age_limit_s": 0.03,
+      "stage": "input",
+      "planned_release_s": 0.0
+    },
+    "Drone5": {
+      "sample_id": "Drone5:0",
+      "vehicle": "Drone5",
+      "model": "plain_mlp_h9_w512_seed0",
+      "priority": 4,
+      "deadline_s": 0.08,
+      "input_age_limit_s": 0.03,
+      "stage": "input",
+      "planned_release_s": 0.0
+    },
+    "Drone6": {
+      "sample_id": "Drone6:0",
+      "vehicle": "Drone6",
+      "model": "plain_mlp_h9_w512_seed0",
+      "priority": 5,
+      "deadline_s": 0.08,
+      "input_age_limit_s": 0.03,
+      "stage": "input",
+      "planned_release_s": 0.0
+    },
+    "Drone7": {
+      "sample_id": "Drone7:0",
+      "vehicle": "Drone7",
+      "model": "plain_mlp_h9_w1024_seed0",
+      "priority": 6,
+      "deadline_s": 0.04,
+      "input_age_limit_s": 0.03,
+      "stage": "input",
+      "planned_release_s": 0.0
+    }
+  },
+  "profile": {
+    "plain_mlp_h9_w1024_seed0": {
+      "segment_estimates_s": [
+        0.000547700000551049,
+        0.0009019999998952699,
+        0.0042537500002152225,
+        0.0009063499995943858,
+        0.0007526000000678323
+      ],
+      "measured_compute_p95_s": 0.0020690750001676876,
+      "measured_segment_max_s": 0.002802500000143482,
+      "samples": 20,
+      "is_WCET": false
+    },
+    "plain_mlp_h9_w512_seed0": {
+      "segment_estimates_s": [
+        0.00020689999963797163,
+        0.00016595000023589818,
+        0.00017809999998353305,
+        0.00017000000037915015,
+        0.00014149999959845445
+      ],
+      "measured_compute_p95_s": 0.0003605150001249058,
+      "measured_segment_max_s": 0.00010459999975864775,
+      "samples": 20,
+      "is_WCET": false
+    }
+  },
+  "costs": {
+    "input_s": 0.0023461500003468245,
+    "sample_io_s": 0.0074628124924747685,
+    "output_s": 0.004471949993228917,
+    "handoff_s": 0.001,
+    "io_s": 0.0078052124980677005,
+    "command_s": 0.0037694875044398933,
+    "ingress_s": 0.0014989500013034556,
+    "egress_s": 0.0010755750025855375,
+    "completion_guard_s": 0.001,
+    "dispatch_guard_s": 0.02,
+    "planner_reserve_s": 0.0037158312546926027,
+    "is_WCET": false,
+    "actuation_s": 0.002425400003528921,
+    "tail_costs": {
+      "input_s": 0.0042628750033036344,
+      "output_s": 0.00618050000765652,
+      "sample_io_s": 0.02545387499948265,
+      "command_s": 0.026706374996036175,
+      "actuation_s": 0.006013625001185574,
+      "io_s": 0.02714462499524234,
+      "ingress_s": 0.012033750002854504,
+      "egress_s": 0.005017749994192855,
+      "handoff_s": 0.001,
+      "planner_reserve_s": 0.005217000001619454
+    },
+    "tail_policy": "observed nominal overrun: use padded development maximum minus actual elapsed; never extend deadline",
+    "io_slots": 7
+  }
+}

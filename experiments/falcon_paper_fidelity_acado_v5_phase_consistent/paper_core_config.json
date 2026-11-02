@@ -1,0 +1,101 @@
+{
+  "random_seed": 2025,
+  "vehicle_name": "Drone1",
+  "timing": {
+    "dt": 0.05,
+    "steps_per_episode": 100,
+    "episode_seconds": 5.0,
+    "episode_timeout_seconds": 30.0,
+    "catastrophic_loop_period": 0.2
+  },
+  "initial_state": {
+    "count": 10,
+    "seed": 2025,
+    "position_range": {"x": [-0.35, 0.35], "y": [-0.8, 0.8], "z": [-3.2, -2.8]},
+    "attitude_range": {"roll": [-0.04, 0.04], "pitch": [-0.04, 0.04], "yaw": [-0.12, 0.12]},
+    "velocity_range": {"x": [4.7, 5.3], "y": [-0.25, 0.25], "z": [-0.20, 0.20]},
+    "angular_velocity_range": {"x": [0.0, 0.0], "y": [0.0, 0.0], "z": [0.0, 0.0]}
+  },
+  "environment": {
+    "count": 40,
+    "seed": 2025,
+    "epsilon_values": [0.0, 0.8, 1.6],
+    "gate_count": 5,
+    "x_start": 10.0,
+    "x_spacing": 10.0,
+    "base_y_range": [-1.5, 1.5],
+    "base_z_range": [-3.2, -2.4],
+    "max_z": -2.2
+  },
+  "gate": {
+    "width": 4.0,
+    "height": 4.0,
+    "thickness": 0.15,
+    "asset": "1M_Cube",
+    "spawn_in_simulation": false,
+    "approach_distance": 2.0,
+    "exit_distance": 1.0,
+    "threshold": 0.8,
+    "clearance": 0.25
+  },
+  "planner": {
+    "nominal_speed": 5.0,
+    "terminal_speed": 5.0,
+    "exit_distance": 1.0,
+    "minimum_duration": 0.8,
+    "maximum_duration": 8.0,
+    "maximum_speed": 8.0,
+    "maximum_acceleration": 8.0,
+    "feasibility_samples": 81,
+    "gravity": 9.8066,
+    "body_rate_difference_dt": 0.001
+  },
+  "trajectory": {
+    "mode": "global_continuous",
+    "start_velocity_mode": "nominal_gate_axis",
+    "final_exit_distance": 5.0,
+    "gate_role": "planning_constraints_and_passive_evaluation_only",
+    "continuity": "C2"
+  },
+  "mpc": {
+    "backend": "official_rpg_mpc_acado_qpoases",
+    "library": "../../native/acado_rpg_mpc/build/bin/libfalcon_acado_mpc.dll",
+    "horizon": 20,
+    "prediction_dt": 0.1,
+    "gravity": 9.8066,
+    "q_position_xy": 200.0,
+    "q_position_z": 500.0,
+    "q_attitude": 50.0,
+    "q_velocity": 10.0,
+    "q_perception": 0.0,
+    "r_thrust": 1.0,
+    "r_pitch_roll": 1.0,
+    "r_yaw": 1.0,
+    "min_thrust": 2.0,
+    "max_thrust": 20.0,
+    "max_body_rate_xy": 3.0,
+    "max_body_rate_z": 2.0
+  },
+  "bounds": {"position_min": [-10.0, -25.0, -15.0], "position_max": [70.0, 25.0, 1.0]},
+  "calibration": "../../configs/thrust_calibration.json",
+  "airsim": {
+    "editor": "E:\\epicGamesStrg\\UE_4.27\\Engine\\Binaries\\Win64\\UE4Editor.exe",
+    "uproject": "F:\\Airsim\\AirSim\\Unreal\\Environments\\Blocks\\Blocks.uproject",
+    "map_asset": "/Game/FalconEmpty.FalconEmpty",
+    "rpc_host": "127.0.0.1",
+    "rpc_port": 41451,
+    "rpc_timeout": 10.0,
+    "startup_timeout": 120.0,
+    "retry_interval": 1.0,
+    "res_x": 1280,
+    "res_y": 720,
+    "null_rhi": true
+  },
+  "dataset": {
+    "root": "paper_core_40k_falcon12_v5_stable",
+    "output_name": "falcon_paper_core_40k_falcon12_v5_stable.npz",
+    "retry_count": 2,
+    "abort_after_consecutive_failures": 5,
+    "progress_every_steps": 20
+  }
+}

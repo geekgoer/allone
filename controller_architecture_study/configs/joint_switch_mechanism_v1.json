@@ -1,0 +1,9 @@
+{
+  "scope": "scripted switching mechanism; not resource/state-adaptive control",
+  "steps": [
+    {"at_seconds": 0, "model": "plain4x256", "period_ms": 50},
+    {"at_seconds": 3, "model": "plain4x512", "period_ms": 75},
+    {"at_seconds": 6, "model": "plain4x512", "period_ms": 100},
+    {"at_seconds": 9, "model": "plain4x256", "period_ms": 50}
+  ]
+}

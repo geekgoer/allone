@@ -1,0 +1,149 @@
+{
+  "format_version": 2,
+  "depth": 22,
+  "width": 1024,
+  "input_dimensions": 12,
+  "input_features": [
+    "reference_position_error_x",
+    "reference_position_error_y",
+    "reference_position_error_z",
+    "reference_attitude_error_x",
+    "reference_attitude_error_y",
+    "reference_attitude_error_z",
+    "reference_velocity_error_x",
+    "reference_velocity_error_y",
+    "reference_velocity_error_z",
+    "reference_acceleration_x",
+    "reference_acceleration_y",
+    "reference_acceleration_z"
+  ],
+  "teacher_policy": "fully_initialized_acado_then_exactly_one_rti_step_v1",
+  "input_contract": "falcon_track_p_trajectory_relative_12d_v1",
+  "reference_speed_values": [
+    10.0
+  ],
+  "initialization": "kaiming_relu_hidden_xavier_output_v1",
+  "selection_metric": "normalized_mse",
+  "gradient_clip_norm": 1.0,
+  "pin_memory": false,
+  "metric_definition": {
+    "physical_mse": "mean((U_pred_physical-U_true_physical)^2) over all samples and four outputs",
+    "normalized_mse": "mean((U_pred_normalized-U_true_normalized)^2) over all samples and four outputs",
+    "training_objective": "normalized_mse"
+  },
+  "parameters": 21009412,
+  "device": "cuda",
+  "seed": 0,
+  "epochs_completed": 600,
+  "best_epoch": 212,
+  "training_complete": true,
+  "termination_reason": "maximum_epochs",
+  "stopped_early": false,
+  "early_stopping": {
+    "enabled": false,
+    "patience": 0,
+    "minimum_epochs": 600,
+    "minimum_absolute_improvement": 0.0,
+    "requires_minimum_learning_rate": false
+  },
+  "learning_rate_schedule": {
+    "type": "constant",
+    "initial_learning_rate": 0.0001,
+    "final_learning_rate": 0.0001,
+    "plateau_patience": 0,
+    "plateau_factor": 0.3,
+    "plateau_relative_threshold": 0.0001,
+    "plateau_cooldown": 0,
+    "minimum_learning_rate": 1e-06
+  },
+  "validation": {
+    "samples": 16000,
+    "mse": 0.2184152901172638,
+    "mae": 0.2321430742740631,
+    "rmse": 0.46734923124313354,
+    "max_abs_error": 8.72235107421875,
+    "mse_per_output": {
+      "collective_thrust_acceleration": 0.3618597686290741,
+      "body_rate_x": 0.3979315757751465,
+      "body_rate_y": 0.11272179335355759,
+      "body_rate_z": 0.0011484217830002308
+    },
+    "mae_per_output": {
+      "collective_thrust_acceleration": 0.39959269762039185,
+      "body_rate_x": 0.3218776285648346,
+      "body_rate_y": 0.18768641352653503,
+      "body_rate_z": 0.01941753178834915
+    }
+  },
+  "test": {
+    "samples": 16000,
+    "mse": 0.1868705302476883,
+    "mae": 0.2023325264453888,
+    "rmse": 0.43228524923324585,
+    "max_abs_error": 5.6579365730285645,
+    "mse_per_output": {
+      "collective_thrust_acceleration": 0.19765245914459229,
+      "body_rate_x": 0.4807227551937103,
+      "body_rate_y": 0.06773849576711655,
+      "body_rate_z": 0.0013654386857524514
+    },
+    "mae_per_output": {
+      "collective_thrust_acceleration": 0.2864170968532562,
+      "body_rate_x": 0.36074331402778625,
+      "body_rate_y": 0.14201794564723969,
+      "body_rate_z": 0.020152296870946884
+    }
+  },
+  "validation_normalized": {
+    "samples": 16000,
+    "mse": 0.09612149000167847,
+    "mae": 0.15797734260559082,
+    "rmse": 0.3100346624851227,
+    "max_abs_error": 5.118936538696289,
+    "mse_per_output": {
+      "collective_thrust_acceleration": 0.04037026688456535,
+      "body_rate_x": 0.22676606476306915,
+      "body_rate_y": 0.09734317660331726,
+      "body_rate_z": 0.020006410777568817
+    },
+    "mae_per_output": {
+      "collective_thrust_acceleration": 0.13346852362155914,
+      "body_rate_x": 0.24298225343227386,
+      "body_rate_y": 0.17441357672214508,
+      "body_rate_z": 0.08104506880044937
+    }
+  },
+  "test_normalized": {
+    "samples": 16000,
+    "mse": 0.0945705845952034,
+    "mae": 0.14601893723011017,
+    "rmse": 0.30752331018447876,
+    "max_abs_error": 4.271134853363037,
+    "mse_per_output": {
+      "collective_thrust_acceleration": 0.022050779312849045,
+      "body_rate_x": 0.27394652366638184,
+      "body_rate_y": 0.058496877551078796,
+      "body_rate_z": 0.0237869955599308
+    },
+    "mae_per_output": {
+      "collective_thrust_acceleration": 0.09566646814346313,
+      "body_rate_x": 0.272321879863739,
+      "body_rate_y": 0.13197490572929382,
+      "body_rate_z": 0.08411207795143127
+    }
+  },
+  "health": {
+    "validation_mean_baseline_mse": 3.5777194499969482,
+    "validation_model_to_baseline_mse_ratio": 0.06104874716139358,
+    "maximum_allowed_ratio": 0.25,
+    "passed": true
+  },
+  "elapsed_seconds": 2953.6152779999993,
+  "test_used_for_early_stopping": false,
+  "data_dir": "F:\\FalconReproduction\\airsim_control\\experiments\\falcon_10ms_hybrid_160k_v1\\dnn_dataset_v4_cold_rti_labels_v1",
+  "cuda_memory": {
+    "device_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+    "peak_allocated_mib": 421.99853515625,
+    "peak_reserved_mib": 444.0
+  }
+}
