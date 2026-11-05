@@ -112,6 +112,7 @@
 
 | ID | 优先级 | 任务与最小交付 | 当前状态/负责人 | 完成条件 |
 |---|---|---|---|---|
+| SHARE-237 | P0 | 补齐Git克隆后的237D独立模型交接与路径迁移 | 已交付代码及zip，Windows Agent，2026-11-05。[交接说明](../controller_architecture_study/docs/SHARE_237D_ARTIFACTS_20261105.md)。新增推理路径解析和内容校验，冻结采集/增广源码保持哈希可核验。原始11文件加默认路线已打包，约241 MiB | `colleague_transfer/residual237d_collaboration_v1_20261105.zip` 及 `.zip.sha256`。换目录解压后来源检查和32条原始验证输入推理PASS。实际试飞和同事机器环境待回填，单包不覆盖六机实时实验的完整依赖 |
 | PLAN-04 | P0 | [直接分配计划](../controller_architecture_study/docs/STATE_FEEDBACK_ALLOCATION_PLAN_20261103.md)的周期执行与测量 | 待试飞复核，Windows Agent。55ms第二轮静态零碰撞，但首弯前有连续丢任务。周期模式合并已采样任务派发与输入准备，前端按期限排序并限制连续收尾，独立监测让出就绪控制工作，经验预测同步更新。92项相关离线检查通过 | 保持55ms和1.90m复跑静态验收，对照 `results/staggered190_6drones_dispatchtrace55_20261103_194021/` 的可派发至实际派发等待、丢任务和命令空窗。两轮静态达标后才运行动态组 |
 | RT-01 | P0 | 修正保持控制义务的时间归属，先做归档回放与针对性检查 | 归档回放已有局部改善，仍有332条重复过期记录；剩余问题待继续定位 | 旧义务结束与当前义务可区分；历史超期仍保留；当前期限、在途成本及全组检查不被绕过 |
 | DIAG-02 | P0 | 核对最新建议的触发、拒绝、提交时间线和总开销，提出可复现异质负载验证方案 | 已完成分析；Windows Agent，2026-11-02；见[拒绝与开销诊断](../controller_architecture_study/docs/DYNAMIC_ADVANTAGE_AND_ADMISSION_DIAGNOSIS_20261102.md)；未改运行机制或试飞 | 首撞前38条全拒绝；发现建议服务缺少执行等待界限、过渡期限阻塞；有条件跳过及公平对照仅为下一步建议 |

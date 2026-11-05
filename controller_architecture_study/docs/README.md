@@ -4,6 +4,8 @@
 
 ## 新协作者先读
 
+克隆Git仓库后若缺少 `results/` 下的237D模型和验证数据，按[237D产物交接](SHARE_237D_ARTIFACTS_20261105.md)接收原始文件包并检查。单模型包覆盖残差21×1024、验证数据和默认路线，其他实验所需产物按入口补齐。
+
 1. [整体Framework](../../docs/FRAMEWORK.md)：研究问题、时间定义、模块边界与尚未验证的假设。
 2. [协作进度/任务认领](../../docs/COLLABORATION_STATUS.md)：已完成、当前问题、未来任务和产物位置。
 3. [易懂实现说明](FRAMEWORK_IMPLEMENTATION_EXPLAINED_20261101.md)：实际控制如何发布、采样、计算、选择和提交。

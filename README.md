@@ -8,6 +8,7 @@
 - [协作进度与任务认领](docs/COLLABORATION_STATUS.md)：已经做了什么、当前问题、后续工作、产物和协作更新方式。
 - [Agent入口](AGENTS.md)：阅读顺序与协作约定。
 - [研究分支文档索引](controller_architecture_study/docs/README.md)：实现、实验、量化与Ubuntu交接的导航。
+- [同事克隆后补齐237D产物](controller_architecture_study/docs/SHARE_237D_ARTIFACTS_20261105.md)：模型和验证数据另行交接，包含路径迁移、zip校验和单模型运行命令。
 
 最新用户完成CPU/XPU服务修复v2六次十机对照，程序异常已排除，期限事实刷新和CPU服务等待有改善；新联合配置仍未安装，控制收益未成立。静态10、旧动态9、新增模块9架次碰撞不能证明新建议救回。新增评分器收益、可靠的最低成本合格DNN选择、全程硬期限及新超网上板效果尚未成立。具体看[最新阶段结果](controller_architecture_study/docs/RUNTIME_SERVICE_REPAIR_RESULTS_20261102.md)。
 

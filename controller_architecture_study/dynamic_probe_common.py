@@ -39,9 +39,9 @@ def read_json(path):
 
 def provenance(names, *, validation=False):
     """No Test values, no incomplete runs, and no unpaired normalization."""
-    from .convex_recovery import verify_arm
+    from .convex_artifacts import verify_recovery_artifacts
 
-    manifest = verify_arm(DATA, BASE, full=False)
+    manifest = verify_recovery_artifacts(DATA, BASE)
     expected = manifest["artifact_sha256"]
     if validation and sha256(DATA / "validation.npz") != expected["validation.npz"]:
         raise ValueError("validation file changed")

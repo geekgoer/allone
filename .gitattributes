@@ -1,0 +1,2 @@
+# Frozen teacher/feature manifests hash LF source bytes across platforms.
+*.py text eol=lf

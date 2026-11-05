@@ -27,6 +27,7 @@ from .convex_teacher import ConvexTeacher
 from .convex_dataset import CONTRACT, VERSION, EXPERIMENT, specification
 from .fly_decision_dnn import DecisionDNN, StoredRoutePlanner
 from .eval_offline import load_checkpoint, load_normalization
+from .convex_artifacts import project_path, verify_recovery_artifacts
 from .convex_recovery_flight import PROFILES, PerturbedClient, RecoveryRecorder, recovery_metrics
 
 
@@ -58,7 +59,7 @@ def verify_dataset(output, *, full=True):
         raise ValueError("collection manifest changed")
     collection = json.loads((output/"manifest.json").read_text(encoding="utf-8"))
     for name, expected in collection["config"]["source_sha256"].items():
-        if sha256(ROOT/name) != expected:
+        if sha256(project_path(name)) != expected:
             raise ValueError(f"feature/teacher source changed: {name}")
     # Do not read test values for training/flight validation.
     for name in (("train.npz", "validation.npz", "normalization.json") if full else ("normalization.json",)):
@@ -75,11 +76,10 @@ class ConvexDNN(DecisionDNN):
         self.input_dim = config.get("input_dim")
         data_dir, contract = output/"dnn_dataset", CONTRACT
         if self.input_dim == 237:
-            from .convex_recovery import verify_arm
             from .convex_features import CONTRACT as contract
 
-            data_dir = ROOT/config["data_dir"]
-            manifest = verify_arm(data_dir, output, full=False)
+            data_dir = project_path(config["data_dir"])
+            manifest = verify_recovery_artifacts(data_dir, output)
             if config.get("augmentation_manifest_sha256") != manifest["augmentation_manifest_sha256"]:
                 raise ValueError("checkpoint augmentation provenance mismatch")
         else:
