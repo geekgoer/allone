@@ -6,6 +6,48 @@ import numpy as np
 SLOTS=(.020,.030,.040,.050,.060)
 
 
+def project_frequencies(desired, weights, lower, upper, demands, capacity):
+    """Weighted frequency projection with backend and frontend capacities."""
+    desired, weights, lower, upper, demands, capacity = map(
+        lambda value: np.asarray(value, dtype=float),
+        (desired, weights, lower, upper, demands, capacity))
+    if np.any(lower > upper) or np.any(demands @ lower > capacity + 1e-10):
+        return None
+
+    def cap(preferred, demand, limit):
+        result = np.clip(preferred, lower, upper)
+        if demand @ result <= limit + 1e-10:
+            return result
+        positive = demand > 0
+        high = max(0., np.max((preferred[positive]-lower[positive])*weights[positive]/demand[positive]))
+        low = 0.
+        for _ in range(22):
+            price = (low+high)/2
+            result = np.clip(preferred-price*demand/weights, lower, upper)
+            if demand @ result > limit:
+                low = price
+            else:
+                high = price
+        return np.clip(preferred-high*demand/weights, lower, upper)
+
+    backend, frontend = demands
+    result = cap(desired, backend, capacity[0])
+    if frontend @ result <= capacity[1]+1e-10:
+        return result
+    low = 0.
+    positive = frontend > 0
+    high = max(0., np.max((desired[positive]-lower[positive])*weights[positive]/frontend[positive]))
+    for _ in range(18):
+        price = (low+high)/2
+        result = cap(desired-price*frontend/weights, backend, capacity[0])
+        if frontend @ result > capacity[1]:
+            low = price
+        else:
+            high = price
+    result = cap(desired-high*frontend/weights, backend, capacity[0])
+    return result if np.all(demands @ result <= capacity+1e-10) else None
+
+
 def load(periods,models,costs):
     return sum(costs[models[v]]/p for v,p in periods.items())
 
@@ -14,7 +56,9 @@ def resource_loads(periods,models,costs,pipeline_costs=None):
     result={'backend':load(periods,models,costs)}
     if pipeline_costs is not None:
         service=sum(pipeline_costs.get(k,0.) for k in ('input_s','output_s','planner_reserve_s','handoff_s'))
-        result['frontend']=sum(service/p for p in periods.values())
+        management=(pipeline_costs.get('management_budget_s',0.)/pipeline_costs['management_period_s']
+            if pipeline_costs.get('management_budget_s') else 0.)
+        result['frontend']=sum(service/p for p in periods.values())+management
     return result
 
 

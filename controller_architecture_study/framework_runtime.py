@@ -134,7 +134,10 @@ def input_age_fits(row, now, remaining_command_s=0.):
 
 def release_deadline(row, released_at):
     age = row.get("input_age_limit_s")
-    return row["deadline_s"] if age is None else min(row["deadline_s"],released_at+age)
+    deadline = row["deadline_s"]
+    if row.get("fixed_period_slot"):
+        deadline = min(deadline, released_at+row["requested_period_s"])
+    return deadline if age is None else min(deadline,released_at+age)
 
 
 class ModeMap:
@@ -262,24 +265,33 @@ def simulate_pipeline(now, future, pending, profile, costs, *, policy="edf", inf
             "segments":profile[row["model"]]["segment_estimates_s"],
             "compute_release_s":now+row.get("ingress_remaining_s",costs.get("ingress_s",0.)),
             "output_release_s":now}
-        if prospective:
+        if prospective or row.get('fixed_period_slot'):
             jobs[name]["deadline_s"] = release_deadline(row,row["planned_release_s"])
     if not jobs:
         return True,{},0
     missed=set(missed_deadline_ids)
     if any(name not in jobs or jobs[name]['deadline_s']>now for name in missed):
         raise ValueError('only already-missed deadlines may be excluded from future feasibility')
+    periodic_sampling = costs.get("periodic_sampling",False)
     for row in jobs.values():
         if not math.isfinite(row["deadline_s"]) or not math.isfinite(row["planned_release_s"]):
             raise ValueError("finite scheduling times required")
-        releases=[r['planned_release_s'] for r in jobs.values() if r is not row
-            and r.get('vehicle')==row.get('vehicle') and r['planned_release_s']>row['planned_release_s']]
-        row['maintenance_due_s']=min(releases,default=row['planned_release_s']+row.get('requested_period_s',0.))
+        following=min((r for r in jobs.values() if r is not row
+            and r.get('vehicle')==row.get('vehicle') and r['planned_release_s']>row['planned_release_s']),
+            key=lambda r:r['planned_release_s'],default=None)
+        release=following['planned_release_s'] if following else row['planned_release_s']+row.get('requested_period_s',0.)
+        row['maintenance_due_s']=release
+        if periodic_sampling and 'completion_frontend_done_s' not in row:
+            row['maintenance_due_s']+= (following or row).get('requested_period_s',0.)
     def key(name):
         row = jobs[name]
         if costs.get('frontend_protection') and row['stage']=='analysis':
             return (row['maintenance_due_s'],row['planned_release_s'],name)
         return (row["priority"] if policy == "static" else row["deadline_s"],row["planned_release_s"],name)
+    def frontend_deadline(name):
+        row=jobs[name]
+        due=row['maintenance_due_s'] if row['stage']=='analysis' else row['deadline_s']
+        return due,row['planned_release_s'],row['priority'],name
     def analysis_cost(name):
         if 'analysis_remaining_s' in jobs[name]:return jobs[name]['analysis_remaining_s']
         return costs['output_s']+(costs.get('planner_reserve_s',0.)
@@ -288,16 +300,23 @@ def simulate_pipeline(now, future, pending, profile, costs, *, policy="edf", inf
         row=jobs[name]
         if not row.get('serial_vehicle'):return True
         same=[n for n,r in jobs.items() if r.get('vehicle')==row['vehicle'] and n!=name and r['stage']!='done'
-            and not r.get('nonblocking_maintenance')]
-        return not any(jobs[n]['stage']!='input' or
+            and (not r.get('nonblocking_maintenance') or
+                (periodic_sampling and 'completion_frontend_done_s' not in r))]
+        waiting_stages = ('input','input_ready','sampling_busy') if periodic_sampling else ('input',)
+        return not any(jobs[n]['stage'] not in waiting_stages or
             (jobs[n]['planned_release_s'],n)<(row['planned_release_s'],name) for n in same)
     clock, frontend, backend = now,None,None
     completed = {r['sample_id']:r['command_completed_s'] for r in pending if 'command_completed_s' in r}
     frontend_available = max(now,costs.get("frontend_reserved_until_s",now))
+    management_period=costs.get('management_period_s',0.)
+    management_budget=costs.get('management_budget_s',0.)
+    management_next=costs.get('management_next_s',now+management_period)
     acknowledged = {r["sample_id"] for r in pending if "command_completed_s" in r}
     io_s, handoff_s = costs.get("io_s",0.),costs.get("handoff_s",0.)
     command_s = costs.get("command_s",io_s)
     sample_io_s = costs.get("sample_io_s",0.)
+    release_dispatch = costs.get('period_release_dispatch_s',0.) if periodic_sampling else 0.
+    previous_completion = False
     io_slots, transfers, captures, command_returns = costs.get("io_slots",len(jobs)),[],[],[]
     for name,row in jobs.items():
         if row['stage']=='input_ready':row['input_ready_s']=row.get('sample_response_received_s',now)
@@ -386,9 +405,22 @@ def simulate_pipeline(now, future, pending, profile, costs, *, policy="edf", inf
             for r in jobs.values() if r["stage"] in ("compute","backend_busy","output") and r['sample_id'] not in missed)
         protected_frontend=costs.get('frontend_protection',False)
         feedback_first = not protected_frontend and policy!="static" and io_s and ready_analysis and not ready_input and not analysis_blocks_output
+        # Reserve future CPU management opportunities as well as the present
+        # review. The XPU may continue while this host CPU budget is occupied.
+        if management_budget and frontend is None and clock>=max(frontend_available,management_next)-1e-12:
+            frontend_available=clock+management_budget
+            management_next=clock+management_period
         # Capture dispatch also requires the serialized frontend. Match the
         # live feedback-first policy instead of capturing through CPU work.
-        if sample_io_s and frontend is None and not ready_input and not feedback_first and not to_send and clock >= frontend_available-1e-12:
+        if periodic_sampling and frontend is None and clock >= frontend_available-1e-12:
+            busy = {jobs[n]['vehicle'] for n,_ in captures}
+            for name in sorted(jobs,key=key):
+                row = jobs[name]
+                if row['stage']=='input' and row['planned_release_s']+release_dispatch<=clock+1e-12 and row['vehicle'] not in busy:
+                    row['stage']='sampling_busy'
+                    captures.append((name,clock+sample_io_s))
+                    busy.add(row['vehicle'])
+        elif sample_io_s and frontend is None and not ready_input and not feedback_first and not to_send and clock >= frontend_available-1e-12:
             inflight = sum(r["stage"] not in ("input","done") and not r.get('nonblocking_maintenance') for r in jobs.values())
             waiting = sorted((n for n,r in jobs.items() if r["stage"] == "input"
                 and r["planned_release_s"] <= clock+1e-12 and dispatch_allowed(n)),key=key)
@@ -396,17 +428,27 @@ def simulate_pipeline(now, future, pending, profile, costs, *, policy="edf", inf
                 jobs[name]["stage"] = "sampling_busy"
                 captures.append((name,clock+sample_io_s))
         if frontend is None and clock >= frontend_available-1e-12:
-            inflight = sum(r["stage"] not in ("input","frontend_input","done") and not r.get('nonblocking_maintenance') for r in jobs.values())
+            waiting_stages = ("input","frontend_input","done","input_ready","sampling_busy") if periodic_sampling else ("input","frontend_input","done")
+            inflight = sum(r["stage"] not in waiting_stages and not r.get('nonblocking_maintenance') for r in jobs.values())
             input_candidates=[n for n,r in jobs.items() if r['stage']==('input_ready' if sample_io_s else 'input')
-                and r['planned_release_s']<=clock+1e-12 and (sample_io_s or (inflight<inflight_limit and dispatch_allowed(n)))]
+                and r['planned_release_s']<=clock+1e-12 and
+                ((sample_io_s and not periodic_sampling) or (inflight<inflight_limit and dispatch_allowed(n)))]
             aged_inputs=[n for n in input_candidates if costs.get('input_wait_limit_s') is not None
                 and clock-jobs[n].get('input_ready_s',jobs[n]['planned_release_s'])>=costs['input_wait_limit_s']]
             maintenance_first=protected_frontend and ready_analysis and not analysis_blocks_output and (
                 not input_candidates or (not aged_inputs and key(min(ready_analysis,key=key))<=key(min(input_candidates,key=key))))
-            if to_send and len(transfers)+len(captures) < io_slots:
+            if to_send and len(transfers)+(0 if periodic_sampling else len(captures)) < io_slots:
                 name = min(to_send,key=key)
                 jobs[name]["stage"] = "frontend_handoff"
                 frontend = (name,"handoff",clock+handoff_s)
+            elif periodic_sampling:
+                candidates=input_candidates+([] if previous_completion and input_candidates else ready_analysis)
+                if candidates:
+                    name=min(candidates,key=frontend_deadline)
+                    previous_completion=jobs[name]['stage']=='analysis'
+                    jobs[name]['stage']='frontend_output' if previous_completion else 'frontend_input'
+                    frontend=(name,'output',clock+analysis_cost(name)) if previous_completion else (
+                        name,'input',clock+costs['input_s'])
             elif ready_analysis and (((not io_s or feedback_first) and not protected_frontend) or maintenance_first):
                 name = min(ready_analysis,key=key)
                 jobs[name]["stage"] = "frontend_output"
@@ -415,17 +457,17 @@ def simulate_pipeline(now, future, pending, profile, costs, *, policy="edf", inf
                 # Do not start a non-preemptive input RPC/feature stage if it
                 # would block an imminent urgent command beyond its deadline.
                 delivery_cost = handoff_s+command_s+costs.get("completion_guard_s",0.)+(costs["output_s"] if not io_s else 0.)
-                blocking_output = any(clock+costs["input_s"]+delivery_cost > r["deadline_s"]
+                blocking_output = not periodic_sampling and any(clock+costs["input_s"]+delivery_cost > r["deadline_s"]
                     for r in jobs.values() if r["stage"] in ("compute","backend_busy","output") and r['sample_id'] not in missed)
                 ready = [] if blocking_output else [n for n,r in jobs.items()
                     if r["stage"] == ("input_ready" if sample_io_s else "input") and r["planned_release_s"] <= clock+1e-12
-                    and (sample_io_s or dispatch_allowed(n))]
+                    and ((sample_io_s and not periodic_sampling) or (inflight<inflight_limit and dispatch_allowed(n)))]
                 if ready:
                     aged=[n for n in aged_inputs if n in ready]
                     name = min(aged,key=lambda n:jobs[n].get('input_ready_s',jobs[n]['planned_release_s'])) if aged else min(ready,key=key)
                     jobs[name]["stage"] = "frontend_input"
                     frontend = (name,"input",clock+costs["input_s"])
-            if frontend is None and ready_analysis and not analysis_blocks_output and (not protected_frontend or not ready_input):
+            if not periodic_sampling and frontend is None and ready_analysis and not analysis_blocks_output and (not protected_frontend or not ready_input):
                 # Acknowledged jobs are complete. Their next-job planning
                 # cannot block the input stage of an already committed job.
                 name = min(ready_analysis,key=key)
@@ -447,8 +489,12 @@ def simulate_pipeline(now, future, pending, profile, costs, *, policy="edf", inf
         if backend is None:
             times += [r["compute_release_s"] for r in jobs.values() if r["stage"] == "compute" and r["compute_release_s"] > clock+1e-12]
         if frontend is None:
-            times += [r["planned_release_s"] for r in jobs.values()
-                if r["stage"] == "input" and r["planned_release_s"] > clock+1e-12]
+            if management_budget and management_next>clock+1e-12 and any(
+                    r['stage'] in ('input_ready','output','analysis') or
+                    (r['stage']=='input' and r['planned_release_s']<=clock) for r in jobs.values()):
+                times.append(management_next)
+            times += [r["planned_release_s"]+release_dispatch for r in jobs.values()
+                if r["stage"] == "input" and r["planned_release_s"]+release_dispatch > clock+1e-12]
             times += [r["output_release_s"] for r in jobs.values() if r["stage"] == "output" and r["output_release_s"] > clock+1e-12]
         if not times:
             return False,completed,events+1

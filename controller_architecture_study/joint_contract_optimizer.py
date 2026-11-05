@@ -141,7 +141,8 @@ def optimize(now, future, pending, options, profile, costs, *, inflight_limit,
     if any(not row for row in choices):
         return None, {**common, 'accepted':False, 'reason':'no_individually_time_feasible_contract',
                       'excluded':rejected, 'empty_loops':[v for v,r in zip(vehicles,choices) if not r]}
-    caps = np.asarray(capacities)
+    management=costs.get('management_budget_s',0.)/costs['management_period_s'] if costs.get('management_budget_s') else 0.
+    caps = np.asarray(capacities)-np.array([0.,management])
     minimum_demand = np.sum([np.min([a['demand'] for a in row],axis=0) for row in choices],axis=0)
     if np.any(minimum_demand > caps+1e-10):
         return None, {**common, 'accepted':False, 'reason':'even_resource_lower_bound_exceeds_capacity',

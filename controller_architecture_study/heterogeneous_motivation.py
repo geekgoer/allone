@@ -24,7 +24,7 @@ from .probe_seven_continuous_timing import flight,matched_initials
 PERIODS=(20.,30.,40.,50.,60.,80.)
 
 
-def make_layout(vehicle_index,seed=0,difficulty=1.,speed=5.):
+def make_layout(vehicle_index,seed=0,difficulty=1.,speed=5.,*,turn_segments=None):
     if not np.isfinite([difficulty,speed]).all() or min(difficulty,speed)<=0.:
         raise ValueError('finite positive difficulty and speed required')
     rng=np.random.default_rng(seed*100+vehicle_index)
@@ -37,9 +37,12 @@ def make_layout(vehicle_index,seed=0,difficulty=1.,speed=5.):
         base_dt=2.1 if k in (0,8) else 1.26
         dt=base_dt*5./speed
         q=p.copy();q[0]+=5.*base_dt*(.5 if k==8 else 1.)
-        if k>=onset and k<8:
+        turning=k>=onset if turn_segments is None else k in turn_segments
+        if turning and k<8:
             q[1]=amplitude*(-1. if (k+vehicle_index)%2 else 1.)
             q[2]=-4.+.12*np.sin(k+vehicle_index)
+        elif turn_segments is not None and k<8:
+            q[1:]=[0.,-4.]
         end_v=zero if k==8 else np.array([speed,0.,0.])
         primitive=QuinticPolynomial(p,v,zero,q,end_v,zero,dt)
         segments.append(dict(start_time=clock,duration=dt,coefficients=primitive.coefficients.tolist(),heading_orientation=[1.,0.,0.,0.]))
@@ -153,7 +156,8 @@ def create_world(case,physical):
 def execute(world,pool,placement,case,config,root,name,*,dynamic=False,physical=True,reserve=.020,guard_costs=None,
         anticipatory=False,recovery_model=None,pipeline_costs=None,deadline_policy='observe',recovery_models=None,
         scheduler=None,frontend_order=None,global_admission=False,frontend_protection=True,recovery_budget=None,planning_profile=None,
-        io_backend='python',runtime_repair=None,joint_adaptation=False,frontend_aging=None,joint_shadow=None):
+        io_backend='python',runtime_repair=None,joint_adaptation=False,frontend_aging=None,joint_shadow=None,
+        trace_frontend=False):
     directory=root/name
     sensing=InflightSensing(world.vehicles,world.calibration,placement.layout['io_cpus'][1],None)
     settings=deepcopy(config)
@@ -179,7 +183,7 @@ def execute(world,pool,placement,case,config,root,name,*,dynamic=False,physical=
         sensing=sensing,response_reserve_s=reserve,frontend_order=frontend_order or ('deadline' if dynamic else 'category'),
         scheduler=scheduler,
         resident_worker=True,model=MODELS[0],loop_config=settings,
-        stop_on_collision=physical,collision_policy='vehicle',joint_shadow=joint_shadow)
+        stop_on_collision=physical,collision_policy='vehicle',joint_shadow=joint_shadow,trace_frontend=trace_frontend)
     if report['error'] or report['cleanup_errors']:raise RuntimeError(f"trial failure: {report['error']} {report['cleanup_errors']}")
     traces=read_json(directory/'traces.json')
     metrics={v:cached_score(t,case) if (not physical or not report['vehicles'][v]['failure']) else None for v,t in traces.items()}

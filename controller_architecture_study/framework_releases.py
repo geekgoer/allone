@@ -47,6 +47,13 @@ class ReleaseQueue:
             row['status'] = reason
         self.queues[vehicle].clear()
 
+    def expire(self, now):
+        for queue in self.queues.values():
+            while queue and queue[0]['deadline_s'] <= now:
+                row = queue.popleft()
+                row.update(status='period_drop_before_inference', discarded_s=now)
+                yield row
+
     def __bool__(self):
         return any(self.queues.values())
 
@@ -83,10 +90,12 @@ def calendar_successor(previous, sequence, *, dynamic=False):
     """Keep releasing while feedback is outstanding; never renew a physical B."""
     row=periodic_successor(previous,sequence)
     row['previous_release_s']=previous['planned_release_s']
+    if previous.get('fixed_period_slot'):
+        row['fixed_period_slot']=True
     if dynamic:
         row['deadline_s']=previous['deadline_s']
         row['feedback_pending']=True
-        for field in ('obligation_actuation_s','obligation_sample_s'):
+        for field in ('obligation_actuation_s','obligation_sample_s','obligation_version','deadline_source'):
             if field in previous:row[field]=previous[field]
     return row
 
@@ -94,10 +103,12 @@ def calendar_successor(previous, sequence, *, dynamic=False):
 def replan_unreleased(candidate, last_release, sequence, now, reserve=0.):
     """Feedback can change the next arrival, never a job already published."""
     row=dict(candidate)
-    target=max(last_release+.020,min(last_release+row['requested_period_s'],row['deadline_s']-reserve))
+    fixed = row.get('fixed_period_slot')
+    target = row['planned_release_s'] if fixed else max(
+        last_release+.020,min(last_release+row['requested_period_s'],row['deadline_s']-reserve))
     row.update(sample_id=f"{row['vehicle']}:{sequence}",previous_release_s=last_release,
-        minimum_release_s=last_release+.020,target_release_s=target,decision_available_s=now,
-        planning_lateness_s=max(0.,now-target),planned_release_s=max(now,target),
+        minimum_release_s=target if fixed else last_release+.020,target_release_s=target,decision_available_s=now,
+        planning_lateness_s=max(0.,now-target),planned_release_s=target if fixed else max(now,target),
         slot=sequence,feedback_pending=False)
     row['nominal_deadline_s']=row['planned_release_s']+row['requested_period_s']
     row['selected_release_interval_s']=row['planned_release_s']-last_release

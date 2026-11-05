@@ -171,3 +171,24 @@ def test_guarded_group_rejects_changed_actual_control_even_before_python_drains(
         assert io.calendar_matches(proposal)
         assert all(io.templates[io.scheduled_versions[v]]['model']=='b' for v in rows)
     finally:io.close()
+
+
+def test_metadata_only_epoch_refresh_keeps_native_release_and_rate():
+    from controller_architecture_study.joint_commit_guard import refresh_epoch_metadata
+    io=NativeCommandIO(['Drone1'],ThrustCalibration(),.003,mock=True)
+    try:
+        origin=time.perf_counter()+.5;row=plan(origin)
+        row.update(obligation_actuation_s=time.perf_counter()-.1,deadline_s=time.perf_counter()-.01)
+        io.schedule(row,origin+1.)
+        command=plan(time.perf_counter());io.send(np.array([9.8,0.,0.,0.]),command)
+        collect(io,'drain');now=time.perf_counter()
+        certs={'Drone1':dict(available=True,sample_s=now,actuation_s=command['rpc_return_s'],deadline_s=origin+.1)}
+        plans={'Drone1':row};before=dict(row)
+        result=refresh_epoch_metadata(plans,[],certs,{'Drone1':command['control_ack_token']},io,now,
+            end_s=origin+1.,expires_s=origin)
+        assert result[0]['installed'] and io.calendar_matches(plans)
+        for key in ('model','sample_id','planned_release_s','requested_period_s','nominal_deadline_s'):
+            assert plans['Drone1'].get(key)==before.get(key)
+        assert plans['Drone1']['deadline_s']==origin+.1
+        assert result[0]['previous_misses']  # Late previous control is still a historical violation.
+    finally:io.close()

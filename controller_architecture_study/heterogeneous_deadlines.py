@@ -4,7 +4,7 @@ import numpy as np
 
 from .decision_dataset import atomic_json,sha256
 from .dynamic_probe_common import read_json
-from .framework_runtime import simulate_pipeline,remaining_stage_cost
+from .framework_runtime import release_deadline,simulate_pipeline,remaining_stage_cost
 
 
 def freeze_costs(source,output,statistic='maximum',*,native=False):
@@ -28,6 +28,11 @@ def freeze_costs(source,output,statistic='maximum',*,native=False):
         measurements[name]=dict(count=len(a),max_s=float(np.max(a)),p99_s=float(np.percentile(a,99)))
     costs.update(handoff_s=.0001,completion_guard_s=.0005,dispatch_guard_s=0.,planner_reserve_s=.001,io_slots=3,is_WCET=False)
     if native:
+        jitter=[max(0.,r['release_parent_received_s']-r['planned_release_s']) for r in rows
+            if 'release_parent_received_s' in r and 'planned_release_s' in r]
+        if jitter:
+            costs['period_release_dispatch_s']=float(1.25*np.percentile(jitter,95)+.0002)
+            tails['period_release_dispatch_s']=float(1.25*max(jitter)+.0002)
         analyses=read_json(source/'analyses.json')
         a=np.asarray([r['analysis_ms']/1000 for r in analyses])
         if not len(a):raise ValueError('native calibration requires recorded budget/mode analysis')
@@ -90,7 +95,7 @@ def admit(now,plans,pending,profile,costs,inflight_limit=3,*,policy='edf',allow_
         if missed:options['missed_deadline_ids']=missed
         good,finish,events=simulate_pipeline(now,list(proposal.values()),pending,profile,costs,**options)
         lag=time.perf_counter()-began
-        deadlines={r['sample_id']:r['deadline_s'] for r in [*proposal.values(),*pending]}
+        deadlines={r['sample_id']:release_deadline(r,r['planned_release_s']) for r in [*proposal.values(),*pending]}
         acknowledged={r['sample_id'] for r in pending if 'command_completed_s' in r}
         adjusted={k:t+(0. if k in acknowledged else lag) for k,t in finish.items()}
         accepted=good and all(t+costs.get('completion_guard_s',0.)<=deadlines[k] for k,t in adjusted.items()
@@ -98,7 +103,9 @@ def admit(now,plans,pending,profile,costs,inflight_limit=3,*,policy='edf',allow_
         unmet=[k for k,d in deadlines.items() if k not in acknowledged and k not in missed
             and (k not in adjusted or adjusted[k]+costs.get('completion_guard_s',0.)>d)]
         attempts.append(dict(feasible=good,accepted=accepted,unmet_deadline_ids=unmet,
-            events=events,finish=adjusted,planning_lag_s=lag))
+            events=events,finish=adjusted,planning_lag_s=lag,
+            response_forecast_s={r['sample_id']:adjusted[r['sample_id']]-r['planned_release_s']+
+                costs.get('completion_guard_s',0.) for r in proposal.values() if r['sample_id'] in adjusted}))
         if accepted:
             return {v:{**r,'planned_release_s':max(r['planned_release_s'],now+lag) if allow_earlier else r['planned_release_s']} for v,r in proposal.items()},dict(
                 feasible=True,checked=index+1,attempts=attempts,planning_ms=1000*lag,

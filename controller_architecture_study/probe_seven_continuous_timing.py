@@ -122,19 +122,29 @@ def cached_input(record,row,last_command,now,minimum_sim_ns=0):
         and 0.<=now-captured<=MIN_PERIOD and (not minimum_sim_ns or raw.timestamp_ns>=minimum_sim_ns))
 
 
-def next_frontend_work(completed,inputs,plans,now,key,frontend_order="priority",*,protect=False,planning=None,eager_completion=False,input_wait_limit_s=None):
-    if input_wait_limit_s is not None:
+def next_frontend_work(completed,inputs,plans,now,key,frontend_order="priority",*,protect=False,planning=None,eager_completion=False,input_wait_limit_s=None,
+        completion_deadlines=None,previous_completion=False):
+    periodic=completion_deadlines is not None
+    if not periodic and input_wait_limit_s is not None:
         aged=[v for v,(_,r) in inputs.items() if now-r.get('sample_response_received_s',now)>=input_wait_limit_s]
         if aged:
             v=min(aged,key=lambda v:inputs[v][1]['sample_response_received_s'])
             return 'input',v,inputs[v][1]
-    if eager_completion and completed:
+    if not periodic and eager_completion and completed:
         v=min(completed,key=lambda name:completed[name][1].get('rpc_return_s',now))
         return 'completed',v,completed[v][1]
     work=[("completed",v,r) for v,(_,r) in completed.items()]
     work.extend(("input",v,r) for v,(_,r) in inputs.items())
     work.extend(("release",v,r) for v,r in plans.items() if r["planned_release_s"]<=now)
     if planning:work.extend(('planning',v,r) for v,r in planning.items())
+    if periodic:
+        if previous_completion and any(kind in ('input','release') for kind,_,_ in work):
+            work=[item for item in work if item[0]!='completed']
+        def deadline(item):
+            kind,v,row=item
+            due=completion_deadlines[v] if kind=='completed' else row['deadline_s']
+            return due,row['planned_release_s'],row['priority']
+        return min(work,key=deadline) if work else (None,None,None)
     if protect:
         unfinished=[item for item in work if item[0]!='completed']
         if unfinished:
@@ -165,6 +175,17 @@ def input_blocks_command(now,row,pending,costs):
     finish=now+costs['input_s']+costs.get('handoff_s',0.)+costs.get('command_s',0.)+costs.get('completion_guard_s',0.)
     return any(r['vehicle']!=row['vehicle'] and 'enqueue_s' in r and 'rpc_return_s' not in r
         and now<r['deadline_s']<finish for r in pending.values())
+
+
+def record_dispatch_observation(row, now, blocker, selected_work, selected_vehicle):
+    row.setdefault('first_dispatch_decision_s',now)
+    if blocker is None:
+        row.setdefault('first_dispatch_eligible_s',now)
+    reason=blocker or ('selected' if (selected_work,selected_vehicle)==('release',row['vehicle'])
+        else f'eligible_waiting_for_{selected_work or "idle"}')
+    changes=row.setdefault('dispatch_wait_changes',[])
+    if not changes or changes[-1]['reason']!=reason:
+        changes.append(dict(time_s=now,reason=reason,selected_vehicle=selected_vehicle))
 
 
 class ContactStop(Exception):
@@ -211,9 +232,13 @@ def flight(world, pool, period_ms, scenario, policy, directory, duration, placem
     if calendar and not (is_static or continuous):
         raise ValueError("committed calendar supports periodic static and state-triggered adaptive policies")
     deadline_policy=config.get("deadline_policy","observe")
-    if deadline_policy not in ("observe","enforce"):raise ValueError("unknown deadline policy")
+    if deadline_policy not in ("observe","enforce","period_drop"):raise ValueError("unknown deadline policy")
     enforce=deadline_policy=="enforce"
+    period_drop=deadline_policy=="period_drop"
+    if period_drop and (io_backend!='cpp' or not calendar or not config.get('pipeline_costs')):
+        raise ValueError('period_drop requires the native calendar and calibrated pipeline costs')
     eager_completion=config.get('eager_completion',calendar)
+    if period_drop and not eager_completion:raise ValueError('period_drop requires prompt I/O completion handling')
     queue_policy=config.get('queue_policy','latest' if calendar and not enforce and release_tape is None else 'all')
     recover_after_miss=config.get('recover_after_miss',calendar and not enforce)
     if enforce and (queue_policy!='all' or recover_after_miss):
@@ -223,6 +248,9 @@ def flight(world, pool, period_ms, scenario, policy, directory, duration, placem
     if enforce and not pipeline_costs:raise ValueError("enforcement requires frozen full-pipeline costs")
     global_admission=config.get('global_admission',False)
     joint_adaptation=config.get('joint_adaptation',False)
+    joint_rates_exclusive=config.get('joint_rates_exclusive',False)
+    if joint_rates_exclusive and not (period_drop and getattr(joint_shadow,'apply_rates',False)):
+        raise ValueError('exclusive rate control requires the live joint period-drop planner')
     frontend_aging=config.get('frontend_aging',joint_adaptation)
     if joint_adaptation and (not global_admission or not config.get('compute_cost_s') or io_backend!='cpp'):
         raise ValueError('joint adaptation requires global admission, frozen compute costs and native calendar batches')
@@ -232,6 +260,7 @@ def flight(world, pool, period_ms, scenario, policy, directory, duration, placem
     if pipeline_costs:
         pipeline_costs={**pipeline_costs,'frontend_protection':frontend_protection,'planning_enabled':continuous,
             'eager_completion':eager_completion}
+        if period_drop:pipeline_costs['periodic_sampling']=True
         if eager_completion:
             pipeline_costs['io_slots']=min(config.get('max_inflight',len(world.vehicles)),len(world.vehicles))
         if frontend_aging:pipeline_costs['input_wait_limit_s']=MIN_PERIOD/2
@@ -259,9 +288,15 @@ def flight(world, pool, period_ms, scenario, policy, directory, duration, placem
     directory.mkdir(parents=True,exist_ok=False)
     states = world.initialize(scenario,directory)
     initial_states = dict(states)
-    server = RuntimeServer(scheduler,placement["inference_cpus"],allow_late=not enforce,resident_worker=resident_worker,model_names=tuple(pool.models))
+    server = RuntimeServer(scheduler,placement["inference_cpus"],allow_late=not (enforce or period_drop),resident_worker=resident_worker,
+        model_names=tuple(pool.models),scheduler_cpus=placement['frontend_cpus'])
     planning_profile=server.profile if frozen_profile is None else frozen_profile
-    io = None
+    if joint_shadow is not None and getattr(joint_shadow,'apply_rates',False):
+        pipeline_costs={**pipeline_costs,'management_period_s':joint_shadow.service_period_s,
+            'management_budget_s':joint_shadow.service_budget_s}
+    io = sample_io = None
+    release_samples, held_rows = {}, {}
+    first_published_periods = {}
     requests,analyses,ready,inputs,pending,plans = [],[],{},{},{},{}
     from .framework_releases import ReleaseQueue,calendar_successor,replan_unreleased,retained_unreleased,post_actuation_observation,commit_dynamic_release,retained_successor,taped_release,release_completed_io,acknowledged_sources
     released=ReleaseQueue(world.vehicles,queue_policy)
@@ -314,6 +349,9 @@ def flight(world, pool, period_ms, scenario, policy, directory, duration, placem
                     plans.pop(v,None);deferred_events.pop(v,None)
                     feedback.pop(v,None)
                     if io_backend=='cpp':io.cancel(v)
+                    if period_drop:
+                        for queued in released.queues[v]:
+                            release_samples.pop(queued['sample_id'],None)
                     released.cancel(v,"collision_cancelled_while_queued")
                     print("CONTACT: only vehicle retired",retired[v],flush=True)
                 park_retired(v)
@@ -354,6 +392,31 @@ def flight(world, pool, period_ms, scenario, policy, directory, duration, placem
 
     def order(row):
         return (row["priority"] if scheduler=="static" else row["deadline_s"],row["planned_release_s"])
+
+    def trace_dispatch_choice(kind, selected_vehicle):
+        now=time.perf_counter()
+        limit=config.get('max_inflight',len(world.vehicles))
+        for vehicle,queue in released.queues.items():
+            if not queue or queue[0]['sample_id'] not in release_samples:continue
+            row=queue[0]
+            blocker=('same_vehicle_inflight' if vehicle in pending else
+                'global_inflight_limit' if len(pending)>=limit else
+                'same_vehicle_cleanup' if vehicle in completed else
+                'dispatch_not_before' if now<row.get('dispatch_not_before_s',-float('inf')) else None)
+            record_dispatch_observation(row,now,blocker,kind,selected_vehicle)
+
+    def service_monitor():
+        with frontend_span(frontend_spans,"sensor_drain"):
+            records=sensing.drain(maximum=1)
+        for record in records:
+            check_contact(record["row"]["vehicle"],record["packet"][0],record["packet"][1])
+            with frontend_span(frontend_spans,"sensor_analysis",record["row"]["vehicle"]):
+                consider_sensor(record)
+        for v,event in list(deferred_events.items()):
+            if v in plans and v not in pending:
+                install_event(v,event)
+                deferred_events.pop(v)
+        return bool(records)
 
     def make_plan(v, raw, observation, action, actuation, previous=None):
         nonlocal admission_needed
@@ -403,7 +466,7 @@ def flight(world, pool, period_ms, scenario, policy, directory, duration, placem
                 committed_periods[v]=target
                 admission.update(committed_load=load({name:committed_periods[name] for name in active_models},active_models,guard_costs),
                     scope="shared serialized compute envelope; not full-pipeline response-time certification")
-        if global_admission and previous is None and not joint_adaptation:
+        if previous is None and (period_drop or (global_admission and not joint_adaptation)):
             target=nominal;selected_model=models[v]
             committed_periods[v]=target;planned_models[v]=selected_model
         index = priority.index(v)
@@ -433,7 +496,7 @@ def flight(world, pool, period_ms, scenario, policy, directory, duration, placem
             deadline = min(deadline,sample+requested_period(nominal,observation["risk"]))
         if policy=="event_insert" and previous is None and release==sample:
             deadline = min(deadline,sample+requested_period(nominal,observation["risk"]))
-        if continuous:
+        if continuous and not (period_drop and previous is None):
             earliest = previous["planned_release_s"]+MIN_PERIOD if previous else sample
             release = max(earliest,min(release,deadline-reserve))
             if policy=="adaptive_twosided":
@@ -442,9 +505,11 @@ def flight(world, pool, period_ms, scenario, policy, directory, duration, placem
         row = {"sample_id":f"{v}:{sequence[v]}","vehicle":v,"model":selected_model,"priority":index,
             "planned_release_s":release,"deadline_s":deadline,"nominal_deadline_s":nominal_deadline,
             "requested_period_s":target,"slot":slot,"skipped_releases":skipped,"status":"planned",
-            "obligation_actuation_s":actuation,"obligation_sample_s":sample}
+            "obligation_actuation_s":actuation,"obligation_sample_s":sample,
+            "obligation_version":f"ack:{actuation:.9f}@observation:{sample:.9f}"}
         row["minimum_release_s"]=(previous["planned_release_s" if calendar else "job_released_s"]+MIN_PERIOD if previous else first_release[v]) if continuous else release
         if calendar:row['serial_vehicle']=True
+        if period_drop:row['fixed_period_slot']=True
         row["event_inserted"] = policy=="event_insert" and slot==-1
         analyses.append({**budget,"vehicle":v,"sample_id":row["sample_id"],"risk":observation["risk"],
             "requested_period_s":target,"planned_release_s":release,"response_reserve_s":reserve,
@@ -458,19 +523,21 @@ def flight(world, pool, period_ms, scenario, policy, directory, duration, placem
             joint_shadow.note(v,raw,observation,action,actuation,budget,row)
         return row
 
-    def consider_sensor(record):
+    def consider_sensor(record, *, periodic=False):
         from .inflight_sensing import event_edge, projected_margin
         began=time.perf_counter()
         raw,hit,captured=record["packet"]
         v=record["row"]["vehicle"]
         if v in retired:return
         nominal=periods[v]
-        sensor_latest[v]=record
+        if not periodic:sensor_latest[v]=record
         elapsed=(raw.timestamp_ns-world.initial[v]["sim_ns"])/1e9
-        if raw.timestamp_ns<=max(sensor_stamps[v],states[v].timestamp_ns) or not 0.<=elapsed<duration:
+        if not 0.<=elapsed<duration:
             return
-        sensor_stamps[v]=raw.timestamp_ns
+        if not periodic and raw.timestamp_ns<=max(sensor_stamps[v],states[v].timestamp_ns):return
         risk=route_risk(raw,risk_reference(world.windows[v],world.phases[v]+elapsed),world.net_width)
+        if periodic:return risk
+        sensor_stamps[v]=raw.timestamp_ns
         old_edge,sensor_armed[v]=event_edge(sensor_armed[v],risk)
         radius=(world.net_width/2 if risk["boundary"]=="lateral" else 2.)-BODY_RADIUS-CLEARANCE
         new_edge,sensor_twosided_armed[v]=event_edge(sensor_twosided_armed[v],risk,radius=radius)
@@ -480,11 +547,12 @@ def flight(world, pool, period_ms, scenario, policy, directory, duration, placem
             "received_s":record["received_s"],"risk":risk,"edge":edge,
             "one_sided_edge":old_edge,"two_sided_edge":new_edge,
             "one_sided_margin":projected_margin(risk),"two_sided_margin":projected_margin(risk,radius),
-            "deadline_s":captured+goal,"applied":policy in ("event_online","event_twosided","adaptive_twosided") and edge,
+            "deadline_s":captured+goal,"applied":not period_drop and policy in ("event_online","event_twosided","adaptive_twosided") and edge,
             "detection_ms":1000*(time.perf_counter()-began)}
         sensor_decisions.append(decision)
-        if decision["applied"]:
+        if decision["applied"] and not period_drop:
             deferred_events[v]=decision
+        return risk
 
     def install_event(v,event):
         nonlocal admission_needed
@@ -502,7 +570,7 @@ def flight(world, pool, period_ms, scenario, policy, directory, duration, placem
         now=time.perf_counter()
         specs=pending_specs(now,pending,ready,inputs,completed,io,pipeline_costs,
             feedback=feedback if eager_completion else None,current_feedback=candidate.get('feedback_from_job'))
-        specs.extend({**r,'stage':'input'} for r in released.rows())
+        specs.extend(released_specs(now))
         if joint_adaptation:
             from .heterogeneous_deadlines import admit_group
             from .heterogeneous_load_guard import allocate,resource_loads
@@ -588,16 +656,42 @@ def flight(world, pool, period_ms, scenario, policy, directory, duration, placem
             for row in io.drain_releases():
                 v=row['vehicle']
                 if v in retired:continue
+                if period_drop:
+                    if v not in first_published_periods:
+                        actual = row['requested_period_s']
+                        first_published_periods[v] = actual
+                        if not math.isclose(actual, periods[v], rel_tol=0., abs_tol=1e-9):
+                            raise RuntimeError(f'{v} first period {actual*1000:g}ms differs from configured {periods[v]*1000:g}ms')
+                        if len(first_published_periods)==len(periods):
+                            print('FIRST RELEASE PERIODS (ms)',
+                                {v:round(p*1000,6) for v,p in first_published_periods.items()},flush=True)
+                    for old in released.expire(time.perf_counter()):
+                        release_samples.pop(old['sample_id'],None)
+                    row['physical_deadline_s']=row['deadline_s']
+                    row['deadline_s']=row['planned_release_s']+row['requested_period_s']
+                    row['nominal_deadline_s']=row['deadline_s']
+                displaced=len(released.superseded)
                 released.publish(row,row['native_release_s'])
+                if period_drop:
+                    for old in released.superseded[displaced:]:release_samples.pop(old['sample_id'],None)
                 row['release_parent_received_s']=time.perf_counter()
                 admission_needed=True;requests.append(row)
                 sequence[v]=max(sequence[v],int(row['sample_id'].rsplit(':',1)[1])+1)
                 last_released[v]=row['planned_release_s']
                 if v in plans and int(plans[v]['sample_id'].rsplit(':',1)[1])<sequence[v]:
-                    following=calendar_successor(row,sequence[v],dynamic=not is_static)
+                    basis={**row,'deadline_s':row['physical_deadline_s']} if period_drop else row
+                    following=calendar_successor(basis,sequence[v],dynamic=not is_static)
                     plans[v]=following
                     # The native timer already installed this periodic successor.
                     io.scheduled[v]=io.plan_key(following)
+                if period_drop:
+                    if row['release_parent_received_s']>=row['deadline_s']:
+                        released.cancel(v,'period_drop_before_sampling')
+                    elif v in sample_io.samples:
+                        released.cancel(v,'period_drop_sampler_busy')
+                    else:
+                        row['input_source']='period_release_rpc'
+                        sample_io.sample(row)
             return
         for v in world.vehicles:
             while v in plans and plans[v]['planned_release_s']<=now:
@@ -616,6 +710,10 @@ def flight(world, pool, period_ms, scenario, policy, directory, duration, placem
                     plans[v]=calendar_successor(row,sequence[v],dynamic=not is_static)
 
     def plan_from_acknowledgements(only=None):
+        if joint_rates_exclusive:
+            return False
+        if period_drop and len(first_published_periods)<len(periods):
+            return False
         # The helper acknowledges actuation BEFORE its post-command state RPC.
         # Use the newest available independent observation; retain its true age.
         sources=acknowledged_sources(pending,feedback) if eager_completion else pending
@@ -640,10 +738,12 @@ def flight(world, pool, period_ms, scenario, policy, directory, duration, placem
             states[v]=raw
             row['next_plan_created']=True
             row['next_plan_started_s']=time.perf_counter()
-            if observation['t']<duration:
+            if observation['t']<duration and (not period_drop or v in plans):
                 candidate=make_plan(v,raw,observation,row['mapped_control'],row['rpc_return_s'],row)
                 candidate['feedback_from_job']=row['sample_id']
                 if calendar:
+                    if period_drop:
+                        candidate['planned_release_s']=plans[v]['planned_release_s']
                     candidate=replan_unreleased(candidate,last_released[v],sequence[v],time.perf_counter(),reserve)
                 if global_admission:
                     fallback=(retained_unreleased(candidate,plans.get(v,row),last_released[v],sequence[v],time.perf_counter(),reserve)
@@ -664,7 +764,7 @@ def flight(world, pool, period_ms, scenario, policy, directory, duration, placem
 
     def planning_jobs():
         result={}
-        if is_static:return result
+        if is_static or joint_rates_exclusive:return result
         sources=acknowledged_sources(pending,feedback) if eager_completion else pending
         for v,row in sources.items():
             if row.get('status')!='applied' or v in retired:continue
@@ -686,11 +786,23 @@ def flight(world, pool, period_ms, scenario, policy, directory, duration, placem
                 result[v]=planning_obligation(row)
         return result
 
+    def released_specs(now):
+        from .framework_runtime import remaining_stage_cost
+        for row in released.rows():
+            spec={**row,'stage':'input'}
+            if period_drop:
+                if row['sample_id'] in release_samples:
+                    spec['stage']='input_ready'
+                elif 'sample_submitted_s' in row:
+                    remaining,_=remaining_stage_cost(pipeline_costs,'sample_io_s',now-row['sample_submitted_s'])
+                    spec.update(stage='sampling',sample_io_remaining_s=remaining)
+            yield spec
+
     def shadow_pending(now):
         from .heterogeneous_deadlines import pending_specs
         specs=pending_specs(now,pending,ready,inputs,completed,io,pipeline_costs,
             feedback=feedback if eager_completion else None)
-        return specs+[{**r,'stage':'input'} for r in released.rows()]
+        return specs+list(released_specs(now))
 
     try:
         if server.provenance!=pool.provenance():
@@ -702,7 +814,10 @@ def flight(world, pool, period_ms, scenario, policy, directory, duration, placem
             from .framework_native_io import NativeCommandIO
             if not calendar or release_tape is not None:raise ValueError('native runtime requires a live committed calendar')
             io_class=NativeCommandIO;io_vehicles=world.vehicles
-        io = io_class(io_vehicles,world.calibration,pipeline_costs["actuation_s"] if enforce else .003,io_cpus,allow_late=not enforce)
+        io = io_class(io_vehicles,world.calibration,pipeline_costs["actuation_s"] if enforce or period_drop else .003,
+            io_cpus,allow_late=not (enforce or period_drop))
+        if period_drop:
+            sample_io=io_class(io_vehicles,world.calibration,0.,io_cpus)
         if sensing is not None:
             sensing.prepare()
         for v in world.vehicles:
@@ -711,7 +826,7 @@ def flight(world, pool, period_ms, scenario, policy, directory, duration, placem
             encode_direct(world.windows[v],states[v],world.phases[v])
             plans[v] = make_plan(v,states[v],initial_observations[v],world.initial[v]["held_control"],0.)
             if release_tape is not None:plans[v]=taped_release(release_tape,v,0,0.)
-        if joint_adaptation:
+        if joint_adaptation and not period_drop:
             from .heterogeneous_load_guard import allocate
             allocation,rate_info=allocate(desired_periods,guard_urgencies,desired_models,guard_costs,pipeline_costs=pipeline_costs,
                 max_periods={v:periods[v] if desired_periods[v]<=MIN_PERIOD else .060 for v in plans})
@@ -719,13 +834,13 @@ def flight(world, pool, period_ms, scenario, policy, directory, duration, placem
                 row.update(requested_period_s=allocation[v],nominal_deadline_s=row['planned_release_s']+allocation[v])
                 committed_periods[v]=allocation[v];planned_models[v]=row['model']
             admissions.append(dict(trigger='initial_sustained_demand',outside_physics=True,**rate_info))
-        if enforce or global_admission:
+        if enforce or global_admission or period_drop:
             from .heterogeneous_deadlines import admit
             proposal,info=admit(0.,plans,[],planning_profile,pipeline_costs,
-                config.get("max_inflight",len(world.vehicles)),policy=scheduler,allow_earlier=not is_static)
-            initial_taskset_forecast=proposal is not None and (not joint_adaptation or rate_info['feasible'])
+                config.get("max_inflight",len(world.vehicles)),policy=scheduler,allow_earlier=not (is_static or period_drop))
+            initial_taskset_forecast=proposal is not None and (not joint_adaptation or period_drop or rate_info['feasible'])
             admissions.append(dict(trigger="initial_taskset",outside_physics=True,**info))
-            if enforce:
+            if enforce or config.get('require_initial_forecast',False):
                 initial_taskset_admitted=initial_taskset_forecast
                 plans.clear()
                 if proposal:plans.update(proposal)
@@ -753,6 +868,7 @@ def flight(world, pool, period_ms, scenario, policy, directory, duration, placem
         if initial_taskset_admitted is not False:world.client.simPause(False)
         if sensing is not None:
             sensing.start(origin,duration if initial_taskset_admitted is not False else 0.,world.initial)
+        previous_completion=False
         with DeadlineWaiter() as timer:
             while plans or pending or released or (eager_completion and (feedback or completed)):
                 now = time.perf_counter()
@@ -762,7 +878,11 @@ def flight(world, pool, period_ms, scenario, policy, directory, duration, placem
                         inputs=list(inputs),ready=list(ready),completed=list(completed),
                         feedback={v:r.get('next_plan_created',False) for v,(_,r) in feedback.items()})
                     raise RuntimeError("bounded physical window did not complete: "+str(queues))
-                if calendar:register_due(now)
+                with frontend_span(frontend_spans,'period_sample_drain'):
+                    period_packets=sample_io.drain_samples() if period_drop else []
+                if calendar:
+                    with frontend_span(frontend_spans,'calendar_service'):
+                        register_due(now)
                 if now>=origin+duration and not (plans or pending or released or inputs or ready or completed):
                     # No control obligation remains. Feedback can only create
                     # successors outside this finite mission; it must not keep
@@ -773,6 +893,10 @@ def flight(world, pool, period_ms, scenario, policy, directory, duration, placem
                 with frontend_span(frontend_spans,"inference_drain"):
                     outputs=server.drain()
                 for action,row in outputs:
+                    if period_drop and (action is None or time.perf_counter()>=row['deadline_s']):
+                        row['status']='period_drop_after_inference'
+                        pending.pop(row['vehicle'])
+                        continue
                     if action is None:
                         if enforce:
                             pending.pop(row["vehicle"],None)
@@ -791,13 +915,52 @@ def flight(world, pool, period_ms, scenario, policy, directory, duration, placem
                 for packet,row in packets:
                     if eager_completion:release_completed_io(pending,row,time.perf_counter())
                     if row.get('status')=='applied':last_command[row['vehicle']]=max(last_command[row['vehicle']],row['rpc_return_s'])
+                    if period_drop and row.get('status')!='applied':
+                        row['status']='period_drop_native_command_guard'
+                        continue
+                    if period_drop:held_rows[row['vehicle']]=row
                     if joint_shadow is not None and row.get('status')=='applied':
                         joint_shadow.observe_ack(packet,row,plans.get(row['vehicle']))
                     if row['vehicle'] in completed:raise RuntimeError('unprocessed completion overwritten')
                     completed[row["vehicle"]]=packet,row
+                if period_drop:
+                    with frontend_span(frontend_spans,'period_sample_drain'):
+                        period_packets.extend(sample_io.drain_samples())
+                    for packet,row in period_packets:
+                        if row['status']!='released_waiting' or row['vehicle'] in retired:continue
+                        v=row['vehicle']
+                        with frontend_span(frontend_spans,'period_sample_risk',row['sample_id']):
+                            risk=consider_sensor(dict(packet=packet,row=row,received_s=row['sample_response_received_s']),periodic=True)
+                        if risk is not None:row['release_sample_risk']=risk
+                        held=held_rows.get(v)
+                        if joint_shadow is not None and held is not None and v not in io.futures:
+                            alert=None
+                            if risk is not None and risk['hdot']<0.:
+                                alert={'deadline_s':packet[2]+max(0.,risk['h'])/-risk['hdot']}
+                            joint_shadow.observe_ack(packet,held,plans.get(v),alert=alert)
+                        release_samples[row['sample_id']]=packet
+                    for row in released.expire(time.perf_counter()):
+                        release_samples.pop(row['sample_id'],None)
+                    for v,(action,row) in list(ready.items()):
+                        if time.perf_counter()>=row['deadline_s']:
+                            row['status']='period_drop_before_command'
+                            ready.pop(v)
+                            pending.pop(v)
                 if calendar:
                     if not frontend_protection:plan_from_acknowledgements()
-                    register_due(time.perf_counter())
+                    with frontend_span(frontend_spans,'calendar_service'):
+                        register_due(time.perf_counter())
+                # CPU management must get a measured service opportunity even
+                # with continuously ready inputs/deliveries. The XPU executor
+                # continues on its own core; management is not an XPU job.
+                if joint_shadow is not None and (not period_drop or len(first_published_periods)==len(periods)):
+                    with frontend_span(frontend_spans,"joint_cpu_service"):
+                        joint_shadow.tick(plans,shadow_pending,io,last_released,last_command,
+                            config.get('max_inflight',len(world.vehicles)))
+                    if getattr(joint_shadow,'apply_rates',False):
+                        for group in joint_shadow.drain_committed():
+                            for name,row in group.items():
+                                committed_periods[name]=row['requested_period_s'];planned_models[name]=row['model']
                 if enforce:
                     now=time.perf_counter()
                     for queued in released.rows():
@@ -815,6 +978,7 @@ def flight(world, pool, period_ms, scenario, policy, directory, duration, placem
                 deliverable=[v for v,(_,r) in ready.items() if time.perf_counter()>=r.get('delivery_not_before_s',0.)]
                 if deliverable:
                     v = min(deliverable,key=lambda v:order(ready[v][1]))
+                    if period_drop and trace_frontend:trace_dispatch_choice('command',v)
                     action,row = ready.pop(v)
                     if v in retired:
                         row["status"]="collision_discarded_before_command"
@@ -827,20 +991,17 @@ def flight(world, pool, period_ms, scenario, policy, directory, duration, placem
                             pending.pop(v,None)
                             deadline_stop(v,row,"remaining command budget cannot meet the unchanged deadline")
                             continue
+                    if period_drop:
+                        from .heterogeneous_deadlines import delivery_fits
+                        if not delivery_fits(time.perf_counter(),row,pipeline_costs):
+                            row['status']='period_drop_before_command'
+                            pending.pop(v)
+                            continue
                     with frontend_span(frontend_spans,"command_submit",row["sample_id"]):
                         io.send(action,row)
                     continue
-                if sensing is not None:
-                    with frontend_span(frontend_spans,"sensor_drain"):
-                        records=sensing.drain(maximum=1)
-                    for record in records:
-                        check_contact(record["row"]["vehicle"],record["packet"][0],record["packet"][1])
-                        with frontend_span(frontend_spans,"sensor_analysis",record["row"]["vehicle"]):
-                            consider_sensor(record)
-                    for v,event in list(deferred_events.items()):
-                        if v in plans and v not in pending:
-                            install_event(v,event)
-                            deferred_events.pop(v)
+                if sensing is not None and not period_drop:
+                    service_monitor()
                 now=time.perf_counter()
                 retired_pending=any(v in retired for v in pending)
                 if enforce and (plans or released) and admission_needed and not inputs and not completed and not retired_pending:
@@ -848,20 +1009,35 @@ def flight(world, pool, period_ms, scenario, policy, directory, duration, placem
                     continue
                 dispatch_plans=(released.dispatchable(pending,config.get("max_inflight",len(world.vehicles)),now) if calendar else
                     plans if not (enforce and retired_pending) and len(pending)<config.get("max_inflight",len(world.vehicles)) else {})
+                if period_drop:
+                    dispatch_plans={v:r for v,r in dispatch_plans.items()
+                        if v not in completed and r['sample_id'] in release_samples}
                 eligible_inputs={v:r for v,r in inputs.items() if not (frontend_protection
+                    and not period_drop
                     and input_blocks_command(now,r[1],pending,pipeline_costs))}
                 cleanup=({v:r for v,r in completed.items() if not frontend_protection or r[1].get('next_plan_created')
                     or not input_blocks_command(now,r[1],pending,planner_costs)} if not inputs or eligible_inputs else {})
                 if eager_completion:cleanup=dict(completed)
+                completion_deadlines=None
+                if period_drop:
+                    completion_deadlines={}
+                    for v,(_,row) in cleanup.items():
+                        queue=released.queues[v]
+                        following=queue[0] if queue else plans.get(v)
+                        completion_deadlines[v]=(following['planned_release_s']+following['requested_period_s'] if following
+                            else row['planned_release_s']+2*row['requested_period_s'])
                 kind,v,_=next_frontend_work(cleanup,eligible_inputs,dispatch_plans,now,order,frontend_order,
                     protect=frontend_protection,planning=planning_jobs() if calendar and frontend_protection else None,
-                    eager_completion=eager_completion,input_wait_limit_s=MIN_PERIOD/2 if frontend_aging else None)
+                    eager_completion=eager_completion,input_wait_limit_s=MIN_PERIOD/2 if frontend_aging else None,
+                    completion_deadlines=completion_deadlines,previous_completion=previous_completion)
+                if period_drop and trace_frontend:trace_dispatch_choice(kind,v)
                 if kind=='planning':
                     plan_from_acknowledgements(only=v)
                     register_due(time.perf_counter())
                     if v not in completed:continue
                     kind='completed'
                 if kind=="completed":
+                    previous_completion=True
                     if calendar and frontend_protection and not eager_completion:plan_from_acknowledgements(only=v)
                     packet,row=completed.pop(v)
                     row["completion_frontend_start_s"]=time.perf_counter()
@@ -889,13 +1065,24 @@ def flight(world, pool, period_ms, scenario, policy, directory, duration, placem
                     if observation["t"]<duration and not calendar:
                         with frontend_span(frontend_spans,"next_plan",row["sample_id"]):
                             plans[v]=make_plan(v,raw,observation,row["mapped_control"],row["rpc_return_s"],row)
-                    if eager_completion and not is_static and not row.get('next_plan_created'):
+                    if eager_completion and not is_static and not joint_rates_exclusive and not row.get('next_plan_created'):
                         if v in feedback:feedback[v][1]['planning_superseded_by']=row['sample_id']
                         feedback[v]=packet,row
                     row["completion_frontend_done_s"]=time.perf_counter()
                     continue
-                if kind=="input":
-                    packet,row = inputs.pop(v)
+                if kind=="input" or (period_drop and kind=="release"):
+                    previous_completion=False
+                    if kind=="release":
+                        # A periodic release already has its state. Do not
+                        # return to arbitration between dispatch and encoding.
+                        row=released.take(v,time.perf_counter())
+                        packet=release_samples.pop(row['sample_id'])
+                        if row['dispatch_s']>=row['deadline_s']:
+                            row.update(status='period_drop_before_inference',discarded_s=row['dispatch_s'])
+                            continue
+                        pending[v]=row
+                    else:
+                        packet,row=inputs.pop(v)
                     raw,hit,sampled = packet
                     check_contact(v,raw,hit)
                     if v in retired:
@@ -914,10 +1101,18 @@ def flight(world, pool, period_ms, scenario, policy, directory, duration, placem
                         pending.pop(v)
                         row["status"] = "after_window_not_computed"
                         continue
+                    if period_drop and time.perf_counter()>=row['deadline_s']:
+                        row['status']='period_drop_before_inference'
+                        pending.pop(v)
+                        continue
                     feature_start = time.perf_counter()
                     with frontend_span(frontend_spans,"input_encode",row["sample_id"]):
                         feature = encode_direct(world.windows[v],raw,world.phases[v]+observation["t"])
                     row.update(sample_s=sampled,feature_start_s=feature_start,feature_done_s=time.perf_counter(),status="submitted")
+                    if period_drop and row['feature_done_s']>=row['deadline_s']:
+                        row['status']='period_drop_before_inference'
+                        pending.pop(v)
+                        continue
                     with frontend_span(frontend_spans,"inference_submit",row["sample_id"]):
                         server.submit(feature,row)
                     continue
@@ -943,18 +1138,15 @@ def flight(world, pool, period_ms, scenario, policy, directory, duration, placem
                         with frontend_span(frontend_spans,"sample_submit",row["sample_id"]):
                             io.sample(row)
                     continue
-                # Advice is background work: already-ready control delivery,
-                # input preparation and releases take precedence.
-                if joint_shadow is not None:
-                    joint_shadow.tick(plans,shadow_pending,io,last_released,last_command,
-                        config.get('max_inflight',len(world.vehicles)))
-                    if getattr(joint_shadow,'apply_rates',False):
-                        for group in joint_shadow.drain_committed():
-                            for name,row in group.items():
-                                committed_periods[name]=row['requested_period_s'];planned_models[name]=row['model']
-                    now=time.perf_counter()
+                # Independent monitoring yields to ready period jobs. The
+                # release samples and command returns still check contact.
+                if period_drop and sensing is not None and service_monitor():
+                    continue
+                now=time.perf_counter()
                 if plans or pending or released or (eager_completion and (feedback or completed)):
                     wake = min([now+.100,*[r["planned_release_s"] for r in (plans if calendar else dispatch_plans).values()]])
+                    if joint_shadow is not None and (not period_drop or len(first_published_periods)==len(periods)):
+                        wake=min(wake,joint_shadow.next_service_s)
                     future_deliveries=[r['delivery_not_before_s'] for _,r in ready.values() if r.get('delivery_not_before_s',0.)>now]
                     if future_deliveries:wake=min(wake,*future_deliveries)
                     future_dispatches=[r['dispatch_not_before_s'] for r in released.rows() if r.get('dispatch_not_before_s',0.)>now]
@@ -968,6 +1160,9 @@ def flight(world, pool, period_ms, scenario, policy, directory, duration, placem
                         limits += [last_command[v]+CONTROL_CAP for v in set(plans)|set(pending) if v not in retired and now<origin+duration]
                         if limits:wake=min(wake,*limits)
                     pipes=[server.connection.connection,io.connection.connection]
+                    if period_drop:
+                        pipes.append(sample_io.connection.connection)
+                        wake=min([wake,*[r['deadline_s'] for r in released.rows()]])
                     if sensing is not None:
                         pipes.append(sensing.connection.connection)
                     with frontend_span(frontend_spans,"wait",wake):
@@ -987,7 +1182,7 @@ def flight(world, pool, period_ms, scenario, policy, directory, duration, placem
     except Exception as exc:
         error = f"{type(exc).__name__}: {exc}"
     finally:
-        for resource in (joint_shadow,sensing,io,server):
+        for resource in (joint_shadow,sensing,sample_io,io,server):
             if resource is not None:
                 try:
                     resource.close()
@@ -1024,10 +1219,36 @@ def flight(world, pool, period_ms, scenario, policy, directory, duration, placem
     cutoff=end if contact_stop else float("inf")
     def timing_cutoff(row):
         return min(cutoff,retired[row["vehicle"]]["stopped_wall_s"]) if row["vehicle"] in retired else cutoff
-    late = [r["sample_id"] for r in applied if r["deadline_s"]<r["rpc_return_s"]<=timing_cutoff(r)]
+    late = [r["sample_id"] for r in applied if r.get("physical_deadline_s",r["deadline_s"])<r["rpc_return_s"]<=timing_cutoff(r)]
     nominal_late = [r["sample_id"] for r in applied if r["nominal_deadline_s"]<r["rpc_return_s"]<=timing_cutoff(r)]
     undelivered = [r["sample_id"] for r in requests if r.get("status")!="applied" and r["deadline_s"]<=min(end,timing_cutoff(r))]
     nominal_undelivered = [r["sample_id"] for r in requests if r.get("status")!="applied" and r["nominal_deadline_s"]<=min(end,timing_cutoff(r))]
+    period_metrics = {}
+    if period_drop:
+        from collections import Counter
+        period_metrics = dict(
+            configured_initial_period_ms={v:p*1000 for v,p in periods.items()},
+            first_published_period_ms={v:p*1000 for v,p in first_published_periods.items()},
+            first_published_periods_verified=(first_published_periods.keys()==periods.keys()
+                and all(math.isclose(p,periods[v],rel_tol=0.,abs_tol=1e-9) for v,p in first_published_periods.items())),
+            jobs_released=len(requests),
+            commands_acknowledged=len(applied),
+            physical_deadline_used_for_admission=True,
+            physical_deadline_used_as_command_drop_cutoff=False,
+            dropped_by_stage=dict(Counter(r['status'] for r in requests
+                if r['status'].startswith('period_drop_') or r['status']=='superseded_before_dispatch')),
+            late_ack_ids=[r['sample_id'] for r in applied if r['rpc_return_s']>r['nominal_deadline_s']],
+            command_start_at_or_after_deadline_ids=[r['sample_id'] for r in applied
+                if r['command_send_s']>=r['nominal_deadline_s']],
+            release_to_sample_request_ms=stats_ms([r['sample_submitted_s']-r['planned_release_s']
+                for r in requests if 'sample_submitted_s' in r]),
+            sample_response_to_dispatch_ms=stats_ms([r['dispatch_s']-r['sample_response_received_s']
+                for r in requests if 'dispatch_s' in r and 'sample_response_received_s' in r]),
+            dispatch_to_frontend_ms=stats_ms([r['frontend_state_start_s']-r['dispatch_s']
+                for r in requests if 'frontend_state_start_s' in r and 'dispatch_s' in r]),
+            completed_response_by_vehicle={v:stats_ms([r['rpc_return_s']-r['planned_release_s']
+                for r in applied if r['vehicle']==v]) for v in world.vehicles},
+            response_samples_censored_by_drop=True, is_WCRT=False)
     ids = [s["sample_id"] for s in server.segments]
     seen,last,resumptions = set(),None,0
     for ident in ids:
@@ -1052,6 +1273,7 @@ def flight(world, pool, period_ms, scenario, policy, directory, duration, placem
         "release_contract":"independent_native_calendar_v2" if io_backend=='cpp' else "independent_calendar_v2" if calendar else "completion_coupled_legacy",
         "io_backend":io_backend,"dynamic_release_waits_for_ack":False if calendar else None,
         "eager_completion":eager_completion,"release_queue_policy":queue_policy,"recover_after_miss":recover_after_miss,
+        "frontend_work_policy":"period_deadline_dispatch_and_input" if period_drop else frontend_order,
         "terminal_feedback_cancelled":terminal_feedback_cancelled,
         "effective_pipeline_costs":pipeline_costs,
         "superseded_before_dispatch":len(released.superseded),
@@ -1078,12 +1300,14 @@ def flight(world, pool, period_ms, scenario, policy, directory, duration, placem
             "update_gap_ms":stats_ms(np.diff([r["rpc_return_s"] for r in applied if r["vehicle"]==v]))} for v in world.vehicles},
         "worker_profile":server.profile,"planning_profile":planning_profile,"planning_profile_frozen":frozen_profile is not None,
         "worker_placement":server.placement,"io_placement":io.placement if io else None,
-        "lookup_used":False,"late_outputs_applied_for_exploration":not enforce,"collision_causes_early_abort":stop_on_collision and collision_policy=="global",
+        "segment_dispatch_owner":"CPU","segment_execution_owner":"XPU analogue",
+        "lookup_used":False,"late_outputs_applied_for_exploration":not (enforce or period_drop),"collision_causes_early_abort":stop_on_collision and collision_policy=="global",
         "collision_retires_vehicle":stop_on_collision and collision_policy=="vehicle",
         "contact_stop":contact_stop,"mode_policy":mode_policy,
         "loop_configuration":config,"collision_policy":collision_policy,"retired_vehicles":retired,
         "active_vehicle_count_final":len(world.vehicles)-len(retired),
         "deadline_policy":deadline_policy,"deadline_failures":{v:e for v,e in retired.items() if e.get("kind")=="deadline"},
+        "period_deadline_metrics":period_metrics,
         "actual_deadline_failure_ids":[e["sample_id"] for e in retired.values() if e.get("kind")=="deadline" and e.get("actual_deadline_elapsed")],
         "deadline_contract":"state_budget_and_control_update_cap" if any(m and m.get("contract")=="relative_preview_v3" for m in policies.values()) else "nominal_deadline_intersected_with_state_budget",
         "admission_checks":len(admissions),"admission_rejections":sum(a['feasible'] is False for a in admissions),
@@ -1112,6 +1336,7 @@ def flight(world, pool, period_ms, scenario, policy, directory, duration, placem
         atomic_json(directory/"io_transport.json",{"deliveries":io.delivery_records,
             "helper_stalls":io.helper_stalls,"parent_stalls":io.connection.stalls})
     atomic_json(directory/"frontend_spans.json",frontend_spans or [])
+    atomic_json(directory/"cpu_segment_dispatches.json",server.cpu_dispatches)
     atomic_json(directory/"admissions.json",admissions)
     atomic_json(directory/"transport_stalls.json",dict(inference_parent=server.connection.stalls,
         inference_worker=server.helper_stalls,sensor_parent=sensing.connection.stalls if sensing is not None else []))

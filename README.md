@@ -9,7 +9,7 @@
 - [Agent入口](AGENTS.md)：阅读顺序与协作约定。
 - [研究分支文档索引](controller_architecture_study/docs/README.md)：实现、实验、量化与Ubuntu交接的导航。
 
-最新阶段已完成120次有效恢复采集与12次十机对照。规则式动态有零碰撞样例；新增评分器的额外收益、可靠的最低成本合格DNN选择、全程硬期限及新超网上板效果尚未成立。具体结论看[阶段结果](controller_architecture_study/docs/BOUNDARY_TAKEOVER_RESULTS_20261102.md)。
+最新用户完成CPU/XPU服务修复v2六次十机对照，程序异常已排除，期限事实刷新和CPU服务等待有改善；新联合配置仍未安装，控制收益未成立。静态10、旧动态9、新增模块9架次碰撞不能证明新建议救回。新增评分器收益、可靠的最低成本合格DNN选择、全程硬期限及新超网上板效果尚未成立。具体看[最新阶段结果](controller_architecture_study/docs/RUNTIME_SERVICE_REPAIR_RESULTS_20261102.md)。
 
 25D、12D、237D独立模型和237D超网是不同轨道；不要混用数据、归一化或部署包。大文件不随文档自动提供，协作时按看板中的产物位置核对。
 

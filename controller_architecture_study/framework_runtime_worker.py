@@ -56,7 +56,7 @@ def serve(connection, pool, policy, allow_late=False):
     return segments
 
 
-def worker(connection, policy, cpus=None, allow_late=False, resident_worker=False,model_names=None):
+def worker(connection, policy, cpus=None, allow_late=False, resident_worker=False,model_names=None,host_controlled=False):
     connection = RuntimeConnection(connection)
     try:
         placement = set_process_cpus(cpus) if cpus else {"enabled":False}
@@ -72,7 +72,10 @@ def worker(connection, policy, cpus=None, allow_late=False, resident_worker=Fals
                 pool.warm_worker()  # page/working-set preparation must precede the last warmup
                 placement["runtime_residency"] = prepared.report
             connection.send(("ready",pool.profile,pool.provenance(),placement))
-            segments = serve(connection,pool,policy,allow_late)
+            if host_controlled:
+                from .framework_cpu_xpu import serve_segments
+                segments=serve_segments(connection,pool,allow_late)
+            else:segments = serve(connection,pool,policy,allow_late)
         connection.send(("closed",segments,connection.stalls))
     except BaseException as exc:
         connection.send(("error",f"{type(exc).__name__}: {exc}"))
@@ -81,13 +84,20 @@ def worker(connection, policy, cpus=None, allow_late=False, resident_worker=Fals
 
 
 class RuntimeServer(ProcessSegmentServer):
-    def __init__(self, policy, cpus=None, *, allow_late=False, resident_worker=False,model_names=None):
+    def __init__(self, policy, cpus=None, *, allow_late=False, resident_worker=False,model_names=None,scheduler_cpus=None):
         context = multiprocessing.get_context("spawn")
         self.connection,child = context.Pipe()
         self.connection = RuntimeConnection(self.connection)
-        self.process = context.Process(target=worker,args=(child,policy,cpus,allow_late,resident_worker,model_names),daemon=True)
+        if scheduler_cpus is None:
+            self.process=context.Process(target=worker,args=(child,policy,cpus,allow_late,resident_worker,model_names),daemon=True)
+        else:
+            from .framework_cpu_xpu import coordinator_worker
+            # A non-daemon CPU coordinator may own its private XPU process.
+            self.process=context.Process(target=coordinator_worker,
+                args=(child,policy,cpus,scheduler_cpus,allow_late,resident_worker,model_names))
         self.rows,self.finished,self.segments = {},[],[]
         self.error,self.closed,self.helper_stalls = None,False,[]
+        self.cpu_dispatches=[]
         self.process.start()
         child.close()
         if not self.connection.poll(30.):
@@ -102,6 +112,7 @@ class RuntimeServer(ProcessSegmentServer):
     def _receive(self, message):
         if message[0] == "closed":
             self.helper_stalls = message[2]
+            if len(message)>3:self.cpu_dispatches=message[3]
         if message[0] != "accepted":
             return super()._receive(message)
         _,ident,model,deadline,enqueued = message

@@ -5,9 +5,33 @@ Dry-run by default; optional guarded installation. Empirical forecast, not WCET.
 
 import time
 
-from .framework_runtime import simulate_pipeline
+from .framework_runtime import release_deadline, simulate_pipeline
 from .joint_contract_recovery import prepare_recovery
 from .joint_contract_optimizer import optimize
+
+
+def refresh_epoch_metadata(plans,pending,certificates,control_tokens,io,now,*,end_s,expires_s):
+    """Rebind facts for unchanged UNPUBLISHED slots, never reconfigure work.
+
+    No resource demand changes: c, T, release and nominal deadline are fixed.
+    Each factual refresh still requires the native publication/control CAS.
+    This is not admission, a renewed historical promise, or a safety proof.
+    """
+    refreshed,history=prepare_recovery(now,plans,pending,certificates,reserve_s=0.)
+    rows=[]
+    for renewal in history['renewals']:
+        if not renewal['new_control_epoch']:continue
+        v=renewal['vehicle'];candidate=refreshed[v];source=plans[v]
+        for key in ('sample_id','model','planned_release_s','requested_period_s','nominal_deadline_s'):
+            if candidate.get(key)!=source.get(key):raise RuntimeError('epoch metadata refresh changed a configuration')
+        limit=min(expires_s,candidate['planned_release_s'])
+        if limit<=time.perf_counter():
+            rows.append(dict(vehicle=v,installed=False,reason='metadata_refresh_window_elapsed'));continue
+        guard=io.guarded_batch(io.calendar_basis({v:source}),{v:candidate},{v:control_tokens[v]},end_s,limit,commit=True)
+        rows.append(dict(vehicle=v,**guard,renewal=renewal,configuration_changed=False,
+            previous_misses=history['previous_misses'],metadata_only=True))
+        if guard['installed']:plans[v]=candidate
+    return rows
 
 
 def repair_current_rates(plans,pending,certificates,last_released,now,profile,costs,*,inflight_limit,budget_s):
@@ -51,7 +75,7 @@ def rebase_slots(recommendation,plans,pending,certificates,last_released,now,*,r
     proposed={v:dict(row) for v,row in current.items()};deferred=[];changes=[]
     for v,row in proposed.items():
         desired=recommendation['proposal'][v];period=desired['requested_period_s']
-        release=last_released[v]+period
+        release=row['planned_release_s'] if row.get('fixed_period_slot') else last_released[v]+period
         if release<=now+reserve_s or release<row.get('minimum_release_s',-float('inf')):
             deferred.append(v);continue
         if (desired['model'],period)!=(row['model'],row['requested_period_s']):changes.append(v)
@@ -78,10 +102,13 @@ def review(recommendation,plans,pending,io,profile,costs,*,end_s,inflight_limit,
         return fail('proposal_job_already_published')
     frontend=sum(costs.get(k,0.) for k in ('input_s','output_s','planner_reserve_s','handoff_s'))
     load=sum(sum(profile[r['model']]['segment_estimates_s'])/r['requested_period_s'] for r in proposal.values())
-    if load>.95+1e-10 or sum(frontend/r['requested_period_s'] for r in proposal.values())>.95+1e-10:
+    management=costs.get('management_budget_s',0.)/costs['management_period_s'] if costs.get('management_budget_s') else 0.
+    if load>.95+1e-10 or sum(frontend/r['requested_period_s'] for r in proposal.values())+management>.95+1e-10:
         return fail('fresh_periodic_load_exceeds_capacity')
     checked={v:dict(row) for v,row in proposal.items()}
     for v,row in checked.items():
+        if plans[v].get('fixed_period_slot') and row['planned_release_s']!=plans[v]['planned_release_s']:
+            return fail('committed_period_slot_moved')
         if rates_only and row['model']!=plans[v]['model']:return fail('rates_only_rejects_model_change')
         # Subtracting two absolute clocks can represent a legal 20ms interval
         # a few picoseconds below .020. Normalize before native installation.
@@ -99,7 +126,7 @@ def review(recommendation,plans,pending,io,profile,costs,*,end_s,inflight_limit,
     if not feasible:return fail('fresh_pipeline_infeasible')
     for row in [*checked.values(),*pending]:
         if 'command_completed_s' in row or row['sample_id'] in missed:continue
-        deadline=min(row['deadline_s'],row['planned_release_s']+row.get('input_age_limit_s',float('inf')))
+        deadline=release_deadline(row,row['planned_release_s'])
         if finish.get(row['sample_id'],float('inf'))+costs.get('completion_guard_s',0.)>deadline+1e-10:return fail('fresh_completion_exceeds_deadline')
     guard=io.guarded_batch(recommendation['native_basis'],checked,recommendation['control_tokens'],end_s,
         min(began+budget_s,min(r['planned_release_s'] for r in checked.values())),commit=commit)

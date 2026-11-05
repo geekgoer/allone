@@ -35,6 +35,13 @@ def encode(message):
         return frame(b"D",{k:row[k] for k in (*CONTEXT,*TIMES) if k in row},data)
     if kind == "stop":
         return b"X"
+    if kind == "segment_run":
+        return frame(b"R",message[1])
+    if kind == "segment_result":
+        _,event,action,row,done=message
+        data=b"" if action is None else np.asarray(action,dtype="<f8").tobytes()
+        if data and len(data)!=32:raise ValueError("one 4D physical executor output required")
+        return frame(b"G",dict(event=event,row={k:row[k] for k in (*CONTEXT,*TIMES) if k in row},done=done),data)
     return b"P"+pickle.dumps(message,protocol=pickle.HIGHEST_PROTOCOL)
 
 
@@ -44,13 +51,20 @@ def decode(data):
         return ("stop",)
     if kind == b"P":
         return pickle.loads(data[1:])
-    if kind not in (b"S",b"A",b"D") or len(data)<5:
+    if kind not in (b"S",b"A",b"D",b"R",b"G") or len(data)<5:
         raise ValueError("invalid executor message")
     size = struct.unpack_from("<I",data,1)[0]
     if size>len(data)-5:
         raise ValueError("truncated executor metadata")
     metadata = json.loads(data[5:5+size])
     payload = data[5+size:]
+    if kind == b"R":
+        if payload or not isinstance(metadata,str):raise ValueError("invalid segment command")
+        return ("segment_run",metadata)
+    if kind == b"G":
+        if len(payload) not in (0,32):raise ValueError("invalid segment result")
+        return ("segment_result",metadata['event'],
+            np.frombuffer(payload,dtype="<f8").copy() if payload else None,metadata['row'],metadata['done'])
     if kind == b"A":
         if payload or len(metadata)!=4:
             raise ValueError("invalid executor acknowledgement")

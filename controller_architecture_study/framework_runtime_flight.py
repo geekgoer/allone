@@ -70,7 +70,8 @@ def fly(world, pool, configuration, scenario, policy, directory, *, mode_map=Non
     directory.mkdir(parents=True,exist_ok=False)
     costs = dict(DEFAULT_COSTS if costs is None else costs)
     states = world.initialize(scenario,directory)
-    server = RuntimeServer("static" if policy == "static" else "edf",(cpu_layout or {}).get("inference_cpus"))
+    server = RuntimeServer("static" if policy == "static" else "edf",(cpu_layout or {}).get("inference_cpus"),
+        scheduler_cpus=(cpu_layout or {}).get('frontend_cpus'))
     if server.provenance != pool.provenance():
         server.close()
         raise ValueError("runtime worker artifact identity mismatch")

@@ -2,6 +2,7 @@ from copy import deepcopy
 from unittest.mock import patch
 
 from controller_architecture_study.joint_contract_optimizer import optimize
+from controller_architecture_study.joint_contract_shadow import decide_snapshot
 from controller_architecture_study.joint_contract_recovery import prepare_recovery
 
 
@@ -106,3 +107,78 @@ def test_late_new_control_does_not_erase_the_prior_hold_violation():
     proposal,info=prepare_recovery(.120,future,[],certs)
     assert proposal['v']['deadline_s']==.190 and info['previous_misses'][0]['deadline_s']==.110
     assert not info['renewals'][0]['previous_obligation_fulfilled']
+
+
+def test_new_ack_rebinds_future_while_queued_compute_keeps_original_deadlines():
+    future={'v':{**row('v',.110),'planned_release_s':.160,'obligation_actuation_s':.080}}
+    certs={'v':dict(available=True,sample_s=.119,actuation_s=.105,deadline_s=.190)}
+    for stage in ('input','sampling','input_ready','compute','output'):
+        pending=[{**row('v',.110),'sample_id':'v:0','stage':stage,'nominal_deadline_s':.115}]
+        frozen=deepcopy((future,pending))
+        proposal,info=prepare_recovery(.120,future,pending,certs)
+        assert proposal['v']['deadline_s']==.190 and not info['deferred']
+        assert info['renewals'][0]['outstanding_work_still_charged']==['v:0']
+        assert info['previous_obligations'][0]['status']=='ended_by_new_command_ack_before_deadline'
+        assert (future,pending)==frozen  # Published work and nominal misses are immutable.
+
+
+def test_inflight_or_unknown_command_and_older_epoch_never_rebind_future():
+    future={'v':{**row('v',.110),'planned_release_s':.160,'obligation_actuation_s':.080}}
+    good=dict(available=True,sample_s=.119,actuation_s=.105,deadline_s=.190)
+    for stage in ('io','command','unknown'):
+        result,info=prepare_recovery(.120,future,[{**row('v'),'stage':stage}],{'v':good})
+        assert result['v']['deadline_s']==.110 and info['deferred']
+    result,info=prepare_recovery(.120,future,[],{'v':{**good,'actuation_s':.070}})
+    assert result['v']['deadline_s']==.110
+    assert info['deferred'][0]['reason']=='certificate_control_epoch_older_than_plan'
+
+
+def test_rebound_future_forecast_still_pays_for_expired_published_compute():
+    future={'v':{**row('v',.950),'planned_release_s':1.040,'previous_release_s':.990,
+        'minimum_release_s':1.010,'obligation_actuation_s':.800}}
+    pending=[{**row('v',.950),'sample_id':'v:0','stage':'compute','planned_release_s':.900}]
+    certs={'v':dict(available=True,sample_s=.999,actuation_s=.970,deadline_s=1.080)}
+    frozen=deepcopy((future,pending))
+    with patch('time.perf_counter',return_value=1.):
+        proposal,info,*_=decide_snapshot(dict(future=future,pending=pending,inflight_limit=1),certs,1.,
+            {'m':dict(segment_estimates_s=[.002])},dict(input_s=.0001,output_s=.0001),{},
+            recover_after_miss=True,feasibility_only=True)
+    assert proposal is not None and info['accepted'] and not info['strict_timing_passed']
+    assert info['missed_work_still_charged']==['v:0']
+    assert 'v:0' in info['checks'][0]['finish']
+    assert info['recovery']['previous_misses'] and (future,pending)==frozen
+    slow=[{**pending[0],'model':'slow'}]
+    with patch('time.perf_counter',return_value=1.):
+        blocked,info,*_=decide_snapshot(dict(future=future,pending=slow,inflight_limit=1),certs,1.,
+            {'m':dict(segment_estimates_s=[.002]),'slow':dict(segment_estimates_s=[.060])},
+            dict(input_s=.0001,output_s=.0001),{},recover_after_miss=True,feasibility_only=True)
+    assert blocked is None and not info['accepted']  # Epoch renewal cannot erase shared-resource blocking.
+
+
+def test_same_control_expiry_with_pending_work_is_not_excused_as_new_epoch():
+    future={'v':{**row('v',.110),'planned_release_s':.160,'obligation_actuation_s':.080}}
+    certs={'v':dict(available=True,sample_s=.119,actuation_s=.080,deadline_s=.190)}
+    result,info=prepare_recovery(.120,future,[{**row('v'),'stage':'compute'}],certs)
+    assert result['v']['deadline_s']==.110 and info['previous_misses'] and info['deferred']
+
+
+def test_ack_metadata_rebinds_inside_release_fence_without_changing_release():
+    # Archived Drone4:8: ACK439.8ms fulfilled the old447.9ms hold, yet
+    # planning at454.5ms used to reject because release458.3ms was near.
+    future={'v':{**row('v',.4479),'planned_release_s':.4583,'obligation_actuation_s':.3679}}
+    certs={'v':dict(available=True,sample_s=.439802,actuation_s=.4398,deadline_s=.5198)}
+    pending=[{**row('v',.4479),'sample_id':'v:7','stage':'compute'}]
+    frozen=deepcopy((future,pending))
+    proposal,info=prepare_recovery(.4545,future,pending,certs)
+    assert proposal['v']['deadline_s']==.5198 and not info['previous_misses']
+    assert info['renewals'][0]['metadata_only_inside_planning_fence']
+    assert proposal['v']['planned_release_s']==.4583
+    assert (future,pending)==frozen
+
+
+def test_ack_cannot_rebind_a_due_or_published_job_even_when_old_hold_fulfilled():
+    future={'v':{**row('v',.110),'planned_release_s':.120,'obligation_actuation_s':.080}}
+    certs={'v':dict(available=True,sample_s=.119,actuation_s=.105,deadline_s=.190)}
+    for changed in ({},{'planned_release_s':.160,'stage':'compute'}):
+        result,info=prepare_recovery(.120,{'v':{**future['v'],**changed}},[],certs)
+        assert result['v']['deadline_s']==.110 and info['deferred']

@@ -7,7 +7,17 @@
 1. [整体Framework](../../docs/FRAMEWORK.md)：研究问题、时间定义、模块边界与尚未验证的假设。
 2. [协作进度/任务认领](../../docs/COLLABORATION_STATUS.md)：已完成、当前问题、未来任务和产物位置。
 3. [易懂实现说明](FRAMEWORK_IMPLEMENTATION_EXPLAINED_20261101.md)：实际控制如何发布、采样、计算、选择和提交。
-4. [最新阶段结果](BOUNDARY_TAKEOVER_RESULTS_20261102.md)：120次恢复采集与12次十机对照；新评分器收益尚未成立。
+4. [最新阶段结果](EPOCH_BOUNDARY_RESULTS_20261102.md)：期限修复、六次十机对照与64次补采；新评分器收益尚未成立。[前一阶段](BOUNDARY_TAKEOVER_RESULTS_20261102.md)保留历史结果。
+
+当前用户已运行[期限归属修复与64次边界补采](EPOCH_FIX_AND_BOUNDARY_RUNBOOK_20261102.md)，详见最新结果；该操作说明保留原设计与启动命令，不把运行目标当作已取得的效果。
+
+针对“为何动态没有在危险前生效、开销多高、哪些场景可能胜出”，见[建议拒绝与动态优势诊断](DYNAMIC_ADVANTAGE_AND_ADMISSION_DIAGNOSIS_20261102.md)：只读分析和实验建议，未修改控制机制。
+
+后续[CPU/XPU分工与建议服务修复](CPU_XPU_SERVICE_REPAIR_20261102.md)已完成代码和135项离线检查，真实试飞待用户执行；入口为`run_runtime_service_repair.ps1`，不重复补采。
+
+该入口v1字典异常已修复并通过137项相关检查；用户已完整执行v2。当前最新实测见[CPU服务修复v2结果](RUNTIME_SERVICE_REPAIR_RESULTS_20261102.md)：事实刷新和服务等待改善，新联合建议仍0安装，不是已验证控制收益。
+
+用户希望将在线候选评分改为直接状态反馈决策；交接见[直接资源分配研究与实施计划](STATE_FEEDBACK_ALLOCATION_PLAN_20261103.md)。这是2026-11-03的待实施计划，包含完整开销口径、过渡义务、PS/PL边界及经典方法对照，不代表当前代码已经替换。
 
 原始用户framework逐字快照位于[reference](../../docs/reference/Framework_latest.original.md)，只作为设计来源；其后的讨论及当前实现差异在稳定入口说明。
 

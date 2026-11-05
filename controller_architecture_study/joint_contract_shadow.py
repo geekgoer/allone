@@ -18,7 +18,9 @@ from .decision_dataset import atomic_json
 from .joint_contract_optimizer import optimize
 from .joint_contract_probe import load_priors
 from .joint_contract_recovery import prepare_recovery
-from .joint_commit_guard import review as review_commit,rebase_slots,repair_current_rates
+from .joint_commit_guard import review as review_commit,rebase_slots,repair_current_rates,refresh_epoch_metadata
+from .heterogeneous_deadlines import admit
+from .heterogeneous_load_guard import project_frequencies
 
 
 def tag_rate_change(row,previous,generation):
@@ -89,10 +91,11 @@ class Trigger:
 
 
 FIELDS = ('vehicle','sample_id','model','priority','planned_release_s','deadline_s',
-    'minimum_release_s','requested_period_s','previous_release_s','serial_vehicle','input_age_limit_s',
+    'minimum_release_s','requested_period_s','nominal_deadline_s','previous_release_s','serial_vehicle','input_age_limit_s',
     'stage','sample_io_remaining_s','sample_response_received_s','ingress_remaining_s',
     'io_remaining_s','command_remaining_s','command_completed_s','analysis_remaining_s',
-    'nonblocking_maintenance','next_plan_created','obligation_actuation_s','obligation_sample_s')
+    'nonblocking_maintenance','next_plan_created','obligation_actuation_s','obligation_sample_s',
+    'obligation_version','deadline_source','fixed_period_slot')
 
 
 def compact(row):
@@ -154,10 +157,43 @@ def freeze_near_releases(snapshot, now, profile, costs, reserve=.006):
     return future,snapshot['pending']+fixed,.95-locked_load,fixed
 
 
+def direct_period_proposal(now, future, pending, caps, profile, costs, inflight_limit):
+    """Produce one fixed-model allocation and forecast its pending work."""
+    names = list(future)
+    if not names:
+        return None, dict(accepted=False, reason='no_movable_period_slots')
+    backend = np.array([sum(profile[future[v]['model']]['segment_estimates_s']) for v in names])
+    frontend = sum(costs.get(k, 0.) for k in ('input_s','output_s','planner_reserve_s','handoff_s'))
+    path = sum(costs.get(k, 0.) for k in ('sample_io_s','input_s','ingress_s','egress_s',
+        'handoff_s','command_s','completion_guard_s','period_release_dispatch_s'))
+    minimum_period = np.maximum(.020, backend+path)
+    slack = np.array([future[v]['deadline_s']-future[v]['planned_release_s'] for v in names])-minimum_period
+    urgency = np.clip(1-slack/.060, 0, 1)
+    management = costs.get('management_budget_s', 0.)/costs.get('management_period_s', 1.)
+    frequency = project_frequencies(1/(.080-.060*urgency), 1+urgency,
+        np.full(len(names), 1/.080), 1/minimum_period, [backend, np.full(len(names),frontend)],
+        [caps[0],caps[1]-management])
+    if frequency is None:
+        return None, dict(accepted=False, reason='direct_period_resource_infeasible')
+    proposal = {}
+    for v,f in zip(names,frequency):
+        row = future[v]
+        period = 1/float(f)
+        proposal[v] = {**row,'requested_period_s':period,
+            'nominal_deadline_s':row['planned_release_s']+period}
+    # Known overdue jobs are still charged by the forecast if they are in flight.
+    missed = {r['sample_id'] for r in pending if r['deadline_s']<=now and 'command_completed_s' not in r}
+    chosen, info = admit(now,proposal,pending,profile,costs,inflight_limit,allow_earlier=False,
+        missed_deadline_ids=missed)
+    return chosen, dict(accepted=chosen is not None, reason='direct_period_forecast_passed' if chosen else
+        'direct_period_forecast_infeasible', forecast=info, historical_misses=sorted(missed))
+
+
 def decide_snapshot(snapshot, certificates, now, profile, costs, priors, *, recover_after_miss=False,
                     feasibility_only=False, restore_without_J=False, effect=None):
     """Identical finite decision path for archived snapshots and live shadow."""
     began=time.perf_counter();future={v:dict(r) for v,r in snapshot['future'].items()}
+    if 'management_next_s' in snapshot:costs={**costs,'management_next_s':snapshot['management_next_s']}
     # Optional live review needs 3ms plus a 1ms return/dispatch allowance,
     # beyond the bounded 6ms planner. This time is charged, never hidden in R.
     ready_s=now+.006+(.004 if effect is not None else .001)
@@ -169,6 +205,16 @@ def decide_snapshot(snapshot, certificates, now, profile, costs, priors, *, reco
             if cert.get('available'):future[v]['deadline_s']=min(future[v]['deadline_s'],cert['deadline_s'])
     movable,pending,caps,fixed=freeze_near_releases({**snapshot,'future':future},now,profile,costs,
         reserve=ready_s-now-.001)
+    if any(r.get('fixed_period_slot') for r in future.values()):
+        proposal,report=direct_period_proposal(now,movable,pending,caps,profile,costs,snapshot['inflight_limit'])
+        elapsed=time.perf_counter()-began
+        if elapsed>=.006:
+            proposal=None
+            report.update(accepted=False,reason='direct_period_planning_budget_exhausted')
+        report.update(recovery=recovery,decision_total_ms=1000*elapsed,quality_ranked=False,
+            selection_objective='state_slack_frequency_projection',quality_qualified=False,
+            all_loop_future_contracts_covered=not recovery['deferred'])
+        return proposal,report,movable,caps,fixed
     effect_used=effect is not None and not feasibility_only
     if effect_used:
         options=effect_options_for({**snapshot,'future':movable},profile,costs,ready_s,*effect)
@@ -248,7 +294,8 @@ def worker(memory, length, generation, lock, changed, stop, ready, error, profil
                     barriers[v]={'available':True,**analysis,**timing,
                         'sample_s':state['sample_s'],'actuation_s':state['actuation_s']}
                 effect_features={}
-                if ranker:
+                fixed_slots=any(r.get('fixed_period_slot') for r in future.values())
+                if ranker and not fixed_slots:
                     for v,s in snapshot['states'].items():
                         if s['held_pair_current']:
                             elapsed=geometry[v]['reference']['phase']+s['elapsed_s']
@@ -271,7 +318,7 @@ def worker(memory, length, generation, lock, changed, stop, ready, error, profil
                 if reply is not None and proposal and report.get('all_loop_future_contracts_covered'):
                     memory_out,length_out,generation_out,lock_out=reply
                     model_advantage={}
-                    if ranker:
+                    if ranker and not fixed_slots:
                         finish=next(c['finish'] for c in report['checks'] if c['passed'])
                         for v,r in proposal.items():
                             old_model=original_future[v]['model'];delay=finish[r['sample_id']]-snapshot['states'][v]['sample_s']
@@ -341,9 +388,14 @@ class JointDecisionShadow:
         self.recovery_enabled=recover_after_miss;self.ack_updates=0
         self.states={};self.note_ms=[];self.capture_ms=[];self.skips=Counter();self.offers=0;self.notes=0
         self.last_attempt=-float('inf');self.started=False;self.closed=False
+        self.service_period_s=.010;self.service_budget_s=.003
+        if self.apply_rates:
+            self.costs={**costs,'management_period_s':self.service_period_s,'management_budget_s':self.service_budget_s}
+        self.next_service_s=-float('inf');self.service_rows=[]
+        self.refresh_rows=[]
         self.path=self.directory/'decisions.jsonl'
         self.process=ctx.Process(target=worker,args=(self.memory,self.length,self.generation,self.lock,self.changed,
-            self.stop,self.ready,self.error,profile,costs,str(priors_path),cpu,str(self.path),recover_after_miss,geometry,
+            self.stop,self.ready,self.error,profile,self.costs,str(priors_path),cpu,str(self.path),recover_after_miss,geometry,
             str(effect_path) if effect_path else None,self.reply),daemon=True)
         self.process.start()
         if not self.ready.wait(30.) or self.error.is_set():
@@ -373,16 +425,16 @@ class JointDecisionShadow:
         self.trigger.notice(v,begin,slack)
         self.note_ms.append(1000*(time.perf_counter()-begin))
 
-    def observe_ack(self, packet, row, plan):
+    def observe_ack(self, packet, row, plan, *, alert=None):
         """Record the paired post-command RPC now, not after legacy planning."""
         if not self.started or packet is None or plan is None:return
         raw,_,sampled=packet
         if sampled<row['rpc_return_s']:return
         self.ack_updates+=1
         self.note(row['vehicle'],raw,{'sample_s':sampled},row['mapped_control'],row['rpc_return_s'],
-            None,{**plan,'control_ack_token':row.get('control_ack_token')})
+            alert,{**plan,'control_ack_token':row.get('control_ack_token')})
 
-    def review_latest(self,plans,pending_builder,io,inflight_limit,last_released,last_command):
+    def review_latest(self,plans,pending_builder,io,inflight_limit,last_released,last_command,*,budget_s=.003):
         if self.reply is None:return
         memory,length,generation,lock=self.reply
         if generation.value==self.reply_seen or not lock.acquire(False):return
@@ -446,21 +498,21 @@ class JointDecisionShadow:
         if self.apply_rates:
             for v,row in recommendation['proposal'].items():
                 tag_rate_change(row,plans[v],self.reply_seen)
-        remaining=.003-(time.perf_counter()-began)
+        remaining=budget_s-(time.perf_counter()-began)
         if remaining<=0.:
             info=dict(passed=False,installed=False,reason='fresh_context_exhausted_review_budget')
         else:
             info=review_commit(recommendation,plans,pending,io,self.profile,self.costs,end_s=self.end_s,
                 inflight_limit=inflight_limit,budget_s=remaining,commit=self.apply_rates,rates_only=self.apply_rates)
-        remaining=.003-(time.perf_counter()-began)
-        if self.fresh_review and not info['passed'] and info['reason'] in (
+        remaining=budget_s-(time.perf_counter()-began)
+        if self.fresh_review and not any(r.get('fixed_period_slot') for r in plans.values()) and not info['passed'] and info['reason'] in (
                 'fresh_pipeline_infeasible','insufficient_review_or_release_time','fresh_periodic_load_exceeds_capacity') and remaining>.001:
             basis=io.calendar_basis(plans)
             now=time.perf_counter()
             candidate,repair=repair_current_rates(plans,pending,recommendation['certificates'],last_released,now,
                 self.profile,self.costs,inflight_limit=inflight_limit,budget_s=remaining-.0005)
             rebase_info['fresh_rate_repair']=repair
-            remaining=.003-(time.perf_counter()-began)
+            remaining=budget_s-(time.perf_counter()-began)
             if candidate and remaining>0.:
                 if self.apply_rates:
                     for v,row in candidate.items():
@@ -488,7 +540,66 @@ class JointDecisionShadow:
         return updates
 
     def tick(self, plans, pending_builder, io, last_released, last_command, inflight_limit):
-        self.review_latest(plans,pending_builder,io,inflight_limit,last_released,last_command)
+        """One budgeted CPU management operation, also under foreground load.
+
+        Called near the TOP of every frontend iteration, never idle-only.
+        A Python/Windows operation cannot be forcibly preempted at its budget;
+        overruns and missed service opportunities are measured, not hidden.
+        """
+        now=time.perf_counter()
+        if not self.started or now<self.next_service_s:return
+        due=self.next_service_s if np.isfinite(self.next_service_s) else now
+        self.next_service_s=now+self.service_period_s
+        began=now;operation='idle'
+        try:
+            if self.apply_rates:
+                # Refresh at most TWO changed hold epochs, independently of
+                # whether the last optimization succeeded. This prevents an
+                # old fulfilled hold from poisoning all later optimization.
+                from .held_control_safety import safe_deadline
+                candidates=[v for v,r in plans.items() if v in self.states
+                    and self.states[v].get('control_token') is not None
+                    and self.states[v]['actuation_s']==last_command[v]
+                    and self.states[v]['actuation_s']>r.get('obligation_actuation_s',float('inf'))
+                    and self.states[v]['observation']['sample_s']>=self.states[v]['actuation_s']
+                    and r['planned_release_s']>now]
+                candidates=sorted(candidates,key=lambda v:plans[v]['deadline_s'])[:2]
+                if candidates:
+                    operation='epoch_refresh'
+                    batch=self.review_batch.analyze({v:self.states[v]['raw'] for v in candidates},
+                        {v:self.states[v]['held_control'] for v in candidates})
+                    current=time.perf_counter();certs={}
+                    for v in candidates:
+                        s=self.states[v]
+                        certs[v]={'available':True,**batch[v],**safe_deadline(s['observation']['sample_s'],current,
+                            s['actuation_s'],batch[v],.080),'sample_s':s['observation']['sample_s'],'actuation_s':s['actuation_s']}
+                    if current-began<self.service_budget_s:
+                        subset={v:plans[v] for v in candidates}
+                        refreshed=refresh_epoch_metadata(subset,
+                            [compact(r) for r in pending_builder(current)],certs,
+                            {v:self.states[v]['control_token'] for v in candidates},io,current,
+                            end_s=self.end_s,expires_s=began+self.service_budget_s)
+                        self.refresh_rows.extend(refreshed)
+                        for record in refreshed:
+                            if record.get('installed'):
+                                v=record['vehicle'];plans[v]=subset[v]
+            remaining=self.service_budget_s-(time.perf_counter()-began)
+            if remaining<.001:return
+            if self.reply is not None and self.reply[2].value!=self.reply_seen:
+                operation='review'
+                self.review_latest(plans,pending_builder,io,inflight_limit,last_released,last_command,
+                    budget_s=remaining)
+            elif self.trigger.due(now):
+                operation='capture'
+                self.capture(plans,pending_builder,io,last_released,last_command,inflight_limit,
+                    budget_s=remaining)
+        finally:
+            end=time.perf_counter()
+            self.service_rows.append(dict(start_s=began,end_s=end,operation=operation,
+                lateness_ms=1000*max(0.,began-due),budget_ms=1000*self.service_budget_s,
+                budget_exceeded=end-began>self.service_budget_s))
+
+    def capture(self, plans, pending_builder, io, last_released, last_command, inflight_limit,*,budget_s=.003):
         now=time.perf_counter()
         if not self.trigger.due(now) or now-self.last_attempt<.001:return
         self.last_attempt=now;begin=now
@@ -517,6 +628,7 @@ class JointDecisionShadow:
                         elapsed_s=(raw.timestamp_ns-self.initial[v]['sim_ns'])/1e9)
             captured=time.perf_counter()
             snap=dict(captured_s=captured,future=future,rates_only=self.apply_rates,
+                management_next_s=self.next_service_s,
                 pending=specs,states=states,inflight_limit=inflight_limit,
                 trigger=dict(reason='response_margin_edge' if self.trigger.urgent else 'merged_updates',
                     dirty=sorted(self.trigger.dirty),urgent=sorted(self.trigger.urgent),notice_s=self.trigger.first_notice))
@@ -526,6 +638,8 @@ class JointDecisionShadow:
             # Single Python owner freezes frontend rows; native mutex confirms
             # no calendar publication was omitted during the copy/encoding.
             if not io.calendar_matches(plans):self.skips['native_publication_race']+=1;return
+            if time.perf_counter()-begin>=budget_s:
+                self.skips['capture_budget_exhausted']+=1;return
             if not self.lock.acquire(False):self.skips['mailbox_busy']+=1;return
             try:
                 ctypes.memmove(ctypes.addressof(self.memory),payload,len(payload))
@@ -560,6 +674,13 @@ class JointDecisionShadow:
             trigger_reasons=dict(Counter(r['trigger']['reason'] for r in rows)),skips=dict(self.skips),
             note_ms=stats(self.note_ms),capture_ms=stats(self.capture_ms),
             frontend_total_ms=sum(self.note_ms)+sum(self.capture_ms)+sum(self.review_ms),
+            cpu_service_period_ms=1000*self.service_period_s,cpu_service_budget_ms=1000*self.service_budget_s,
+            cpu_service_location='before foreground work selection; not idle-only',
+            cpu_service_ms=stats([1000*(r['end_s']-r['start_s']) for r in self.service_rows]),
+            cpu_service_lateness_ms=stats([r['lateness_ms'] for r in self.service_rows]),
+            cpu_service_budget_overruns=sum(r['budget_exceeded'] for r in self.service_rows),
+            cpu_service_is_hard_bound=False,
+            epoch_metadata_refreshes=sum(r.get('installed',False) for r in self.refresh_rows),
             worker_total_ms=stats([r['total_worker_ms'] for r in rows]),
             worker_cpu_total_ms=totals.get('cpu_total_ms'),worker_iteration_ms=stats(totals.get('iteration_ms',[])),
             worker_cost_includes_logging=bool(totals),
@@ -577,6 +698,8 @@ class JointDecisionShadow:
             scope=('guarded rate assistance to legacy control; no recovery/safety qualification' if self.apply_rates else
                 'real-time shadow; optional fresh whole-group forecast and native atomic dry-run; NO takeover/qualification'))
         atomic_json(self.directory/'atomic_reviews.json',self.review_rows)
+        atomic_json(self.directory/'cpu_service.json',self.service_rows)
+        atomic_json(self.directory/'epoch_metadata_refreshes.json',self.refresh_rows)
         atomic_json(self.directory/'installed_groups.json',self.installed_groups)
         atomic_json(self.directory/'report.json',report)
         return report

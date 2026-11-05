@@ -91,6 +91,27 @@ def boundary_case(base,hardness):
     return case
 
 
+def paired_block(world,pool,case,output,step):
+    actions=list(ACTIONS);np.random.default_rng(case['route_seed']+step*7919).shuffle(actions)
+    block=[]
+    for model,period in actions:
+        path=output/'trials'/f"{case['id']}_{model}_T{period*1000:.0f}"
+        existing=[json.loads(p.read_text()) for p in attempt_reports(path)]
+        result=next((r for r in existing if r['label']['valid']),None)
+        if result is None:
+            path=next_attempt(path)
+            result=run_trial(world,pool,model,.010,case,path,
+                protocol={**PROTOCOL,'cadence_s':period,'update_bound_s':period+.010})
+            result.update(route_seed=case['route_seed'],hardness=case['hardness'],
+                experiment_kind='sampled_initial_recovery_boundary',midflight_impulse=False)
+            atomic_json(path/'report.json',result)
+        if not result['label']['valid']:
+            raise RuntimeError(f'invalid boundary trial retained, not a negative recovery label: {path}')
+        block.append(result)
+        print(f"{case['id']} {model} T={period*1000:.0f} recovery={result['label']['qualified']} collision={result['label']['collision']}",flush=True)
+    return block
+
+
 def summarize(output):
     plan=json.loads((output/'plan.json').read_text());rows=[];groups={};invalid=[]
     paths,invalid=selected_reports(output)
@@ -115,7 +136,7 @@ def summarize(output):
             model_recovery=recovery,model_recovery_differs=len(set(recovery.values()))>1,
             collision_outcomes=collisions))
     report=dict(queried_trials=len(rows)+len(invalid),valid_trials=len(rows),
-        complete=len(rows)==120 and len(evidence)==30 and not incomplete,
+        complete=len(rows)==plan['max_trials'] and len(evidence)==plan['max_trials']//len(ACTIONS) and not incomplete,
         invalid=[str(p) for p in invalid],selected_reports=[str(p) for p in paths],incomplete_groups=incomplete,
         groups=evidence,discovery_adaptive=True,confirmation_uniform_predeclared=True,
         changed_controller_weights=False,midflight_impulse=False,test_used_for_selection=False,
@@ -157,23 +178,7 @@ def run(output):
                         if base['split']=='confirmation':hardness=identity['confirmation_hardness'][step]
                         elif step<2:hardness=identity['discovery_endpoints'][step]
                         else:hardness=next_hardness(observed)
-                        case=boundary_case(base,hardness);block=[]
-                        actions=list(ACTIONS);np.random.default_rng(base['route_seed']+step*7919).shuffle(actions)
-                        for model,period in actions:
-                            path=output/'trials'/f"{case['id']}_{model}_T{period*1000:.0f}"
-                            existing=[json.loads(p.read_text()) for p in attempt_reports(path)]
-                            result=next((r for r in existing if r['label']['valid']),None)
-                            if result is None:
-                                path=next_attempt(path)
-                                result=run_trial(world,pool,model,.010,case,path,
-                                    protocol={**PROTOCOL,'cadence_s':period,'update_bound_s':period+.010})
-                                result.update(route_seed=base['route_seed'],hardness=hardness,
-                                    experiment_kind='sampled_initial_recovery_boundary',midflight_impulse=False)
-                                atomic_json(path/'report.json',result)
-                            if not result['label']['valid']:
-                                raise RuntimeError(f'invalid boundary trial retained, not a negative recovery label: {path}')
-                            block.append(result)
-                            print(f"{case['id']} {model} T={period*1000:.0f} recovery={result['label']['qualified']} collision={result['label']['collision']}",flush=True)
+                        case=boundary_case(base,hardness);block=paired_block(world,pool,case,output,step)
                         used.append(hardness)
                         observed[hardness]=tuple(next(r for r in block if (r['model'],r['cadence_s'])==a)['label']['qualified'] for a in ACTIONS[:2])
                         atomic_json(output/f"progress_{base['id']}.json",dict(hardness=used,anchor_outcomes=observed))
