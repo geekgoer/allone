@@ -235,6 +235,8 @@ def flight(world, pool, period_ms, scenario, policy, directory, duration, placem
     if deadline_policy not in ("observe","enforce","period_drop"):raise ValueError("unknown deadline policy")
     enforce=deadline_policy=="enforce"
     period_drop=deadline_policy=="period_drop"
+    period_io_policy=config.get('period_io_policy','shared')
+    if period_io_policy not in ('shared','split'):raise ValueError('unknown period I/O placement policy')
     if period_drop and (io_backend!='cpp' or not calendar or not config.get('pipeline_costs')):
         raise ValueError('period_drop requires the native calendar and calibrated pipeline costs')
     eager_completion=config.get('eager_completion',calendar)
@@ -807,7 +809,8 @@ def flight(world, pool, period_ms, scenario, policy, directory, duration, placem
     try:
         if server.provenance!=pool.provenance():
             raise ValueError("inference worker model identity mismatch")
-        io_cpus=placement["io_cpus"][:1] if sensing is not None else placement["io_cpus"]
+        split_period_io=period_drop and period_io_policy=='split'
+        io_cpus=placement["io_cpus"][:1] if sensing is not None or split_period_io else placement["io_cpus"]
         io_class=ProcessCommandIO
         io_vehicles=len(world.vehicles)
         if io_backend=='cpp':
@@ -817,7 +820,10 @@ def flight(world, pool, period_ms, scenario, policy, directory, duration, placem
         io = io_class(io_vehicles,world.calibration,pipeline_costs["actuation_s"] if enforce or period_drop else .003,
             io_cpus,allow_late=not (enforce or period_drop))
         if period_drop:
-            sample_io=io_class(io_vehicles,world.calibration,0.,io_cpus)
+            sample_cpus=placement['io_cpus'][1:2] if split_period_io else io_cpus
+            if split_period_io and (not sample_cpus or set(sample_cpus)&set(io_cpus)):
+                raise ValueError('split period I/O requires distinct sampling and command CPUs')
+            sample_io=io_class(io_vehicles,world.calibration,0.,sample_cpus)
         if sensing is not None:
             sensing.prepare()
         for v in world.vehicles:
@@ -1300,6 +1306,8 @@ def flight(world, pool, period_ms, scenario, policy, directory, duration, placem
             "update_gap_ms":stats_ms(np.diff([r["rpc_return_s"] for r in applied if r["vehicle"]==v]))} for v in world.vehicles},
         "worker_profile":server.profile,"planning_profile":planning_profile,"planning_profile_frozen":frozen_profile is not None,
         "worker_placement":server.placement,"io_placement":io.placement if io else None,
+        "sample_io_placement":sample_io.placement if sample_io else None,
+        "period_io_policy":period_io_policy if period_drop else None,
         "segment_dispatch_owner":"CPU","segment_execution_owner":"XPU analogue",
         "lookup_used":False,"late_outputs_applied_for_exploration":not (enforce or period_drop),"collision_causes_early_abort":stop_on_collision and collision_policy=="global",
         "collision_retires_vehicle":stop_on_collision and collision_policy=="vehicle",

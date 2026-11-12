@@ -272,7 +272,7 @@ def worker(memory, length, generation, lock, changed, stop, ready, error, profil
         with threadpool_limits(limits=1), Path(path).open('w',encoding='utf-8') as handle:
             ready.set()
             while not stop.is_set() or generation.value!=seen:
-                changed.wait(.050);changed.clear()
+                changed.acquire(timeout=.050)
                 payload=None
                 with lock:
                     if generation.value!=seen:
@@ -369,7 +369,7 @@ class JointDecisionShadow:
         ctx=mp.get_context('spawn')
         self.memory=ctx.RawArray(ctypes.c_ubyte,262144)
         self.length,self.generation=ctx.RawValue('i',0),ctx.RawValue('q',0)
-        self.lock,self.changed,self.stop,self.ready,self.error=ctx.Lock(),ctx.Event(),ctx.Event(),ctx.Event(),ctx.Event()
+        self.lock,self.changed,self.stop,self.ready,self.error=ctx.Lock(),ctx.Semaphore(0),ctx.Event(),ctx.Event(),ctx.Event()
         self.profile,self.costs,self.trigger=profile,costs,Trigger()
         self.effect_path=effect_path;self.initial={};self.end_s=0.;self.review_rows=[];self.review_ms=[];self.reply_seen=0
         self.fresh_review=fresh_review
@@ -387,6 +387,7 @@ class JointDecisionShadow:
         self.reply=(ctx.RawArray(ctypes.c_ubyte,131072),ctx.RawValue('i',0),ctx.RawValue('q',0),ctx.Lock()) if effect_path else None
         self.recovery_enabled=recover_after_miss;self.ack_updates=0
         self.states={};self.note_ms=[];self.capture_ms=[];self.skips=Counter();self.offers=0;self.notes=0
+        self.notification_ms=[]
         self.last_attempt=-float('inf');self.started=False;self.closed=False
         self.service_period_s=.010;self.service_budget_s=.003
         if self.apply_rates:
@@ -645,14 +646,18 @@ class JointDecisionShadow:
                 ctypes.memmove(ctypes.addressof(self.memory),payload,len(payload))
                 self.length.value=len(payload);self.generation.value+=1
             finally:self.lock.release()
-            self.changed.set()
+            # multiprocessing.Event.set waits for its sleeping consumer to
+            # acknowledge wakeup. Semaphore.release has no consumer handshake.
+            notice=time.perf_counter()
+            self.changed.release()
+            self.notification_ms.append(1000*(time.perf_counter()-notice))
             self.trigger.consumed(captured);self.offers+=1
         finally:
             self.capture_ms.append(1000*(time.perf_counter()-begin))
 
     def close(self):
         if self.closed:return
-        self.stop.set();self.changed.set();self.process.join(10.)
+        self.stop.set();self.changed.release();self.process.join(10.)
         if self.process.is_alive():self.process.terminate();self.process.join(5.);self.skips['worker_forced_stop']+=1
         self.closed=True
         rows=[json.loads(line) for line in self.path.read_text(encoding='utf-8').splitlines()] if self.path.exists() else []
@@ -673,6 +678,7 @@ class JointDecisionShadow:
                 for previous,r in zip([0]+[r['generation'] for r in rows[:-1]],rows)),
             trigger_reasons=dict(Counter(r['trigger']['reason'] for r in rows)),skips=dict(self.skips),
             note_ms=stats(self.note_ms),capture_ms=stats(self.capture_ms),
+            snapshot_notification_ms=stats(self.notification_ms),
             frontend_total_ms=sum(self.note_ms)+sum(self.capture_ms)+sum(self.review_ms),
             cpu_service_period_ms=1000*self.service_period_s,cpu_service_budget_ms=1000*self.service_budget_s,
             cpu_service_location='before foreground work selection; not idle-only',

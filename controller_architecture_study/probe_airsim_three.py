@@ -86,6 +86,9 @@ def run(args):
     switch_plan = getattr(args, "switch_plan", None)
     joint_shadow = getattr(args, "joint_selection_shadow", False)
     joint_online = getattr(args, "joint_online", False)
+    ip37_bundle = getattr(args, "ip37_bundle", None)
+    if ip37_bundle is not None and args.mode != "shadow":
+        raise ValueError("IP37 mirror requires MPC shadow mode")
     if joint_online and (switch_plan is not None or joint_shadow or args.mode != "dnn"):
         raise ValueError("online joint control cannot be mixed with scripted/MPC/shadow control")
     dynamic_control = switch_plan is not None or joint_online
@@ -179,7 +182,7 @@ def run(args):
     atomic_json(path / "setup.json", metadata)
     rows, errors, traces = [], [], {v: [] for v in VEHICLES}
     stop = threading.Event()
-    service = scene = client = online = None
+    service = scene = client = online = ip37_client = ip37_service = None
     threads = []
     start_time = [None]
     planners, gates, fast_windows = {}, {}, {}
@@ -203,6 +206,20 @@ def run(args):
         client = connect()
         if not set(VEHICLES) <= set(client.listVehicles()):
             raise RuntimeError("manual Play session must contain Drone1, Drone2 and Drone3")
+        if ip37_bundle is not None:
+            from .ip37_shadow import make_client, predict
+            ip37_client, manifest = make_client(ip37_bundle, args.ip37_host,
+                                                getattr(args, "ip37_port", None), args.deadline_ms)
+            entry = next((m for m in manifest["models"] if m["numeric_id"] == args.ip37_model_id), None)
+            if entry is None:
+                raise ValueError("Requested IP37 model is not present in the selected bundle")
+            metadata["ip37_endpoint"] = {
+                "host": ip37_client.peer[0], "port": ip37_client.peer[1],
+                "wire_tag_hex": manifest["wire_tag_hex"], "revision": manifest.get("revision"),
+                "normalization_sha256": manifest["normalization_sha256"], "model": entry,
+            }
+            ip37_service = InferenceService(
+                lambda model, feature: predict(ip37_client, model, feature, record_input=True))
         foreign = [n for n in client.simListSceneObjects("Falcon.*Gate.*") if not n.startswith("FalconProbeGate_")]
         if foreign:
             raise RuntimeError("Other generated gates remain. Stop/Play once to clear runtime gates before this probe; no foreign gates deleted.")
@@ -331,6 +348,13 @@ def run(args):
                     row["command_ready_s"] = time.perf_counter()
                     row["mpc_dispatch_s" if teacher else "dnn_dispatch_s"] = row["command_ready_s"]
                     row["control_outcome"] = "mpc_shadow" if teacher else "dnn_dispatched"
+                    if ip37_service is not None:
+                        # Separate bounded worker. The MPC command has already been sent.
+                        ip37_service.submit(args.ip37_model_id, feature, {
+                            key: row[key] for key in ("vehicle", "cycle", "scheduled_s", "sample_start_s",
+                                                      "state_ready_s", "reference_ready_s", "feature_ready_s",
+                                                      "command_start_s", "command_ready_s", "deadline_ms")
+                        })
                     row["clipped"] = bool(np.any(applied != control))
                     if dynamic_control:
                         row["model_changed"] = previous_choice is not None and name != previous_choice["model"]
@@ -385,6 +409,10 @@ def run(args):
         if service is not None:
             service.close()
             rows = service.rows
+        if ip37_service is not None:
+            ip37_service.close()
+        if ip37_client is not None:
+            ip37_client.close()
         if client is not None and simulation_touched:
             try:
                 client.simPause(False)
@@ -482,6 +510,21 @@ def run(args):
             "is_safety_certificate": False, "quality_scope": args.joint_profile["quality_scope"]}
         atomic_json(path / "online_selection_report.json", summary)
         metadata["online_selection"].update(report="online_selection_report.json", **summary)
+    if ip37_service is not None:
+        from .ip37_shadow import network_summary
+        mirror = ip37_service.rows
+        summary = network_summary(mirror)
+        summary.update(outputs_applied=False,
+                       release_to_board_result_ms=describe(
+                           [1000*(r["ready_s"]-r["scheduled_s"]) for r in mirror if r["status"] == "ready"]),
+                       effective_deadline_misses=sum(
+                           r["status"] != "ready" or (r["ready_s"]-r["scheduled_s"])*1000 > r["deadline_ms"]
+                           for r in mirror))
+        atomic_json(path / "ip37_shadow_requests.json", mirror)
+        atomic_json(path / "ip37_shadow_summary.json", summary)
+        if getattr(ip37_client, "rejected_inputs", None):
+            atomic_json(path / "ip37_rejected_inputs.json", ip37_client.rejected_inputs)
+        metadata["ip37_shadow"] = summary
     report = save_timing(path, rows, None if dynamic_control else args.deadline_ms, metadata)
     print(f"flight_passed={report['flight_passed']} realtime_passed={report['realtime_passed']} "
           f"acceptance_passed={report['acceptance_passed']} errors={errors}", flush=True)
@@ -527,6 +570,11 @@ def main():
     parser.add_argument("--route-index", type=int, choices=range(20), default=0)
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=41451)
+    parser.add_argument("--ip37-bundle", type=Path, help="Verified bundle for a separate board mirror in MPC shadow mode")
+    parser.add_argument("--ip37-host", default="192.168.77.2")
+    parser.add_argument("--ip37-port", type=int, metavar="PORT",
+                        help="Board port override; otherwise use bundle port or 5237")
+    parser.add_argument("--ip37-model-id", type=int, choices=(11, 6), default=11)
     parser.add_argument("--keep-gates", action="store_true")
     parser.add_argument("--output-dir", type=Path, help="New report directory; existing directories are refused")
     parser.add_argument("--state-budget-config", type=Path,

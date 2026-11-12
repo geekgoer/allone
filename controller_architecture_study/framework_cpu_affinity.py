@@ -88,10 +88,25 @@ def set_thread_cpus(cpus):
         "previous":[c for c in range(64) if previous & (1<<c)]}
 
 
+def set_thread_priority(priority):
+    api=ctypes.WinDLL('kernel32',use_last_error=True)
+    api.GetCurrentThread.restype=ctypes.c_void_p
+    api.GetThreadPriority.argtypes=(ctypes.c_void_p,)
+    api.SetThreadPriority.argtypes=(ctypes.c_void_p,ctypes.c_int)
+    thread=api.GetCurrentThread()
+    previous=api.GetThreadPriority(thread)
+    if previous==0x7fffffff or not api.SetThreadPriority(thread,priority):
+        raise ctypes.WinError(ctypes.get_last_error())
+    actual=api.GetThreadPriority(thread)
+    if actual!=priority:raise RuntimeError('thread priority readback mismatch')
+    return dict(previous=previous,requested=priority,actual=actual)
+
+
 class CpuPlacement:
     """Restore our process and the exact 12-drone editor even after trial failure."""
-    def __init__(self, enabled=True):
+    def __init__(self, enabled=True, *, frontend_priority=None):
         self.enabled,self.editors,self.parent,self.thread = enabled,[],None,None
+        self.frontend_priority,self.priority=frontend_priority,None
         self.report = {"enabled":enabled,"exclusive_os_reservation":False,"is_WCET":False,
             "gil_removed_from_frontend_io":True,"FPGA_timing_equivalent":False}
 
@@ -121,6 +136,9 @@ class CpuPlacement:
             self.thread = set_thread_cpus(self.layout["frontend_cpus"])
             self.thread["previous"] = original_thread
             self.report.update(parent=self.parent,frontend_thread=self.thread)
+            if self.frontend_priority is not None:
+                self.priority=set_thread_priority(self.frontend_priority)
+                self.report['frontend_thread_priority']=self.priority
             return self
         except BaseException:
             self.__exit__(None,None,None)
@@ -135,6 +153,9 @@ class CpuPlacement:
                     set_thread_cpus(self.thread["previous"])
             except Exception as exc:
                 failures.append(f"parent: {exc}")
+        if self.priority is not None:
+            try:set_thread_priority(self.priority['previous'])
+            except Exception as exc:failures.append(f'thread priority: {exc}')
         for row in self.editors:
             try:
                 process = psutil.Process(row["pid"])

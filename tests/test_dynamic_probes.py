@@ -193,11 +193,14 @@ class FlightHarnessTests(unittest.TestCase):
     def test_vectorized_shadow_preserves_rpc_ownership_timing_and_deadlines(self):
         self._check_shadow("vectorized")
 
-    def _check_shadow(self, policy):
+    def test_ip37_timeout_does_not_interrupt_mpc_commands(self):
+        self._check_shadow("vectorized", ip37=True)
+
+    def _check_shadow(self, policy, *, ip37=False):
         state = SimpleNamespace(position=np.array([0., 0., -4.]), quaternion=np.array([1., 0., 0., 0.]),
                                 velocity=np.zeros(3), acceleration=np.zeros(3), timestamp_ns=1)
         ref = SimpleNamespace(position=state.position, orientation=state.quaternion)
-        clients, resets, placements, encoders = [], [], [], []
+        clients, resets, placements, encoders, applied = [], [], [], [], []
         def feature(name):
             encoders.append(name)
             return np.zeros(237)
@@ -252,10 +255,21 @@ class FlightHarnessTests(unittest.TestCase):
                 "ConvexTeacher": lambda: SimpleNamespace(solve=lambda *_: np.array([9.8, 0., 0., 0.])),
                 "encode": lambda *_: feature("legacy"), "fast_encode": lambda *_: feature("vectorized"),
                 "FastReferenceWindow": lambda *_: SimpleNamespace(window=lambda *_: [ref]*21),
-                "send_control": lambda *a, **k: None,
+                "send_control": lambda drone, command, *a, **k: applied.append(command.tolist()),
                 "release_schedule": short_schedule, "_crossing_results": lambda *_: [(i, None, 0., True) for i in range(5)]}
             for name, replacement in patches.items():
                 stack.enter_context(patch.object(live, name, replacement))
+            if ip37:
+                from controller_architecture_study import ip37_shadow
+                args.ip37_bundle, args.ip37_host, args.ip37_model_id = Path(directory), "localhost", 11
+                args.ip37_port = 5238
+                def timeout(*_, **_kwargs):
+                    raise TimeoutError("IP37 response timeout")
+                board_manifest = {"wire_tag_hex": "8a1f973e89710236", "normalization_sha256": "mock",
+                                  "models": [{"numeric_id": 11}]}
+                connect_board = stack.enter_context(patch.object(ip37_shadow, "make_client",
+                    return_value=(SimpleNamespace(close=lambda: None, peer=("localhost", 5238)), board_manifest)))
+                stack.enter_context(patch.object(ip37_shadow, "predict", side_effect=timeout))
             # Three mock releases cannot satisfy the complete planned flight schedule.
             with self.assertRaises(SystemExit) as stopped:
                 live.run(args)
@@ -267,6 +281,11 @@ class FlightHarnessTests(unittest.TestCase):
             self.assertTrue(report["flight_passed"])
             self.assertFalse(report["acceptance_passed"])
             self.assertEqual(report["preprocess_policy"], policy)
+            if ip37:
+                self.assertEqual(report["ip37_shadow"]["errors"], 3)
+                connect_board.assert_called_once_with(Path(directory), "localhost", 5238, 50.)
+                self.assertEqual(report["ip37_endpoint"]["port"], 5238)
+                self.assertEqual(applied, [[9.8, 0., 0., 0.]] * 3)
             for name in ("state_rpc_ms", "collision_rpc_ms", "preprocess_wait_ms", "reference_ms",
                          "feature_ms", "mpc_solve_ms", "command_submit_ms"):
                 self.assertEqual(report["timing"][name]["count"], 3)

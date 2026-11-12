@@ -113,14 +113,21 @@ class FastReferenceWindow:
             self.trajectory.final_velocity, self.trajectory.final_acceleration)
         return p, v, a, self.headings[indices]
 
-    def window(self, elapsed, *, dt=.1, horizon=21):
+    def window(self, elapsed, *, dt=.1, horizon=21, include_body_rates=True):
         if not np.isfinite(elapsed) or elapsed < 0. or not np.isfinite(dt) or dt <= 0. or horizon < 1:
             raise ValueError("elapsed must be non-negative and dt/horizon positive")
         times = float(elapsed)+np.arange(horizon)*float(dt)
-        # Include the original 1ms forward samples for planner body-rate feed-forward.
-        p, v, a, heading = self._evaluate(np.r_[times, times+self.config.body_rate_difference_dt])
+        # Only the teacher consumes body-rate feed-forward. The 237D encoder
+        # uses position, orientation, velocity and acceleration from this window.
+        evaluation_times = times
+        if include_body_rates:
+            evaluation_times = np.r_[times, times+self.config.body_rate_difference_dt]
+        p, v, a, heading = self._evaluate(evaluation_times)
         q = _attitudes(a, heading, self.config.gravity)
-        rates = _body_rates(q[:horizon], q[horizon:], self.config.body_rate_difference_dt) * VECTOR_FLIP
+        if include_body_rates:
+            rates = _body_rates(q[:horizon], q[horizon:], self.config.body_rate_difference_dt) * VECTOR_FLIP
+        else:
+            rates = np.zeros((horizon, 3))
         orientation = _normalize(q[:horizon] * QUATERNION_FLIP)
         return [MPCReference(p[i], orientation[i], v[i], a[i], rates[i]) for i in range(horizon)]
 

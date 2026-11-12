@@ -48,8 +48,16 @@ def load_library(path=LIBRARY):
 
 class NativeCommandIO:
     def __init__(self, vehicles, calibration, command_bound, cpus=None, *, allow_late=False,
-            host='127.0.0.1',port=41451,mock=False,mock_delay_s=0.):
+            host='127.0.0.1',port=41451,mock=False,mock_delay_s=0.,auto_sample=False):
         self.dll=load_library()
+        if auto_sample:
+            try:
+                self.dll.falcon_enable_auto_sample.argtypes = [C.c_void_p]
+                self.dll.falcon_enable_auto_sample.restype = C.c_int
+                self.dll.falcon_complete_sample.argtypes = [C.c_void_p, C.c_int, C.c_uint64]
+                self.dll.falcon_complete_sample.restype = C.c_int
+            except AttributeError as exc:
+                raise RuntimeError('Rebuild native runtime for release-triggered sampling') from exc
         self.vehicles=list(vehicles);self.calibration=calibration
         self.index={v:i for i,v in enumerate(self.vehicles)}
         calibration.validate()
@@ -58,10 +66,17 @@ class NativeCommandIO:
         self.handle=self.dll.falcon_create(host.encode(),port,'\n'.join(self.vehicles).encode(),
             sum(1<<i for i in (cpus or [])),cal,command_bound,allow_late,mock,mock_delay_s)
         if not self.handle:raise RuntimeError(self.dll.falcon_error().decode())
+        if auto_sample:
+            try:
+                self.check(self.dll.falcon_enable_auto_sample(self.handle))
+            except Exception:
+                self.dll.falcon_destroy(self.handle)
+                raise
         self.connection=SimpleNamespace(connection=self.dll.falcon_handle(self.handle),stalls=[])
         self.futures,self.samples,self.rows={},{},{}
         self.tokens=0;self.closed=False
         self.releases=deque();self.templates={};self.scheduled={};self.scheduled_versions={};self.version=0
+        self.auto_samples = deque()
         self.delivery_records=[];self.helper_stalls=[]
         self.placement=dict(backend='cpp_airlib',requested=list(cpus or []),
             python_io_threads=0,python_ipc_hops=0,native_workers=len(vehicles),
@@ -108,11 +123,20 @@ class NativeCommandIO:
                 row.update(sample_id=f'{v}:{event.id}',planned_release_s=event.planned,
                     minimum_release_s=event.planned,requested_period_s=event.period,
                     slot=int(event.id),native_release_s=event.finished,native_calendar_version=int(event.version),
-                    status='planned',nominal_deadline_s=event.planned+event.period)
+                    status='planned',nominal_deadline_s=event.planned+event.period,
+                    native_release_status=event.status)
                 # A held-control budget is absolute; carrying it forward must not renew it.
                 row['deadline_s']=(row['deadline_s']+delta if row.get('native_static') else row['deadline_s'])
                 row['previous_release_s']=event.planned-event.period
                 self.releases.append(row)
+                continue
+            if event.kind==6:
+                self.auto_samples.append(dict(vehicle=self.vehicles[event.vehicle], cycle=int(event.id),
+                    packet=self.packet(event) if event.status==0 else None, sample_status=event.status,
+                    sample_start_s=event.planned if event.status==0 else event.started,
+                    **(dict(state_ready_s=event.state_end, collision_ready_s=event.collision_end)
+                       if event.status==0 else {}),
+                    native_sample_finished_s=event.finished, native_sample_received_s=time.perf_counter()))
                 continue
             row,target=self.rows[event.id];v=row['vehicle']
             if event.kind in (2,3):
@@ -239,6 +263,15 @@ class NativeCommandIO:
 
     def drain_releases(self):
         self.pump();rows=list(self.releases);self.releases.clear();return rows
+
+    def drain_calendar_samples(self):
+        releases = self.drain_releases()
+        samples = list(self.auto_samples)
+        self.auto_samples.clear()
+        return releases, samples
+
+    def complete_sample(self, vehicle, cycle):
+        self.check(self.dll.falcon_complete_sample(self.handle, self.index[vehicle], cycle))
 
     def close(self):
         if not self.closed:

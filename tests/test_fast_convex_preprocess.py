@@ -84,6 +84,8 @@ class FastPreprocessTests(unittest.TestCase):
             state = RawDroneState(refs[0].position+[.1, .2, -.1], refs[0].orientation,
                 refs[0].velocity+[.2, -.3, .1], np.zeros(3), np.zeros(3))
             np.testing.assert_allclose(fast.encode(state, batched), encode(state, refs), rtol=0., atol=2e-6)
+            dnn_refs = self.fast.window(elapsed, include_body_rates=False)
+            np.testing.assert_array_equal(fast.encode(state, dnn_refs), fast.encode(state, batched))
             np.testing.assert_allclose(teacher.query(state, batched)[0], teacher.query(state, refs)[0],
                                        rtol=0., atol=2e-5)
 

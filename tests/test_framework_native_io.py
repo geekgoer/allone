@@ -6,6 +6,8 @@ import pytest
 
 from config import ThrustCalibration
 from controller_architecture_study.framework_native_io import LIBRARY,NativeCommandIO
+from controller_architecture_study.bottleneck_abc import abc_repair
+from controller_architecture_study.ip37_joint_runtime import JointRuntime
 
 
 pytestmark=pytest.mark.skipif(not LIBRARY.exists(),reason='build C++ runtime first')
@@ -24,6 +26,95 @@ def plan(release,model='a',number=0):
     return dict(vehicle='Drone1',sample_id=f'Drone1:{number}',model=model,priority=0,
         planned_release_s=release,minimum_release_s=release,requested_period_s=.020,
         nominal_deadline_s=release+.020,deadline_s=release+.300,slot=number,status='planned')
+
+
+def test_calendar_samples_before_python_polls_and_reserves_the_worker():
+    io = NativeCommandIO(['Drone1'], ThrustCalibration(), .003, mock=True, auto_sample=True)
+    try:
+        origin = time.perf_counter()+.03
+        row = plan(origin)
+        row['requested_period_s'] = .04
+        io.schedule(row, origin+.6, static=True)
+        time.sleep(.15)
+        poll_s = time.perf_counter()
+        releases, samples = io.drain_calendar_samples()
+        assert [x['native_release_status'] for x in releases[:2]] == [0, 4]
+        first, = samples
+        assert first['sample_status'] == 0
+        assert first['cycle'] == releases[0]['slot']
+        assert releases[0]['native_release_s'] <= first['packet'][2] < poll_s
+        assert first['native_sample_finished_s'] < poll_s
+        with pytest.raises(RuntimeError, match='invalid scheduled sample completion'):
+            io.complete_sample('Drone1', first['cycle']+1)
+        io.complete_sample('Drone1', first['cycle'])
+        end = time.perf_counter()+.35
+        samples = []
+        while not samples and time.perf_counter() < end:
+            _, samples = io.drain_calendar_samples()
+            time.sleep(.001)
+        second, = samples
+        assert second['cycle'] > first['cycle']
+        io.complete_sample('Drone1', second['cycle'])
+    finally:
+        io.close()
+
+
+def test_native_adaptive_commit_keeps_published_deadline_and_uses_new_period():
+    io = NativeCommandIO(['Drone1'], ThrustCalibration(), .003, mock=True, auto_sample=True)
+    try:
+        origin = time.perf_counter()+.04
+        rt = JointRuntime(['Drone1'], origin, 120., (80., 120.), 11, 1., prep_ms=.1, post_ms=.1,
+                          decision_ms=10.)
+        rt.native_io, rt.native_end = io, origin+.5
+        io.schedule(dict(plan(origin, 11), requested_period_s=.12, deadline_s=origin+.12),
+                    rt.native_end, static=True)
+        until = origin+.07
+        releases, samples = [], []
+        while not samples and time.perf_counter() < until:
+            new_releases, samples = io.drain_calendar_samples()
+            releases.extend(new_releases)
+            if not samples:
+                time.sleep(.001)
+        first, = releases
+        old = rt.accept_native_release(first)
+        first_sample, = samples
+        assert first_sample['cycle'] == old['cycle']
+        rt.finish(old)
+        io.complete_sample('Drone1', old['cycle'])
+        rt.observe('Drone1', origin, origin+.10, {}, 0)
+        snapshot_s = time.perf_counter()
+        revision, scenario = rt.snapshot(snapshot_s)
+        result = abc_repair(scenario)
+        status, updates = rt.install(revision, scenario, result, snapshot_s)
+        assert status == 'installed'
+        assert updates[0]['first_cycle'] == 1
+        assert updates[0]['period_ms'] == 80.
+        event, = collect(io, 'drain_releases')
+        new = rt.accept_native_release(event)
+        assert old['deadline_s'] == pytest.approx(origin+.12)
+        assert new['release_s'] == pytest.approx(origin+.08)
+        assert new['deadline_s'] == pytest.approx(origin+.16)
+        assert new['native_calendar_version'] != old['native_calendar_version']
+    finally:
+        io.close()
+
+
+def test_native_adaptive_group_rejects_unconsumed_peer_release():
+    io = NativeCommandIO(['Drone1', 'Drone2'], ThrustCalibration(), .003, mock=True, auto_sample=True)
+    try:
+        now = time.perf_counter()
+        origin, end = now+.40, now+1.
+        plans = {'Drone1': plan(origin), 'Drone2': dict(plan(now+.04), vehicle='Drone2', sample_id='Drone2:0')}
+        for row in plans.values():
+            io.schedule(row, end, static=True)
+        basis = io.calendar_basis(plans)
+        time.sleep(.10)  # Drone2 publishes while Python still has the old calendar view.
+        proposal = dict(plans, Drone1=dict(plans['Drone1'], planned_release_s=origin+.1))
+        guard = io.guarded_batch(basis, proposal, dict.fromkeys(plans, 0), end, origin, commit=True)
+        assert guard['reason'] == 'calendar_changed'
+        assert io.calendar_matches({'Drone1': plans['Drone1']})
+    finally:
+        io.close()
 
 
 def test_read_only_calendar_check_detects_publication_without_rewriting_it():

@@ -103,7 +103,7 @@ def check_static_baseline(report, requests, traces, turn_start_s):
 def run(output,boundary_report,seed=6,ranker_path=None,*,period_drop=False,period_ms=None,period_plan_only=False,
         timing_source=None,light_vehicles=(),vehicle_count=None,gate_width_m=None,
         staggered_turns=False,static_only=False,joint_only=False,spread_releases=False,require_static_baseline=False,
-        trace_frontend=False):
+        trace_frontend=False,period_io_policy='split'):
     boundary=read_json(boundary_report)
     if not boundary['complete']:raise ValueError('finish and audit the boundary collection before application')
     output.mkdir(parents=True,exist_ok=False)
@@ -111,6 +111,7 @@ def run(output,boundary_report,seed=6,ranker_path=None,*,period_drop=False,perio
     sys.setswitchinterval(.0005)
     origin=BASE/'fair_pool_search_20261028_v1'
     config=read_json(origin/'strengthened/selection.json')['configuration'];source=read_json(origin/'plan.json')
+    config['period_io_policy']=period_io_policy
     case=case_for(seed)
     if vehicle_count is not None:
         if not 1<=vehicle_count<=case['count']:
@@ -178,7 +179,7 @@ def run(output,boundary_report,seed=6,ranker_path=None,*,period_drop=False,perio
         virtual_prefix_disabled=True,hard_realtime_certified=False,
         scope='functional repeated paired pilot; reviewed rates supplement the existing dynamic policy; not exact FALCON')
     atomic_json(output/'plan.json',plan)
-    placement=CpuPlacement();rows=[];first=None;static_gate_passed=None
+    placement=CpuPlacement(frontend_priority=1);rows=[];first=None;static_gate_passed=None
     try:
         with placement:
             cpu=worker_core(placement)
@@ -302,6 +303,7 @@ if __name__=='__main__':
     p.add_argument('--spread-releases',action='store_true',help='Spread first releases uniformly across --period-ms')
     p.add_argument('--require-static-baseline',action='store_true')
     p.add_argument('--trace-frontend',action='store_true')
+    p.add_argument('--period-io-policy',choices=('shared','split'),default='split')
     p.add_argument('--timing-source',type=Path,help='Archived native flight directory containing requests.json and analyses.json')
     a=p.parse_args()
     if a.period_ms is not None and not (a.period_drop or a.period_plan_only):
@@ -321,4 +323,4 @@ if __name__=='__main__':
         light_vehicles=a.light_vehicles,vehicle_count=a.vehicles,gate_width_m=a.gate_width_m,
         staggered_turns=a.staggered_turns,static_only=a.static_only,joint_only=a.joint_only,
         spread_releases=a.spread_releases,require_static_baseline=a.require_static_baseline,
-        trace_frontend=a.trace_frontend)
+        trace_frontend=a.trace_frontend,period_io_policy=a.period_io_policy)

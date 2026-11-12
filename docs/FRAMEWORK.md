@@ -1,8 +1,16 @@
 # 状态感知的动态控制与共享加速器框架
 
-维护日期：2026-11-02。本文是当前设计入口；进度与任务维护在[协作进度](COLLABORATION_STATUS.md)，源码与证据入口见[研究分支索引](../controller_architecture_study/docs/README.md)。
+2026-11-09 路线B当前实现和代码阅读见[路线B代码指南](../controller_architecture_study/docs/ROUTE_B_CODE_GUIDE_20261109.md)，最新问题见[协作进度](COLLABORATION_STATUS.md)。下列旧日期的进展和拟议步骤为历史记录。
+
+当前执行目标（2026-11-08）见[研究目标与分阶段计划](RESEARCH_GOALS_AND_PLAN.md)：保留增益3.5的现有板端DNN，先环境初筛、再按测量选择Windows/PS部署位置，冻结环境后研究时序与模型差异。微调、全量迁移PS和三个旋钮同时成立均不是预设前提；下文历史状态不替代该最新路线。
+
+维护日期：2026-11-07。本文是当前设计入口；进度与任务维护在[协作进度](COLLABORATION_STATUS.md)，源码与证据入口见[研究分支索引](../controller_architecture_study/docs/README.md)。
+
+2026-11-06新增独立路线B：[关键窗口需求修复](../controller_architecture_study/docs/BOTTLENECK_INSIGHTS_AND_HEURISTIC_20261106.md)。它按绝对期限前可以兑现的PS/PL需求减少量指导联合修改，再检查全组有限时序。后续取得真实板端双模型成本，并于11月7日完成RC1单机及[多机在线入口](../controller_architecture_study/docs/IP37_JOINT_ONLINE_RUNBOOK_20261107.md)的首次有效试飞。三机固定/启发式均15/15穿门，动态实际安装5组、7次周期改变；请求减35.45%、平均位置MSE增1.19%。成本模型后期过度保守和日历尾部覆盖仍待修正，且尚未比较J最优静态基线；详见[本轮结果](../controller_architecture_study/docs/IP37_JOINT_FIRST_RESULTS_20261107.md)。下文未特别标注的旧运行实现仍对应已冻结路线A。
 
 本文在用户提供的[原始Framework_latest快照](reference/Framework_latest.original.md)上整理，并纳入后续关于低开销学习建议、明确检查和真实接管的讨论。原文逐字保留，来源及哈希见[快照清单](reference/framework_source_manifest.json)。原文中的“直接查表、不使用预测模型”等是当时的设计选择；当前允许探索小评分器，但没有把整个决策层交给黑盒网络。
+
+用户最新实验重点是“局部危险处及时识别、启发式调整实际生效、减少碰撞且保持总体性能”。固定80ms也已在原三机宽门路线通过；后续按[危险纠正实验设计](../controller_architecture_study/docs/SAFETY_RECOVERY_EXPERIMENT_20261107.md)研究六机危险时段错开、持续转弯中穿门，与最佳找到的静态及始终快周期比较。场景已离线准备，尚未正式实飞，不把资源节约等同于安全收益。
 
 ## 1. 一句话说明
 
@@ -69,6 +77,8 @@ a_{i,k+1}-a_{i,k}=T_{i,k}+R_{i,k+1}-R_{i,k}.
 周期丢弃试验入口采用 `period_drop`。每个已发布任务冻结 `D_job = r_planned + T_job`。前端读取原生发布时间事件后，用独立原生采样通道提交状态请求。采样可与上一任务推理或命令回执重叠，控制推理和下发仍按同机顺序执行。动态更新只改变下一未发布任务的周期长度，其释放时刻保留上一轮承诺的周期边界。
 
 下发前按 `D_job` 丢弃来不及送达的结果。已发出的AirSim命令可能晚回执，报告单列此类超期。这个试验把物理期限用于动态准入和超期诊断，执行丢弃门使用周期期限。Windows和AirSim的实测上界与有限流水线预测均按经验值报告。
+
+11月5日试验入口支持原生采样与命令下发分核，后台快照使用信号量通知，并对控制前端线程设置可恢复的较高优先级。动态周期已经有实际采用记录，当前1.75m场景中J略升但丢弃增加。具体状态见[阶段结果](../controller_architecture_study/docs/RT_SPLIT_IO_RESULTS_20261105.md)。
 
 ```text
 状态＋当前保持控制＋时间/版本

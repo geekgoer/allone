@@ -45,6 +45,14 @@ class AffinityTests(unittest.TestCase):
             process.assert_called_once_with([0,1,2,3])
             thread.assert_called_once_with([0,1])
 
+    def test_frontend_priority_is_restored_after_trial_failure(self):
+        with patch('controller_architecture_study.framework_cpu_affinity.set_thread_priority') as priority:
+            scope=CpuPlacement(frontend_priority=1)
+            scope.priority={'previous':0,'requested':1,'actual':1}
+            scope.__exit__(RuntimeError,RuntimeError('trial'),None)
+            priority.assert_called_once_with(0)
+            self.assertTrue(scope.report['restoration_passed'])
+
 
 if __name__ == "__main__":
     unittest.main()

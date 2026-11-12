@@ -1,0 +1,43 @@
+# IP37 RC1 的 Windows 三机影子复测
+
+2026-11-06，AirSim Blocks 环境 48、路线 0、3 架错峰、50ms。Windows 以原 MPC 下发控制，DPU 接收原始 237D 输入并旁路返回控制量。结论只适用于本次影子工况。
+
+## 交付包与固定输入
+
+- 候选 tar 与解包的 29 个文件逐项匹配，审计 tar 与解包的 146 个文件逐项匹配。候选、审计与审计内嵌候选的 SHA256SUMS 分别核对了 28、145、28 个文件。
+- 候选模型为 ID 11、kernel `p237_11rc1106v1`、tag `8a1f973e89710236`、`192.168.77.2:5238`。编译交付记录的实际输入与输出比例为 8 与 0.125。Windows 复算对照使用 manifest 中哈希匹配的原 FP32 权重与归一化。
+- Windows 向候选发了原正常 32 条、原问题 37 条、独立验证 1,024 条，共 1,093 条。全部成功，无输入拒绝或传输错误。37 条 raw237 与原始拒绝文件按 float32 逐值相等。1,093 条 Windows UDP 输出与交付记录逐值相等。37 条参与了校准，独立组未参与校准且来自已有数据。
+- [Windows 固定输入结果](../results/ip37_rc1_windows_20261106_20261106_231355/numerical_comparison.json)。该次交付客户端的本机计时较粗，时延采用下面的 QPC 影子记录。
+
+## 新采实时状态
+
+三架都穿过 5 道门。候选 1,200/1,200 条全部返回，输入拒绝、传输错误、忙丢弃、50ms 内未完成均为 0。UDP 往返 P99 为 3.000ms，从计划释放到影子结果 P99 为 21.787ms。后者包含采样、特征生成、MPC 下发之后才提交影子的顺序等待，终点是影子结果就绪。
+
+逐条将这 1,200 个新采 raw237 重放到旧版 5237 服务。旧版接受 1,167 条，拒绝 33 条，拒绝均为状态 3。相同批次 x[7] 最高 1.226m，按输入比例 16 计算越界 33 条，按比例 8 计算越界 0 条。这说明即使起飞出现先前的偏差，候选在本轮仍能提供结果。
+
+[实时报告](../results/ip37_rc1_airsim_live_20261106_20261106_231609/report.json) · [IP37 时序](../results/ip37_rc1_airsim_live_20261106_20261106_231609/ip37_shadow_summary.json) · [逐状态配对统计](../results/ip37_rc1_airsim_live_20261106_20261106_231609/paired_output_quality.json)
+
+## 相同状态上的控制输出误差
+
+每行均使用同一批 raw237。MPC 结果取飞行日志中同一无人机、同一周期、限幅前的教师输出。FP32 用实际候选的同源权重和归一化。表中为 RMSE。
+
+| 样本组与对照 | 推力加速度 m/s² | wx rad/s | wy rad/s | wz rad/s |
+| --- | ---: | ---: | ---: | ---: |
+| 两版均接受的 1,167 条，旧 INT8 对 FP32 | 0.0548 | 0.0159 | 0.0471 | 0.0066 |
+| 同一 1,167 条，新 INT8 对 FP32 | 0.0537 | 0.0234 | 0.1075 | 0.0086 |
+| 旧版拒绝的 33 条，FP32 对 MPC | 0.0296 | 0.0091 | 0.0094 | 0.0069 |
+| 同一 33 条，新 INT8 对 FP32 | 0.1060 | 0.0281 | 0.1034 | 0.0358 |
+| 同一 33 条，新 INT8 对 MPC | 0.1081 | 0.0327 | 0.1015 | 0.0341 |
+
+范围问题在同路线新输入中复测通过。原 FP32 在本次 33 个起飞边界样本上仍贴近教师。候选量化对 wy 的影响更大，两版均接受的 1,167 条中，wy RMSE 从 0.0471 增至 0.1075rad/s。候选扩大范围的效果和输出误差应分开评估。若继续迭代，保留这一批作诊断，用独立的起飞/转弯轨迹评估同样能覆盖范围且 wy 误差更低的量化候选。
+
+## 复跑入口
+
+```powershell
+Set-Location -LiteralPath 'F:\FalconReproduction\airsim_control'
+$env:PYTHONDONTWRITEBYTECODE = '1'
+$py = 'D:\files\PYTHON\cv_lab\Yolov8_Beginner_Demo-main\.venv\Scripts\python.exe'
+$bundle = 'F:\FalconReproduction\237D_data\rec\ip37_h4_input8_rc1_20261106'
+$out = '.\controller_architecture_study\results\ip37_rc1_live_' + (Get-Date -Format 'yyyyMMdd_HHmmss')
+& $py -u -m controller_architecture_study.probe_airsim_three --mode shadow --model residual21x1024 --device cuda --phase staggered --preprocess-policy vectorized --environment-id 48 --route-index 0 --period-ms 50 --deadline-ms 50 --ip37-bundle $bundle --ip37-port 5238 --ip37-model-id 11 --output-dir $out
+```

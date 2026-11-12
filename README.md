@@ -1,6 +1,6 @@
 # FALCON reproduction and dynamic control research
 
-## 协作入口（更新：2026-11-02）
+## 协作入口（更新：2026-11-05）
 
 本工程已从AirSim/MPC与FALCON模型复现，扩展到**状态相关控制期限、低开销配置决策与多回路共享加速器调度**。当前主要研究源码在`controller_architecture_study/`；下面的早期MPC命令继续保留，但不能据此判断整个工程的最新状态。
 
@@ -10,7 +10,7 @@
 - [研究分支文档索引](controller_architecture_study/docs/README.md)：实现、实验、量化与Ubuntu交接的导航。
 - [同事克隆后补齐237D产物](controller_architecture_study/docs/SHARE_237D_ARTIFACTS_20261105.md)：模型和验证数据另行交接，包含路径迁移、zip校验和单模型运行命令。
 
-最新用户完成CPU/XPU服务修复v2六次十机对照，程序异常已排除，期限事实刷新和CPU服务等待有改善；新联合配置仍未安装，控制收益未成立。静态10、旧动态9、新增模块9架次碰撞不能证明新建议救回。新增评分器收益、可靠的最低成本合格DNN选择、全程硬期限及新超网上板效果尚未成立。具体看[最新阶段结果](controller_architecture_study/docs/RUNTIME_SERVICE_REPAIR_RESULTS_20261102.md)。
+最新完成原生采样/命令分核、后台快照通知修复及16轮六机试飞，均零碰撞。动态周期有实际安装，1.75m两轮平均J约提高0.98%，但丢任务增加；1.60m新配置未采用。尚无静态碰撞、动态救回的证据，全程硬期限和新超网上板效果待验证。具体看[最新阶段结果](controller_architecture_study/docs/RT_SPLIT_IO_RESULTS_20261105.md)。
 
 25D、12D、237D独立模型和237D超网是不同轨道；不要混用数据、归一化或部署包。大文件不随文档自动提供，协作时按看板中的产物位置核对。
 

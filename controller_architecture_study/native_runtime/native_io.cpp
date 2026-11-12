@@ -34,7 +34,7 @@ template<size_t N> static void copy_text(char (&dst)[N], const std::string& s) {
 }
 extern "C" {
 struct Event {
-    int32_t kind, vehicle; // 1 sample, 2 acknowledgement, 3 command done, 4 release, 5 error
+    int32_t kind, vehicle; // 1 sample, 2 acknowledgement, 3 command done, 4 release, 5 error, 6 scheduled sample
     uint64_t id, version;
     double submitted, started, state_end, collision_end, finished, planned, period;
     uint64_t sim_ns, collision_ns;
@@ -44,7 +44,7 @@ struct Event {
 };
 }
 struct Task {
-    bool command = false, cancelled = false;
+    bool command = false, cancelled = false, scheduled_sample = false;
     uint64_t id = 0;
     double submitted = 0, deadline = 0;
     std::array<double, 4> control{};
@@ -55,6 +55,8 @@ struct Loop {
     std::condition_variable wake;
     std::deque<Task> tasks;
     bool busy = false;
+    bool pipeline_busy = false; // from native release through Python control completion
+    uint64_t pipeline_id = 0;
     std::thread worker;
 };
 struct Calendar {
@@ -80,6 +82,7 @@ public:
     std::string init_error;
     std::deque<Event> events;
     bool overflow = false;
+    bool auto_sample = false;
     std::atomic<bool> stopping{false};
     HANDLE completion = nullptr, changed = nullptr, timer = nullptr;
     std::thread releaser;
@@ -177,7 +180,7 @@ public:
                 if (loop.tasks.empty() && stopping) break;
                 task = loop.tasks.front(); loop.tasks.pop_front();
             }
-            Event event{}; event.kind = task.command ? 3 : 1; event.vehicle = int(i);
+            Event event{}; event.kind = task.command ? 3 : task.scheduled_sample ? 6 : 1; event.vehicle = int(i);
             event.id = task.id; event.submitted = task.submitted; event.started = clock_s();
             try {
                 if (task.command) {
@@ -203,7 +206,8 @@ public:
                     }
                     else { std::lock_guard<std::mutex> lock(calendar_mutex); calendars[i].command_pending = false; }
                 }
-                if (!task.command || event.status == 0) snapshot(client.get(), i, event);
+                if (task.scheduled_sample && event.started >= task.deadline) event.status = 1;
+                if (event.status == 0) snapshot(client.get(), i, event);
             } catch (const std::exception& e) { event.kind = 5; copy_text(event.error, e.what()); }
             event.finished = clock_s();
             { std::lock_guard<std::mutex> lock(loop.mutex); loop.busy = false; }
@@ -212,9 +216,12 @@ public:
     }
     void submit(int index, Task task) {
         auto& loop = *loops.at(index);
+        // Match release_loop's lock order when both locks are needed.
+        std::unique_lock<std::mutex> calendar_lock(calendar_mutex, std::defer_lock);
+        if (task.command) calendar_lock.lock();
         std::lock_guard<std::mutex> lock(loop.mutex);
         if (stopping || loop.busy) throw std::runtime_error("one native I/O operation per vehicle required");
-        if (task.command) { std::lock_guard<std::mutex> guard(calendar_mutex); calendars.at(index).command_pending = true; }
+        if (task.command) calendars.at(index).command_pending = true;
         loop.busy = true; task.submitted = clock_s(); loop.tasks.push_back(task); loop.wake.notify_one();
     }
     Calendar schedule(int index, uint64_t id, uint64_t version, double next, double period, double end) {
@@ -278,6 +285,7 @@ public:
             if (!c.active || c.id!=e.id || c.version!=e.version ||
                 std::abs(c.next-e.submitted)>1e-9 || std::abs(c.period-e.started)>1e-9) return 1;
             if (c.command_pending || c.control_token!=e.collision_ns) return 2;
+            if (auto_sample && c.next <= now) return 3; // a due sampling slot is already committed
             if (now>=e.state_end || e.planned<=now || e.planned+1e-9<c.last+.020 || e.planned>=e.finished) return 3;
         }
         if (commit) {
@@ -293,6 +301,36 @@ public:
     void cancel(int index) {
         std::lock_guard<std::mutex> lock(calendar_mutex); calendars.at(index).active = false; SetEvent(changed);
     }
+    void enable_auto_sample() {
+        std::lock_guard<std::mutex> lock(calendar_mutex);
+        for (const auto& c : calendars) if (c.active) throw std::runtime_error("enable scheduled sampling before releases");
+        auto_sample = true;
+    }
+    void complete_sample(int index, uint64_t id) {
+        auto& loop = *loops.at(index);
+        std::lock_guard<std::mutex> lock(loop.mutex);
+        if (!loop.pipeline_busy || loop.pipeline_id != id || loop.busy)
+            throw std::runtime_error("invalid scheduled sample completion");
+        loop.pipeline_busy = false;
+    }
+    void publish_release(size_t i, Event& event) {
+        if (!auto_sample) { push(event); return; }
+        auto& loop = *loops[i];
+        std::lock_guard<std::mutex> lock(loop.mutex);
+        if (event.finished >= event.planned + event.period) event.status = 1;
+        else if (loop.pipeline_busy || loop.busy) event.status = 4;
+        push(event);
+        if (event.status != 0) return;
+        Task task;
+        task.scheduled_sample = true;
+        task.id = event.id;
+        task.submitted = event.finished;
+        task.deadline = event.planned + event.period;
+        loop.pipeline_busy = loop.busy = true;
+        loop.pipeline_id = task.id;
+        loop.tasks.push_back(task);
+        loop.wake.notify_one();
+    }
     void release_loop() {
         try {
             pin();
@@ -305,7 +343,7 @@ public:
                         while (c.active && c.next <= now) {
                             Event event{}; event.kind = 4; event.vehicle = int(i); event.id = c.id++;
                             event.version = c.version; event.planned = c.next; event.finished = clock_s(); event.period = c.period;
-                            push(event); c.last = c.next; c.next += c.period; c.active = c.next+1e-9 < c.end;
+                            publish_release(i, event); c.last = c.next; c.next += c.period; c.active = c.next+1e-9 < c.end;
                         }
                         if (c.active) nearest = std::min(nearest, c.next);
                     }
@@ -365,5 +403,7 @@ API int falcon_guarded_batch(Runtime* runtime, Event* expected, int count, int c
     TRY { return runtime->guarded_batch(expected,count,commit!=0); } FAIL
 }
 API int falcon_cancel(Runtime* runtime, int vehicle) { TRY { runtime->cancel(vehicle); return 0; } FAIL }
+API int falcon_enable_auto_sample(Runtime* runtime) { TRY { runtime->enable_auto_sample(); return 0; } FAIL }
+API int falcon_complete_sample(Runtime* runtime, int vehicle, uint64_t id) { TRY { runtime->complete_sample(vehicle, id); return 0; } FAIL }
 API void falcon_stop(Runtime* runtime) { runtime->stop(); }
 API void falcon_destroy(Runtime* runtime) { delete runtime; }
