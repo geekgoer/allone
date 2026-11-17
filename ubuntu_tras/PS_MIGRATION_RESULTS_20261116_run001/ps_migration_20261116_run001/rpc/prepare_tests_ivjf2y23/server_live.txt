@@ -1,0 +1,3 @@
+DESTROY PSMIG20261116_previous_owned_actor
+RESET
+MOCK_PREPARE_STOP actors=40

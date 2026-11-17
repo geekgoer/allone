@@ -1,0 +1,5256 @@
+{
+  "cases": [
+    {
+      "actual": {
+        "accepted": true,
+        "action": "quality_upgrade",
+        "checks": 2,
+        "choice": {
+          "Drone1:0": 11,
+          "Drone1:1": 13,
+          "Drone2:0": 18,
+          "Drone2:1": 13,
+          "Drone3:0": 4,
+          "Drone3:1": 5,
+          "Drone4:0": 4,
+          "Drone4:1": 5
+        },
+        "order": [
+          "Drone1:0",
+          "Drone3:0",
+          "Drone4:0",
+          "Drone2:0",
+          "Drone4:1",
+          "Drone1:1",
+          "Drone2:1",
+          "Drone3:1"
+        ],
+        "skipped": null
+      },
+      "expected": {
+        "accepted": true,
+        "action": "quality_upgrade",
+        "checks": 2,
+        "choice": {
+          "Drone1:0": 11,
+          "Drone1:1": 13,
+          "Drone2:0": 18,
+          "Drone2:1": 13,
+          "Drone3:0": 4,
+          "Drone3:1": 5,
+          "Drone4:0": 4,
+          "Drone4:1": 5
+        },
+        "order": [
+          "Drone1:0",
+          "Drone3:0",
+          "Drone4:0",
+          "Drone2:0",
+          "Drone4:1",
+          "Drone1:1",
+          "Drone2:1",
+          "Drone3:1"
+        ],
+        "skipped": null
+      },
+      "full_decision": {
+        "accepted": true,
+        "action": "quality_upgrade",
+        "candidates": 2,
+        "checks": 2,
+        "choice": {
+          "Drone1:0": 11,
+          "Drone1:1": 13,
+          "Drone2:0": 18,
+          "Drone2:1": 13,
+          "Drone3:0": 4,
+          "Drone3:1": 5,
+          "Drone4:0": 4,
+          "Drone4:1": 5
+        },
+        "commit_by": 3.0,
+        "diagnosis": {
+          "deficit": 0.0,
+          "end": 0.0,
+          "jobs": [],
+          "kind": "none",
+          "start": 0.0,
+          "type": "C"
+        },
+        "forecast": {
+          "command_finish": {
+            "Drone1:0": 10.4262858170235,
+            "Drone1:1": 39.4626088785026,
+            "Drone2:0": 12.7022858170235,
+            "Drone2:1": 41.3931588161356,
+            "Drone3:0": 11.0342858170235,
+            "Drone3:1": 41.5431588161356,
+            "Drone4:0": 11.6422858170235,
+            "Drone4:1": 37.7065328855161
+          },
+          "feasible": true,
+          "finish": {
+            "Drone1:0": 10.4262858170235,
+            "Drone1:1": 39.4626088785026,
+            "Drone2:0": 12.7022858170235,
+            "Drone2:1": 41.3931588161356,
+            "Drone3:0": 11.0342858170235,
+            "Drone3:1": 41.5431588161356,
+            "Drone4:0": 11.6422858170235,
+            "Drone4:1": 37.7065328855161
+          },
+          "jobs": [
+            {
+              "command_completed": false,
+              "deadline": 11.3582189749872,
+              "loop": "Drone1",
+              "mode": "11",
+              "name": "Drone1:0",
+              "release": 8.26363522352242,
+              "remaining_operations": [
+                [
+                  "ps",
+                  0.261973654980166
+                ],
+                [
+                  "pl",
+                  1.33
+                ],
+                [
+                  "ps",
+                  0.15
+                ],
+                [
+                  "delay",
+                  0.3
+                ]
+              ],
+              "segments": []
+            },
+            {
+              "command_completed": false,
+              "deadline": 12.5357033334207,
+              "loop": "Drone3",
+              "mode": "4",
+              "name": "Drone3:0",
+              "release": 9.48317162660845,
+              "remaining_operations": [
+                [
+                  "ps",
+                  0.493114190415061
+                ],
+                [
+                  "pl",
+                  0.608
+                ],
+                [
+                  "ps",
+                  0.15
+                ],
+                [
+                  "delay",
+                  0.3
+                ]
+              ],
+              "segments": []
+            },
+            {
+              "command_completed": false,
+              "deadline": 13.164867239175,
+              "loop": "Drone4",
+              "mode": "4",
+              "name": "Drone4:0",
+              "release": 6.87067579933505,
+              "remaining_operations": [
+                [
+                  "ps",
+                  0.288857086181085
+                ],
+                [
+                  "pl",
+                  0.608
+                ],
+                [
+                  "ps",
+                  0.15
+                ],
+                [
+                  "delay",
+                  0.3
+                ]
+              ],
+              "segments": []
+            },
+            {
+              "command_completed": false,
+              "deadline": 16.5587526331598,
+              "loop": "Drone2",
+              "mode": "18",
+              "name": "Drone2:0",
+              "release": 10.3004493340564,
+              "remaining_operations": [
+                [
+                  "ps",
+                  0.155709482079261
+                ],
+                [
+                  "pl",
+                  1.06
+                ],
+                [
+                  "ps",
+                  0.15
+                ],
+                [
+                  "delay",
+                  0.3
+                ]
+              ],
+              "segments": []
+            },
+            {
+              "command_completed": false,
+              "deadline": 42.7745793908277,
+              "loop": "Drone4",
+              "mode": "5",
+              "name": "Drone4:1",
+              "release": 36.870675799335,
+              "remaining_operations": [
+                [
+                  "ps",
+                  0.288857086181085
+                ],
+                [
+                  "pl",
+                  0.097
+                ],
+                [
+                  "ps",
+                  0.15
+                ],
+                [
+                  "delay",
+                  0.3
+                ]
+              ],
+              "segments": []
+            },
+            {
+              "command_completed": false,
+              "deadline": 43.1312835517341,
+              "loop": "Drone1",
+              "mode": "13",
+              "name": "Drone1:1",
+              "release": 38.2636352235224,
+              "remaining_operations": [
+                [
+                  "ps",
+                  0.261973654980166
+                ],
+                [
+                  "pl",
+                  0.487
+                ],
+                [
+                  "ps",
+                  0.15
+                ],
+                [
+                  "delay",
+                  0.3
+                ]
+              ],
+              "segments": []
+            },
+            {
+              "command_completed": false,
+              "deadline": 43.4111056955478,
+              "loop": "Drone2",
+              "mode": "13",
+              "name": "Drone2:1",
+              "release": 40.3004493340564,
+              "remaining_operations": [
+                [
+                  "ps",
+                  0.155709482079261
+                ],
+                [
+                  "pl",
+                  0.487
+                ],
+                [
+                  "ps",
+                  0.15
+                ],
+                [
+                  "delay",
+                  0.3
+                ]
+              ],
+              "segments": []
+            },
+            {
+              "command_completed": false,
+              "deadline": 46.7416491624179,
+              "loop": "Drone3",
+              "mode": "5",
+              "name": "Drone3:1",
+              "release": 39.4831716266085,
+              "remaining_operations": [
+                [
+                  "ps",
+                  0.493114190415061
+                ],
+                [
+                  "pl",
+                  0.097
+                ],
+                [
+                  "ps",
+                  0.15
+                ],
+                [
+                  "delay",
+                  0.3
+                ]
+              ],
+              "segments": []
+            }
+          ],
+          "misses": [],
+          "scope": "finite deterministic service envelope; not plant or infinite-horizon certificate",
+          "slack": {
+            "Drone1:0": 0.931933157963719,
+            "Drone1:1": 3.66867467323149,
+            "Drone2:0": 3.85646681613625,
+            "Drone2:1": 2.01794687941213,
+            "Drone3:0": 1.50141751639714,
+            "Drone3:1": 5.19849034628228,
+            "Drone4:0": 1.5225814221515,
+            "Drone4:1": 5.06804650531156
+          },
+          "switches": 7,
+          "timeline": [
+            {
+              "end": 7.15953288551613,
+              "job": "Drone4:0",
+              "ready": 6.87067579933505,
+              "resource": "ps",
+              "start": 6.87067579933505
+            },
+            {
+              "end": 8.52560887850258,
+              "job": "Drone1:0",
+              "ready": 8.26363522352242,
+              "resource": "ps",
+              "start": 8.26363522352242
+            },
+            {
+              "end": 9.85560887850258,
+              "job": "Drone1:0",
+              "ready": 8.52560887850258,
+              "resource": "pl",
+              "start": 8.52560887850258
+            },
+            {
+              "end": 9.97628581702352,
+              "job": "Drone3:0",
+              "ready": 9.48317162660845,
+              "resource": "ps",
+              "start": 9.48317162660845
+            },
+            {
+              "end": 10.1262858170235,
+              "job": "Drone1:0",
+              "ready": 9.85560887850258,
+              "resource": "ps",
+              "start": 9.97628581702352
+            },
+            {
+              "end": 10.5842858170235,
+              "job": "Drone3:0",
+              "ready": 9.97628581702352,
+              "resource": "pl",
+              "start": 9.97628581702352
+            },
+            {
+              "end": 10.4561588161356,
+              "job": "Drone2:0",
+              "ready": 10.3004493340564,
+              "resource": "ps",
+              "start": 10.3004493340564
+            },
+            {
+              "end": 10.7342858170235,
+              "job": "Drone3:0",
+              "ready": 10.5842858170235,
+              "resource": "ps",
+              "start": 10.5842858170235
+            },
+            {
+              "end": 11.1922858170235,
+              "job": "Drone4:0",
+              "ready": 7.15953288551613,
+              "resource": "pl",
+              "start": 10.5842858170235
+            },
+            {
+              "end": 11.3422858170235,
+              "job": "Drone4:0",
+              "ready": 11.1922858170235,
+              "resource": "ps",
+              "start": 11.1922858170235
+            },
+            {
+              "end": 12.2522858170235,
+              "job": "Drone2:0",
+              "ready": 10.4561588161356,
+              "resource": "pl",
+              "start": 11.1922858170235
+            },
+            {
+              "end": 12.4022858170235,
+              "job": "Drone2:0",
+              "ready": 12.2522858170235,
+              "resource": "ps",
+              "start": 12.2522858170235
+            },
+            {
+              "end": 37.1595328855161,
+              "job": "Drone4:1",
+              "ready": 36.870675799335,
+              "resource": "ps",
+              "start": 36.870675799335
+            },
+            {
+              "end": 37.2565328855161,
+              "job": "Drone4:1",
+              "ready": 37.1595328855161,
+              "resource": "pl",
+              "start": 37.1595328855161
+            },
+            {
+              "end": 37.4065328855161,
+              "job": "Drone4:1",
+              "ready": 37.2565328855161,
+              "resource": "ps",
+              "start": 37.2565328855161
+            },
+            {
+              "end": 38.5256088785026,
+              "job": "Drone1:1",
+              "ready": 38.2636352235224,
+              "resource": "ps",
+              "start": 38.2636352235224
+            },
+            {
+              "end": 39.0126088785026,
+              "job": "Drone1:1",
+              "ready": 38.5256088785026,
+              "resource": "pl",
+              "start": 38.5256088785026
+            },
+            {
+              "end": 39.1626088785026,
+              "job": "Drone1:1",
+              "ready": 39.0126088785026,
+              "resource": "ps",
+              "start": 39.0126088785026
+            },
+            {
+              "end": 39.9762858170235,
+              "job": "Drone3:1",
+              "ready": 39.4831716266085,
+              "resource": "ps",
+              "start": 39.4831716266085
+            },
+            {
+              "end": 40.4561588161356,
+              "job": "Drone2:1",
+              "ready": 40.3004493340564,
+              "resource": "ps",
+              "start": 40.3004493340564
+            },
+            {
+              "end": 40.9431588161356,
+              "job": "Drone2:1",
+              "ready": 40.4561588161356,
+              "resource": "pl",
+              "start": 40.4561588161356
+            },
+            {
+              "end": 41.0931588161356,
+              "job": "Drone2:1",
+              "ready": 40.9431588161356,
+              "resource": "ps",
+              "start": 40.9431588161356
+            },
+            {
+              "end": 41.0401588161356,
+              "job": "Drone3:1",
+              "ready": 39.9762858170235,
+              "resource": "pl",
+              "start": 40.9431588161356
+            },
+            {
+              "end": 41.2431588161356,
+              "job": "Drone3:1",
+              "ready": 41.0401588161356,
+              "resource": "ps",
+              "start": 41.0931588161356
+            }
+          ],
+          "waits": {
+            "Drone1:0": {
+              "pl": 0.0,
+              "ps": 0.120676938520932
+            },
+            "Drone1:1": {
+              "pl": 0.0,
+              "ps": 0.0
+            },
+            "Drone2:0": {
+              "pl": 0.736127000887896,
+              "ps": 0.0
+            },
+            "Drone2:1": {
+              "pl": 0.0,
+              "ps": 0.0
+            },
+            "Drone3:0": {
+              "pl": 0.0,
+              "ps": 0.0
+            },
+            "Drone3:1": {
+              "pl": 0.966872999112105,
+              "ps": 0.0529999999999973
+            },
+            "Drone4:0": {
+              "pl": 3.42475293150738,
+              "ps": 0.0
+            },
+            "Drone4:1": {
+              "pl": 0.0,
+              "ps": 0.0
+            }
+          },
+          "worst": "Drone1:0"
+        },
+        "jobs": [
+          {
+            "allowed_modes": [
+              13,
+              4,
+              15,
+              8,
+              18,
+              11,
+              14,
+              16,
+              17,
+              2
+            ],
+            "current_mode": 11,
+            "fresh_deadline": 11.8582189749872,
+            "hold_deadline": 43.1312835517341,
+            "mode_locked": false,
+            "name": "Drone1:0",
+            "periodic_edit": false,
+            "post_ms": 0.15,
+            "prep_ms": 0.261973654980166,
+            "prep_ready": 8.26363522352242,
+            "recovery": false,
+            "release": 8.06363522352242,
+            "release_options": [
+              [
+                6.06363522352242,
+                9.35821897498724
+              ],
+              [
+                9.06363522352242,
+                12.3582189749872
+              ]
+            ],
+            "slot_deadline": 11.3582189749872,
+            "transport_ms": 0.3,
+            "vehicle": "Drone1"
+          },
+          {
+            "allowed_modes": [
+              5,
+              10,
+              12,
+              13,
+              4,
+              15,
+              8,
+              18,
+              11,
+              14,
+              16,
+              3,
+              17,
+              7,
+              2,
+              6
+            ],
+            "current_mode": 4,
+            "fresh_deadline": 13.0357033334207,
+            "hold_deadline": 46.7416491624179,
+            "mode_locked": false,
+            "name": "Drone3:0",
+            "periodic_edit": false,
+            "post_ms": 0.15,
+            "prep_ms": 0.493114190415061,
+            "prep_ready": 9.48317162660845,
+            "recovery": false,
+            "release": 9.28317162660846,
+            "release_options": [
+              [
+                7.28317162660846,
+                10.5357033334207
+              ],
+              [
+                10.2831716266085,
+                13.5357033334207
+              ]
+            ],
+            "slot_deadline": 12.5357033334207,
+            "transport_ms": 0.3,
+            "vehicle": "Drone3"
+          },
+          {
+            "allowed_modes": [
+              5,
+              10,
+              12,
+              13,
+              4,
+              15,
+              8,
+              18,
+              11,
+              14,
+              16,
+              3,
+              17,
+              7,
+              2,
+              6
+            ],
+            "current_mode": 4,
+            "fresh_deadline": 13.664867239175,
+            "hold_deadline": 42.7745793908277,
+            "mode_locked": false,
+            "name": "Drone4:0",
+            "periodic_edit": false,
+            "post_ms": 0.15,
+            "prep_ms": 0.288857086181085,
+            "prep_ready": 6.87067579933505,
+            "recovery": false,
+            "release": 6.67067579933505,
+            "release_options": [
+              [
+                4.67067579933505,
+                11.164867239175
+              ],
+              [
+                7.67067579933505,
+                14.164867239175
+              ]
+            ],
+            "slot_deadline": 13.164867239175,
+            "transport_ms": 0.3,
+            "vehicle": "Drone4"
+          },
+          {
+            "allowed_modes": [
+              13,
+              4,
+              15,
+              8,
+              18,
+              11,
+              14,
+              16,
+              17,
+              2
+            ],
+            "current_mode": 18,
+            "fresh_deadline": 17.0587526331598,
+            "hold_deadline": 43.4111056955478,
+            "mode_locked": false,
+            "name": "Drone2:0",
+            "periodic_edit": false,
+            "post_ms": 0.15,
+            "prep_ms": 0.155709482079261,
+            "prep_ready": 10.3004493340564,
+            "recovery": false,
+            "release": 10.1004493340564,
+            "release_options": [
+              [
+                8.10044933405636,
+                14.5587526331598
+              ],
+              [
+                11.1004493340564,
+                17.5587526331598
+              ]
+            ],
+            "slot_deadline": 16.5587526331598,
+            "transport_ms": 0.3,
+            "vehicle": "Drone2"
+          },
+          {
+            "allowed_modes": [
+              5,
+              10,
+              12,
+              13,
+              4,
+              15,
+              8,
+              18,
+              11,
+              14,
+              16,
+              3,
+              17,
+              7,
+              2,
+              6
+            ],
+            "current_mode": 5,
+            "fresh_deadline": 44.670675799335,
+            "hold_deadline": 42.7745793908277,
+            "mode_locked": false,
+            "name": "Drone4:1",
+            "periodic_edit": false,
+            "post_ms": 0.15,
+            "prep_ms": 0.288857086181085,
+            "prep_ready": 36.870675799335,
+            "recovery": false,
+            "release": 36.670675799335,
+            "release_options": [],
+            "slot_deadline": 46.670675799335,
+            "transport_ms": 0.3,
+            "vehicle": "Drone4"
+          },
+          {
+            "allowed_modes": [
+              13,
+              4,
+              15,
+              8,
+              18,
+              11,
+              14,
+              16,
+              17,
+              2
+            ],
+            "current_mode": 13,
+            "fresh_deadline": 46.0636352235224,
+            "hold_deadline": 43.1312835517341,
+            "mode_locked": false,
+            "name": "Drone1:1",
+            "periodic_edit": false,
+            "post_ms": 0.15,
+            "prep_ms": 0.261973654980166,
+            "prep_ready": 38.2636352235224,
+            "recovery": false,
+            "release": 38.0636352235224,
+            "release_options": [],
+            "slot_deadline": 48.0636352235224,
+            "transport_ms": 0.3,
+            "vehicle": "Drone1"
+          },
+          {
+            "allowed_modes": [
+              13,
+              4,
+              15,
+              8,
+              18,
+              11,
+              14,
+              16,
+              17,
+              2
+            ],
+            "current_mode": 13,
+            "fresh_deadline": 48.1004493340564,
+            "hold_deadline": 43.4111056955478,
+            "mode_locked": false,
+            "name": "Drone2:1",
+            "periodic_edit": false,
+            "post_ms": 0.15,
+            "prep_ms": 0.155709482079261,
+            "prep_ready": 40.3004493340564,
+            "recovery": false,
+            "release": 40.1004493340564,
+            "release_options": [],
+            "slot_deadline": 50.1004493340564,
+            "transport_ms": 0.3,
+            "vehicle": "Drone2"
+          },
+          {
+            "allowed_modes": [
+              5,
+              10,
+              12,
+              13,
+              4,
+              15,
+              8,
+              18,
+              11,
+              14,
+              16,
+              3,
+              17,
+              7,
+              2,
+              6
+            ],
+            "current_mode": 5,
+            "fresh_deadline": 47.2831716266085,
+            "hold_deadline": 46.7416491624179,
+            "mode_locked": false,
+            "name": "Drone3:1",
+            "periodic_edit": false,
+            "post_ms": 0.15,
+            "prep_ms": 0.493114190415061,
+            "prep_ready": 39.4831716266085,
+            "recovery": false,
+            "release": 39.2831716266085,
+            "release_options": [],
+            "slot_deadline": 49.2831716266085,
+            "transport_ms": 0.3,
+            "vehicle": "Drone3"
+          }
+        ],
+        "order": [
+          "Drone1:0",
+          "Drone3:0",
+          "Drone4:0",
+          "Drone2:0",
+          "Drone4:1",
+          "Drone1:1",
+          "Drone2:1",
+          "Drone3:1"
+        ],
+        "pending": [],
+        "permission": null,
+        "revision": 0,
+        "scope": "finite PS/PL replay under supplied service and control qualifications",
+        "skipped": null,
+        "trace": [
+          {
+            "accepted": true,
+            "action": "keep_current",
+            "misses": [],
+            "optimistic_head_budget_ms": 2.38261009648465,
+            "overlap": [],
+            "skip_net_head_budget_ms": null
+          },
+          {
+            "accepted": true,
+            "action": "quality_upgrade",
+            "misses": [],
+            "optimistic_head_budget_ms": 2.38261009648465,
+            "overlap": [],
+            "skip_net_head_budget_ms": null
+          }
+        ]
+      },
+      "pass": true,
+      "seed": 0
+    },
+    {
+      "actual": {
+        "accepted": true,
+        "action": "quality_upgrade",
+        "checks": 3,
+        "choice": {
+          "Drone1:0": 8,
+          "Drone1:1": 13,
+          "Drone2:0": 13,
+          "Drone2:1": 13,
+          "Drone3:0": 5,
+          "Drone3:1": 5,
+          "Drone4:0": 5,
+          "Drone4:1": 5
+        },
+        "order": [
+          "Drone1:0",
+          "Drone2:0",
+          "Drone4:0",
+          "Drone3:0",
+          "Drone1:1",
+          "Drone2:1",
+          "Drone3:1",
+          "Drone4:1"
+        ],
+        "skipped": null
+      },
+      "expected": {
+        "accepted": true,
+        "action": "quality_upgrade",
+        "checks": 3,
+        "choice": {
+          "Drone1:0": 8,
+          "Drone1:1": 13,
+          "Drone2:0": 13,
+          "Drone2:1": 13,
+          "Drone3:0": 5,
+          "Drone3:1": 5,
+          "Drone4:0": 5,
+          "Drone4:1": 5
+        },
+        "order": [
+          "Drone1:0",
+          "Drone2:0",
+          "Drone4:0",
+          "Drone3:0",
+          "Drone1:1",
+          "Drone2:1",
+          "Drone3:1",
+          "Drone4:1"
+        ],
+        "skipped": null
+      },
+      "full_decision": {
+        "accepted": true,
+        "action": "quality_upgrade",
+        "candidates": 3,
+        "checks": 3,
+        "choice": {
+          "Drone1:0": 8,
+          "Drone1:1": 13,
+          "Drone2:0": 13,
+          "Drone2:1": 13,
+          "Drone3:0": 5,
+          "Drone3:1": 5,
+          "Drone4:0": 5,
+          "Drone4:1": 5
+        },
+        "commit_by": 3.0,
+        "diagnosis": {
+          "deficit": 0.665008107696774,
+          "end": 10.4707650667888,
+          "jobs": [
+            "Drone2:0"
+          ],
+          "kind": "path",
+          "start": 8.20146713291762,
+          "type": "A"
+        },
+        "forecast": {
+          "command_finish": {
+            "Drone1:0": 8.57701597654273,
+            "Drone1:1": 38.0950159765427,
+            "Drone2:0": 9.64832201811068,
+            "Drone2:1": 39.5727731744856,
+            "Drone3:0": 10.6758492751039,
+            "Drone3:1": 39.7227731744856,
+            "Drone4:0": 10.5258492751039,
+            "Drone4:1": 40.5258492751039
+          },
+          "feasible": true,
+          "finish": {
+            "Drone1:0": 8.57701597654273,
+            "Drone1:1": 38.0950159765427,
+            "Drone2:0": 9.64832201811068,
+            "Drone2:1": 39.5727731744856,
+            "Drone3:0": 10.6758492751039,
+            "Drone3:1": 39.7227731744856,
+            "Drone4:0": 10.5258492751039,
+            "Drone4:1": 40.5258492751039
+          },
+          "jobs": [
+            {
+              "command_completed": false,
+              "deadline": 8.86916510801624,
+              "loop": "Drone1",
+              "mode": "8",
+              "name": "Drone1:0",
+              "release": 6.7536309985777,
+              "remaining_operations": [
+                [
+                  "ps",
+                  0.40438497796503
+                ],
+                [
+                  "pl",
+                  0.969
+                ],
+                [
+                  "ps",
+                  0.15
+                ],
+                [
+                  "delay",
+                  0.3
+                ]
+              ],
+              "segments": []
+            },
+            {
+              "command_completed": false,
+              "deadline": 10.4707650667888,
+              "loop": "Drone2",
+              "mode": "13",
+              "name": "Drone2:0",
+              "release": 8.20146713291762,
+              "remaining_operations": [
+                [
+                  "ps",
+                  0.434306041567948
+                ],
+                [
+                  "pl",
+                  0.487
+                ],
+                [
+                  "ps",
+                  0.15
+                ],
+                [
+                  "delay",
+                  0.3
+                ]
+              ],
+              "segments": []
+            },
+            {
+              "command_completed": false,
+              "deadline": 11.4304189149598,
+              "loop": "Drone4",
+              "mode": "5",
+              "name": "Drone4:0",
+              "release": 9.50318960999253,
+              "remaining_operations": [
+                [
+                  "ps",
+                  0.475659665111404
+                ],
+                [
+                  "pl",
+                  0.097
+                ],
+                [
+                  "ps",
+                  0.15
+                ],
+                [
+                  "delay",
+                  0.3
+                ]
+              ],
+              "segments": []
+            },
+            {
+              "command_completed": false,
+              "deadline": 13.8729835624202,
+              "loop": "Drone3",
+              "mode": "5",
+              "name": "Drone3:0",
+              "release": 8.59381922857801,
+              "remaining_operations": [
+                [
+                  "ps",
+                  0.420730546798593
+                ],
+                [
+                  "pl",
+                  0.097
+                ],
+                [
+                  "ps",
+                  0.15
+                ],
+                [
+                  "delay",
+                  0.3
+                ]
+              ],
+              "segments": []
+            },
+            {
+              "command_completed": false,
+              "deadline": 39.2611432206041,
+              "loop": "Drone1",
+              "mode": "13",
+              "name": "Drone1:1",
+              "release": 36.7536309985777,
+              "remaining_operations": [
+                [
+                  "ps",
+                  0.40438497796503
+                ],
+                [
+                  "pl",
+                  0.487
+                ],
+                [
+                  "ps",
+                  0.15
+                ],
+                [
+                  "delay",
+                  0.3
+                ]
+              ],
+              "segments": []
+            },
+            {
+              "command_completed": false,
+              "deadline": 40.1715519920497,
+              "loop": "Drone2",
+              "mode": "13",
+              "name": "Drone2:1",
+              "release": 38.2014671329176,
+              "remaining_operations": [
+                [
+                  "ps",
+                  0.434306041567948
+                ],
+                [
+                  "pl",
+                  0.487
+                ],
+                [
+                  "ps",
+                  0.15
+                ],
+                [
+                  "delay",
+                  0.3
+                ]
+              ],
+              "segments": []
+            },
+            {
+              "command_completed": false,
+              "deadline": 41.9918025913216,
+              "loop": "Drone3",
+              "mode": "5",
+              "name": "Drone3:1",
+              "release": 38.593819228578,
+              "remaining_operations": [
+                [
+                  "ps",
+                  0.420730546798593
+                ],
+                [
+                  "pl",
+                  0.097
+                ],
+                [
+                  "ps",
+                  0.15
+                ],
+                [
+                  "delay",
+                  0.3
+                ]
+              ],
+              "segments": []
+            },
+            {
+              "command_completed": false,
+              "deadline": 44.5516644467535,
+              "loop": "Drone4",
+              "mode": "5",
+              "name": "Drone4:1",
+              "release": 39.5031896099925,
+              "remaining_operations": [
+                [
+                  "ps",
+                  0.475659665111404
+                ],
+                [
+                  "pl",
+                  0.097
+                ],
+                [
+                  "ps",
+                  0.15
+                ],
+                [
+                  "delay",
+                  0.3
+                ]
+              ],
+              "segments": []
+            }
+          ],
+          "misses": [],
+          "scope": "finite deterministic service envelope; not plant or infinite-horizon certificate",
+          "slack": {
+            "Drone1:0": 0.292149131473515,
+            "Drone1:1": 1.16612724406134,
+            "Drone2:0": 0.822443048678112,
+            "Drone2:1": 0.598778817564089,
+            "Drone3:0": 3.19713428731629,
+            "Drone3:1": 2.269029416836,
+            "Drone4:0": 0.9045696398559,
+            "Drone4:1": 4.02581517164958
+          },
+          "switches": 7,
+          "timeline": [
+            {
+              "end": 7.15801597654273,
+              "job": "Drone1:0",
+              "ready": 6.7536309985777,
+              "resource": "ps",
+              "start": 6.7536309985777
+            },
+            {
+              "end": 8.12701597654273,
+              "job": "Drone1:0",
+              "ready": 7.15801597654273,
+              "resource": "pl",
+              "start": 7.15801597654273
+            },
+            {
+              "end": 8.27701597654273,
+              "job": "Drone1:0",
+              "ready": 8.12701597654273,
+              "resource": "ps",
+              "start": 8.12701597654273
+            },
+            {
+              "end": 8.71132201811068,
+              "job": "Drone2:0",
+              "ready": 8.20146713291762,
+              "resource": "ps",
+              "start": 8.27701597654273
+            },
+            {
+              "end": 9.13205256490927,
+              "job": "Drone3:0",
+              "ready": 8.59381922857801,
+              "resource": "ps",
+              "start": 8.71132201811068
+            },
+            {
+              "end": 9.19832201811068,
+              "job": "Drone2:0",
+              "ready": 8.71132201811068,
+              "resource": "pl",
+              "start": 8.71132201811068
+            },
+            {
+              "end": 9.34832201811068,
+              "job": "Drone2:0",
+              "ready": 9.19832201811068,
+              "resource": "ps",
+              "start": 9.19832201811068
+            },
+            {
+              "end": 9.97884927510393,
+              "job": "Drone4:0",
+              "ready": 9.50318960999253,
+              "resource": "ps",
+              "start": 9.50318960999253
+            },
+            {
+              "end": 10.0758492751039,
+              "job": "Drone4:0",
+              "ready": 9.97884927510393,
+              "resource": "pl",
+              "start": 9.97884927510393
+            },
+            {
+              "end": 10.2258492751039,
+              "job": "Drone4:0",
+              "ready": 10.0758492751039,
+              "resource": "ps",
+              "start": 10.0758492751039
+            },
+            {
+              "end": 10.1728492751039,
+              "job": "Drone3:0",
+              "ready": 9.13205256490927,
+              "resource": "pl",
+              "start": 10.0758492751039
+            },
+            {
+              "end": 10.3758492751039,
+              "job": "Drone3:0",
+              "ready": 10.1728492751039,
+              "resource": "ps",
+              "start": 10.2258492751039
+            },
+            {
+              "end": 37.1580159765427,
+              "job": "Drone1:1",
+              "ready": 36.7536309985777,
+              "resource": "ps",
+              "start": 36.7536309985777
+            },
+            {
+              "end": 37.6450159765427,
+              "job": "Drone1:1",
+              "ready": 37.1580159765427,
+              "resource": "pl",
+              "start": 37.1580159765427
+            },
+            {
+              "end": 37.7950159765427,
+              "job": "Drone1:1",
+              "ready": 37.6450159765427,
+              "resource": "ps",
+              "start": 37.6450159765427
+            },
+            {
+              "end": 38.6357731744856,
+              "job": "Drone2:1",
+              "ready": 38.2014671329176,
+              "resource": "ps",
+              "start": 38.2014671329176
+            },
+            {
+              "end": 39.0565037212842,
+              "job": "Drone3:1",
+              "ready": 38.593819228578,
+              "resource": "ps",
+              "start": 38.6357731744856
+            },
+            {
+              "end": 39.1227731744856,
+              "job": "Drone2:1",
+              "ready": 38.6357731744856,
+              "resource": "pl",
+              "start": 38.6357731744856
+            },
+            {
+              "end": 39.2727731744856,
+              "job": "Drone2:1",
+              "ready": 39.1227731744856,
+              "resource": "ps",
+              "start": 39.1227731744856
+            },
+            {
+              "end": 39.2197731744856,
+              "job": "Drone3:1",
+              "ready": 39.0565037212842,
+              "resource": "pl",
+              "start": 39.1227731744856
+            },
+            {
+              "end": 39.4227731744856,
+              "job": "Drone3:1",
+              "ready": 39.2197731744856,
+              "resource": "ps",
+              "start": 39.2727731744856
+            },
+            {
+              "end": 39.9788492751039,
+              "job": "Drone4:1",
+              "ready": 39.5031896099925,
+              "resource": "ps",
+              "start": 39.5031896099925
+            },
+            {
+              "end": 40.0758492751039,
+              "job": "Drone4:1",
+              "ready": 39.9788492751039,
+              "resource": "pl",
+              "start": 39.9788492751039
+            },
+            {
+              "end": 40.2258492751039,
+              "job": "Drone4:1",
+              "ready": 40.0758492751039,
+              "resource": "ps",
+              "start": 40.0758492751039
+            }
+          ],
+          "waits": {
+            "Drone1:0": {
+              "pl": 0.0,
+              "ps": 0.0
+            },
+            "Drone1:1": {
+              "pl": 0.0,
+              "ps": 0.0
+            },
+            "Drone2:0": {
+              "pl": 0.0,
+              "ps": 0.0755488436251124
+            },
+            "Drone2:1": {
+              "pl": 0.0,
+              "ps": 0.0
+            },
+            "Drone3:0": {
+              "pl": 0.943796710194663,
+              "ps": 0.170502789532671
+            },
+            "Drone3:1": {
+              "pl": 0.0662694532014072,
+              "ps": 0.0949539459075552
+            },
+            "Drone4:0": {
+              "pl": 0.0,
+              "ps": 0.0
+            },
+            "Drone4:1": {
+              "pl": 0.0,
+              "ps": 0.0
+            }
+          },
+          "worst": "Drone1:0"
+        },
+        "jobs": [
+          {
+            "allowed_modes": [
+              13,
+              4,
+              15,
+              8,
+              18,
+              11,
+              14,
+              16,
+              17,
+              2
+            ],
+            "current_mode": 8,
+            "fresh_deadline": 9.36916510801624,
+            "hold_deadline": 39.2611432206041,
+            "mode_locked": false,
+            "name": "Drone1:0",
+            "periodic_edit": false,
+            "post_ms": 0.15,
+            "prep_ms": 0.40438497796503,
+            "prep_ready": 6.7536309985777,
+            "recovery": false,
+            "release": 6.5536309985777,
+            "release_options": [
+              [
+                4.5536309985777,
+                6.86916510801624
+              ],
+              [
+                7.5536309985777,
+                9.86916510801624
+              ]
+            ],
+            "slot_deadline": 8.86916510801624,
+            "transport_ms": 0.3,
+            "vehicle": "Drone1"
+          },
+          {
+            "allowed_modes": [
+              13,
+              4,
+              15,
+              8,
+              18,
+              11,
+              14,
+              16,
+              17,
+              2
+            ],
+            "current_mode": 13,
+            "fresh_deadline": 10.9707650667888,
+            "hold_deadline": 40.1715519920497,
+            "mode_locked": false,
+            "name": "Drone2:0",
+            "periodic_edit": false,
+            "post_ms": 0.15,
+            "prep_ms": 0.434306041567948,
+            "prep_ready": 8.20146713291762,
+            "recovery": false,
+            "release": 8.00146713291762,
+            "release_options": [
+              [
+                6.00146713291762,
+                8.47076506678879
+              ],
+              [
+                9.00146713291762,
+                11.4707650667888
+              ]
+            ],
+            "slot_deadline": 10.4707650667888,
+            "transport_ms": 0.3,
+            "vehicle": "Drone2"
+          },
+          {
+            "allowed_modes": [
+              5,
+              10,
+              12,
+              13,
+              4,
+              15,
+              8,
+              18,
+              11,
+              14,
+              16,
+              3,
+              17,
+              7,
+              2,
+              6
+            ],
+            "current_mode": 5,
+            "fresh_deadline": 11.9304189149598,
+            "hold_deadline": 44.5516644467535,
+            "mode_locked": false,
+            "name": "Drone4:0",
+            "periodic_edit": false,
+            "post_ms": 0.15,
+            "prep_ms": 0.475659665111404,
+            "prep_ready": 9.50318960999253,
+            "recovery": false,
+            "release": 9.30318960999253,
+            "release_options": [
+              [
+                7.30318960999253,
+                9.43041891495983
+              ],
+              [
+                10.3031896099925,
+                12.4304189149598
+              ]
+            ],
+            "slot_deadline": 11.4304189149598,
+            "transport_ms": 0.3,
+            "vehicle": "Drone4"
+          },
+          {
+            "allowed_modes": [
+              5,
+              10,
+              12,
+              13,
+              4,
+              15,
+              8,
+              18,
+              11,
+              14,
+              16,
+              3,
+              17,
+              7,
+              2,
+              6
+            ],
+            "current_mode": 5,
+            "fresh_deadline": 14.3729835624202,
+            "hold_deadline": 41.9918025913216,
+            "mode_locked": false,
+            "name": "Drone3:0",
+            "periodic_edit": false,
+            "post_ms": 0.15,
+            "prep_ms": 0.420730546798593,
+            "prep_ready": 8.59381922857801,
+            "recovery": false,
+            "release": 8.39381922857801,
+            "release_options": [
+              [
+                6.39381922857801,
+                11.8729835624202
+              ],
+              [
+                9.39381922857801,
+                14.8729835624202
+              ]
+            ],
+            "slot_deadline": 13.8729835624202,
+            "transport_ms": 0.3,
+            "vehicle": "Drone3"
+          },
+          {
+            "allowed_modes": [
+              13,
+              4,
+              15,
+              8,
+              18,
+              11,
+              14,
+              16,
+              17,
+              2
+            ],
+            "current_mode": 13,
+            "fresh_deadline": 44.5536309985777,
+            "hold_deadline": 39.2611432206041,
+            "mode_locked": false,
+            "name": "Drone1:1",
+            "periodic_edit": false,
+            "post_ms": 0.15,
+            "prep_ms": 0.40438497796503,
+            "prep_ready": 36.7536309985777,
+            "recovery": false,
+            "release": 36.5536309985777,
+            "release_options": [],
+            "slot_deadline": 46.5536309985777,
+            "transport_ms": 0.3,
+            "vehicle": "Drone1"
+          },
+          {
+            "allowed_modes": [
+              13,
+              4,
+              15,
+              8,
+              18,
+              11,
+              14,
+              16,
+              17,
+              2
+            ],
+            "current_mode": 13,
+            "fresh_deadline": 46.0014671329176,
+            "hold_deadline": 40.1715519920497,
+            "mode_locked": false,
+            "name": "Drone2:1",
+            "periodic_edit": false,
+            "post_ms": 0.15,
+            "prep_ms": 0.434306041567948,
+            "prep_ready": 38.2014671329176,
+            "recovery": false,
+            "release": 38.0014671329176,
+            "release_options": [],
+            "slot_deadline": 48.0014671329176,
+            "transport_ms": 0.3,
+            "vehicle": "Drone2"
+          },
+          {
+            "allowed_modes": [
+              5,
+              10,
+              12,
+              13,
+              4,
+              15,
+              8,
+              18,
+              11,
+              14,
+              16,
+              3,
+              17,
+              7,
+              2,
+              6
+            ],
+            "current_mode": 5,
+            "fresh_deadline": 46.393819228578,
+            "hold_deadline": 41.9918025913216,
+            "mode_locked": false,
+            "name": "Drone3:1",
+            "periodic_edit": false,
+            "post_ms": 0.15,
+            "prep_ms": 0.420730546798593,
+            "prep_ready": 38.593819228578,
+            "recovery": false,
+            "release": 38.393819228578,
+            "release_options": [],
+            "slot_deadline": 48.393819228578,
+            "transport_ms": 0.3,
+            "vehicle": "Drone3"
+          },
+          {
+            "allowed_modes": [
+              5,
+              10,
+              12,
+              13,
+              4,
+              15,
+              8,
+              18,
+              11,
+              14,
+              16,
+              3,
+              17,
+              7,
+              2,
+              6
+            ],
+            "current_mode": 5,
+            "fresh_deadline": 47.3031896099925,
+            "hold_deadline": 44.5516644467535,
+            "mode_locked": false,
+            "name": "Drone4:1",
+            "periodic_edit": false,
+            "post_ms": 0.15,
+            "prep_ms": 0.475659665111404,
+            "prep_ready": 39.5031896099925,
+            "recovery": false,
+            "release": 39.3031896099925,
+            "release_options": [],
+            "slot_deadline": 49.3031896099925,
+            "transport_ms": 0.3,
+            "vehicle": "Drone4"
+          }
+        ],
+        "order": [
+          "Drone1:0",
+          "Drone2:0",
+          "Drone4:0",
+          "Drone3:0",
+          "Drone1:1",
+          "Drone2:1",
+          "Drone3:1",
+          "Drone4:1"
+        ],
+        "pending": [],
+        "permission": null,
+        "revision": 0,
+        "scope": "finite PS/PL replay under supplied service and control qualifications",
+        "skipped": null,
+        "trace": [
+          {
+            "accepted": false,
+            "action": "keep_current",
+            "misses": [
+              "Drone2:0",
+              "Drone4:0",
+              "Drone3:0"
+            ],
+            "optimistic_head_budget_ms": null,
+            "overlap": [],
+            "skip_net_head_budget_ms": null
+          },
+          {
+            "accepted": true,
+            "action": "faster_modes",
+            "misses": [],
+            "optimistic_head_budget_ms": 1.26114913147351,
+            "overlap": [],
+            "skip_net_head_budget_ms": null
+          },
+          {
+            "accepted": true,
+            "action": "quality_upgrade",
+            "misses": [],
+            "optimistic_head_budget_ms": 1.26114913147351,
+            "overlap": [],
+            "skip_net_head_budget_ms": null
+          }
+        ]
+      },
+      "pass": true,
+      "seed": 1
+    },
+    {
+      "actual": {
+        "accepted": true,
+        "action": "quality_upgrade",
+        "checks": 2,
+        "choice": {
+          "Drone1:0": 11,
+          "Drone1:1": 13,
+          "Drone2:0": 18,
+          "Drone2:1": 13,
+          "Drone3:0": 17,
+          "Drone3:1": 5,
+          "Drone4:0": 10,
+          "Drone4:1": 5
+        },
+        "order": [
+          "Drone1:0",
+          "Drone2:0",
+          "Drone3:0",
+          "Drone4:0",
+          "Drone1:1",
+          "Drone2:1",
+          "Drone3:1",
+          "Drone4:1"
+        ],
+        "skipped": null
+      },
+      "expected": {
+        "accepted": true,
+        "action": "quality_upgrade",
+        "checks": 2,
+        "choice": {
+          "Drone1:0": 11,
+          "Drone1:1": 13,
+          "Drone2:0": 18,
+          "Drone2:1": 13,
+          "Drone3:0": 17,
+          "Drone3:1": 5,
+          "Drone4:0": 10,
+          "Drone4:1": 5
+        },
+        "order": [
+          "Drone1:0",
+          "Drone2:0",
+          "Drone3:0",
+          "Drone4:0",
+          "Drone1:1",
+          "Drone2:1",
+          "Drone3:1",
+          "Drone4:1"
+        ],
+        "skipped": null
+      },
+      "full_decision": {
+        "accepted": true,
+        "action": "quality_upgrade",
+        "candidates": 2,
+        "checks": 2,
+        "choice": {
+          "Drone1:0": 11,
+          "Drone1:1": 13,
+          "Drone2:0": 18,
+          "Drone2:1": 13,
+          "Drone3:0": 17,
+          "Drone3:1": 5,
+          "Drone4:0": 10,
+          "Drone4:1": 5
+        },
+        "commit_by": 3.0,
+        "diagnosis": {
+          "deficit": 0.0,
+          "end": 0.0,
+          "jobs": [],
+          "kind": "none",
+          "start": 0.0,
+          "type": "C"
+        },
+        "forecast": {
+          "command_finish": {
+            "Drone1:0": 5.22153375419419,
+            "Drone1:1": 34.3112120534348,
+            "Drone2:0": 9.43662291518505,
+            "Drone2:1": 38.863622915185,
+            "Drone3:0": 14.5830360923774,
+            "Drone3:1": 41.5510360923774,
+            "Drone4:0": 14.7960360923774,
+            "Drone4:1": 41.7010360923774
+          },
+          "feasible": true,
+          "finish": {
+            "Drone1:0": 5.22153375419419,
+            "Drone1:1": 34.3112120534348,
+            "Drone2:0": 9.43662291518505,
+            "Drone2:1": 38.863622915185,
+            "Drone3:0": 14.5830360923774,
+            "Drone3:1": 41.5510360923774,
+            "Drone4:0": 14.7960360923774,
+            "Drone4:1": 41.7010360923774
+          },
+          "jobs": [
+            {
+              "command_completed": false,
+              "deadline": 5.57809637754281,
+              "loop": "Drone1",
+              "mode": "11",
+              "name": "Drone1:0",
+              "release": 2.93267829924059,
+              "remaining_operations": [
+                [
+                  "ps",
+                  0.441533754194189
+                ],
+                [
+                  "pl",
+                  1.33
+                ],
+                [
+                  "ps",
+                  0.15
+                ],
+                [
+                  "delay",
+                  0.3
+                ]
+              ],
+              "segments": []
+            },
+            {
+              "command_completed": false,
+              "deadline": 12.3603751446286,
+              "loop": "Drone2",
+              "mode": "18",
+              "name": "Drone2:0",
+              "release": 7.65435505906854,
+              "remaining_operations": [
+                [
+                  "ps",
+                  0.272267856116508
+                ],
+                [
+                  "pl",
+                  1.06
+                ],
+                [
+                  "ps",
+                  0.15
+                ],
+                [
+                  "delay",
+                  0.3
+                ]
+              ],
+              "segments": []
+            },
+            {
+              "command_completed": false,
+              "deadline": 14.6951810160332,
+              "loop": "Drone3",
+              "mode": "17",
+              "name": "Drone3:0",
+              "release": 10.3498437506984,
+              "remaining_operations": [
+                [
+                  "ps",
+                  0.47428467406289
+                ],
+                [
+                  "pl",
+                  3.129
+                ],
+                [
+                  "ps",
+                  0.15
+                ],
+                [
+                  "delay",
+                  0.3
+                ]
+              ],
+              "segments": []
+            },
+            {
+              "command_completed": false,
+              "deadline": 16.7195398003352,
+              "loop": "Drone4",
+              "mode": "10",
+              "name": "Drone4:0",
+              "release": 10.2603070304859,
+              "remaining_operations": [
+                [
+                  "ps",
+                  0.269444387828676
+                ],
+                [
+                  "pl",
+                  0.213
+                ],
+                [
+                  "ps",
+                  0.15
+                ],
+                [
+                  "delay",
+                  0.3
+                ]
+              ],
+              "segments": []
+            },
+            {
+              "command_completed": false,
+              "deadline": 39.5864505670768,
+              "loop": "Drone1",
+              "mode": "13",
+              "name": "Drone1:1",
+              "release": 32.9326782992406,
+              "remaining_operations": [
+                [
+                  "ps",
+                  0.441533754194189
+                ],
+                [
+                  "pl",
+                  0.487
+                ],
+                [
+                  "ps",
+                  0.15
+                ],
+                [
+                  "delay",
+                  0.3
+                ]
+              ],
+              "segments": []
+            },
+            {
+              "command_completed": false,
+              "deadline": 40.4046522805974,
+              "loop": "Drone2",
+              "mode": "13",
+              "name": "Drone2:1",
+              "release": 37.6543550590685,
+              "remaining_operations": [
+                [
+                  "ps",
+                  0.272267856116508
+                ],
+                [
+                  "pl",
+                  0.487
+                ],
+                [
+                  "ps",
+                  0.15
+                ],
+                [
+                  "delay",
+                  0.3
+                ]
+              ],
+              "segments": []
+            },
+            {
+              "command_completed": false,
+              "deadline": 44.3822055238396,
+              "loop": "Drone3",
+              "mode": "5",
+              "name": "Drone3:1",
+              "release": 40.3498437506984,
+              "remaining_operations": [
+                [
+                  "ps",
+                  0.47428467406289
+                ],
+                [
+                  "pl",
+                  0.097
+                ],
+                [
+                  "ps",
+                  0.15
+                ],
+                [
+                  "delay",
+                  0.3
+                ]
+              ],
+              "segments": []
+            },
+            {
+              "command_completed": false,
+              "deadline": 47.5068076915617,
+              "loop": "Drone4",
+              "mode": "5",
+              "name": "Drone4:1",
+              "release": 40.2603070304859,
+              "remaining_operations": [
+                [
+                  "ps",
+                  0.269444387828676
+                ],
+                [
+                  "pl",
+                  0.097
+                ],
+                [
+                  "ps",
+                  0.15
+                ],
+                [
+                  "delay",
+                  0.3
+                ]
+              ],
+              "segments": []
+            }
+          ],
+          "misses": [],
+          "scope": "finite deterministic service envelope; not plant or infinite-horizon certificate",
+          "slack": {
+            "Drone1:0": 0.356562623348617,
+            "Drone1:1": 5.27523851364201,
+            "Drone2:0": 2.92375222944351,
+            "Drone2:1": 1.54102936541233,
+            "Drone3:0": 0.112144923655805,
+            "Drone3:1": 2.83116943146214,
+            "Drone4:0": 1.92350370795778,
+            "Drone4:1": 5.80577159918421
+          },
+          "switches": 7,
+          "timeline": [
+            {
+              "end": 3.44153375419419,
+              "job": "Drone1:0",
+              "ready": 2.93267829924059,
+              "resource": "ps",
+              "start": 3.0
+            },
+            {
+              "end": 4.77153375419419,
+              "job": "Drone1:0",
+              "ready": 3.44153375419419,
+              "resource": "pl",
+              "start": 3.44153375419419
+            },
+            {
+              "end": 4.92153375419419,
+              "job": "Drone1:0",
+              "ready": 4.77153375419419,
+              "resource": "ps",
+              "start": 4.77153375419419
+            },
+            {
+              "end": 7.92662291518505,
+              "job": "Drone2:0",
+              "ready": 7.65435505906854,
+              "resource": "ps",
+              "start": 7.65435505906854
+            },
+            {
+              "end": 8.98662291518504,
+              "job": "Drone2:0",
+              "ready": 7.92662291518505,
+              "resource": "pl",
+              "start": 7.92662291518505
+            },
+            {
+              "end": 9.13662291518505,
+              "job": "Drone2:0",
+              "ready": 8.98662291518504,
+              "resource": "ps",
+              "start": 8.98662291518504
+            },
+            {
+              "end": 10.5297514183145,
+              "job": "Drone4:0",
+              "ready": 10.2603070304859,
+              "resource": "ps",
+              "start": 10.2603070304859
+            },
+            {
+              "end": 11.0040360923774,
+              "job": "Drone3:0",
+              "ready": 10.3498437506984,
+              "resource": "ps",
+              "start": 10.5297514183145
+            },
+            {
+              "end": 14.1330360923774,
+              "job": "Drone3:0",
+              "ready": 11.0040360923774,
+              "resource": "pl",
+              "start": 11.0040360923774
+            },
+            {
+              "end": 14.2830360923774,
+              "job": "Drone3:0",
+              "ready": 14.1330360923774,
+              "resource": "ps",
+              "start": 14.1330360923774
+            },
+            {
+              "end": 14.3460360923774,
+              "job": "Drone4:0",
+              "ready": 10.5297514183145,
+              "resource": "pl",
+              "start": 14.1330360923774
+            },
+            {
+              "end": 14.4960360923774,
+              "job": "Drone4:0",
+              "ready": 14.3460360923774,
+              "resource": "ps",
+              "start": 14.3460360923774
+            },
+            {
+              "end": 33.3742120534348,
+              "job": "Drone1:1",
+              "ready": 32.9326782992406,
+              "resource": "ps",
+              "start": 32.9326782992406
+            },
+            {
+              "end": 33.8612120534348,
+              "job": "Drone1:1",
+              "ready": 33.3742120534348,
+              "resource": "pl",
+              "start": 33.3742120534348
+            },
+            {
+              "end": 34.0112120534348,
+              "job": "Drone1:1",
+              "ready": 33.8612120534348,
+              "resource": "ps",
+              "start": 33.8612120534348
+            },
+            {
+              "end": 37.926622915185,
+              "job": "Drone2:1",
+              "ready": 37.6543550590685,
+              "resource": "ps",
+              "start": 37.6543550590685
+            },
+            {
+              "end": 38.4136229151851,
+              "job": "Drone2:1",
+              "ready": 37.926622915185,
+              "resource": "pl",
+              "start": 37.926622915185
+            },
+            {
+              "end": 38.5636229151851,
+              "job": "Drone2:1",
+              "ready": 38.4136229151851,
+              "resource": "ps",
+              "start": 38.4136229151851
+            },
+            {
+              "end": 40.5297514183146,
+              "job": "Drone4:1",
+              "ready": 40.2603070304859,
+              "resource": "ps",
+              "start": 40.2603070304859
+            },
+            {
+              "end": 41.0040360923774,
+              "job": "Drone3:1",
+              "ready": 40.3498437506984,
+              "resource": "ps",
+              "start": 40.5297514183146
+            },
+            {
+              "end": 41.1010360923774,
+              "job": "Drone3:1",
+              "ready": 41.0040360923774,
+              "resource": "pl",
+              "start": 41.0040360923774
+            },
+            {
+              "end": 41.2510360923774,
+              "job": "Drone3:1",
+              "ready": 41.1010360923774,
+              "resource": "ps",
+              "start": 41.1010360923774
+            },
+            {
+              "end": 41.1980360923774,
+              "job": "Drone4:1",
+              "ready": 40.5297514183146,
+              "resource": "pl",
+              "start": 41.1010360923774
+            },
+            {
+              "end": 41.4010360923774,
+              "job": "Drone4:1",
+              "ready": 41.1980360923774,
+              "resource": "ps",
+              "start": 41.2510360923774
+            }
+          ],
+          "waits": {
+            "Drone1:0": {
+              "pl": 0.0,
+              "ps": 0.0673217007594111
+            },
+            "Drone1:1": {
+              "pl": 0.0,
+              "ps": 0.0
+            },
+            "Drone2:0": {
+              "pl": 0.0,
+              "ps": 0.0
+            },
+            "Drone2:1": {
+              "pl": 0.0,
+              "ps": 0.0
+            },
+            "Drone3:0": {
+              "pl": 0.0,
+              "ps": 0.17990766761616
+            },
+            "Drone3:1": {
+              "pl": 0.0,
+              "ps": 0.179907667616163
+            },
+            "Drone4:0": {
+              "pl": 3.60328467406289,
+              "ps": 0.0
+            },
+            "Drone4:1": {
+              "pl": 0.571284674062895,
+              "ps": 0.0529999999999973
+            }
+          },
+          "worst": "Drone3:0"
+        },
+        "jobs": [
+          {
+            "allowed_modes": [
+              13,
+              4,
+              15,
+              8,
+              18,
+              11,
+              14,
+              16,
+              17,
+              2
+            ],
+            "current_mode": 11,
+            "fresh_deadline": 6.07809637754281,
+            "hold_deadline": 39.5864505670768,
+            "mode_locked": false,
+            "name": "Drone1:0",
+            "periodic_edit": false,
+            "post_ms": 0.15,
+            "prep_ms": 0.441533754194189,
+            "prep_ready": 2.93267829924059,
+            "recovery": false,
+            "release": 2.73267829924059,
+            "release_options": [
+              [
+                0.732678299240589,
+                3.57809637754281
+              ],
+              [
+                3.73267829924059,
+                6.57809637754281
+              ]
+            ],
+            "slot_deadline": 5.57809637754281,
+            "transport_ms": 0.3,
+            "vehicle": "Drone1"
+          },
+          {
+            "allowed_modes": [
+              13,
+              4,
+              15,
+              8,
+              18,
+              11,
+              14,
+              16,
+              17,
+              2
+            ],
+            "current_mode": 18,
+            "fresh_deadline": 12.8603751446286,
+            "hold_deadline": 40.4046522805974,
+            "mode_locked": false,
+            "name": "Drone2:0",
+            "periodic_edit": false,
+            "post_ms": 0.15,
+            "prep_ms": 0.272267856116508,
+            "prep_ready": 7.65435505906854,
+            "recovery": false,
+            "release": 7.45435505906854,
+            "release_options": [
+              [
+                5.45435505906854,
+                10.3603751446286
+              ],
+              [
+                8.45435505906854,
+                13.3603751446286
+              ]
+            ],
+            "slot_deadline": 12.3603751446286,
+            "transport_ms": 0.3,
+            "vehicle": "Drone2"
+          },
+          {
+            "allowed_modes": [
+              5,
+              10,
+              12,
+              13,
+              4,
+              15,
+              8,
+              18,
+              11,
+              14,
+              16,
+              3,
+              17,
+              7,
+              2,
+              6
+            ],
+            "current_mode": 17,
+            "fresh_deadline": 15.1951810160332,
+            "hold_deadline": 44.3822055238396,
+            "mode_locked": false,
+            "name": "Drone3:0",
+            "periodic_edit": false,
+            "post_ms": 0.15,
+            "prep_ms": 0.47428467406289,
+            "prep_ready": 10.3498437506984,
+            "recovery": false,
+            "release": 10.1498437506984,
+            "release_options": [
+              [
+                8.14984375069839,
+                12.6951810160332
+              ],
+              [
+                11.1498437506984,
+                15.6951810160332
+              ]
+            ],
+            "slot_deadline": 14.6951810160332,
+            "transport_ms": 0.3,
+            "vehicle": "Drone3"
+          },
+          {
+            "allowed_modes": [
+              5,
+              10,
+              12,
+              13,
+              4,
+              15,
+              8,
+              18,
+              11,
+              14,
+              16,
+              3,
+              17,
+              7,
+              2,
+              6
+            ],
+            "current_mode": 10,
+            "fresh_deadline": 17.2195398003352,
+            "hold_deadline": 47.5068076915617,
+            "mode_locked": false,
+            "name": "Drone4:0",
+            "periodic_edit": false,
+            "post_ms": 0.15,
+            "prep_ms": 0.269444387828676,
+            "prep_ready": 10.2603070304859,
+            "recovery": false,
+            "release": 10.0603070304859,
+            "release_options": [
+              [
+                8.06030703048587,
+                14.7195398003352
+              ],
+              [
+                11.0603070304859,
+                17.7195398003352
+              ]
+            ],
+            "slot_deadline": 16.7195398003352,
+            "transport_ms": 0.3,
+            "vehicle": "Drone4"
+          },
+          {
+            "allowed_modes": [
+              13,
+              4,
+              15,
+              8,
+              18,
+              11,
+              14,
+              16,
+              17,
+              2
+            ],
+            "current_mode": 13,
+            "fresh_deadline": 40.7326782992406,
+            "hold_deadline": 39.5864505670768,
+            "mode_locked": false,
+            "name": "Drone1:1",
+            "periodic_edit": false,
+            "post_ms": 0.15,
+            "prep_ms": 0.441533754194189,
+            "prep_ready": 32.9326782992406,
+            "recovery": false,
+            "release": 32.7326782992406,
+            "release_options": [],
+            "slot_deadline": 42.7326782992406,
+            "transport_ms": 0.3,
+            "vehicle": "Drone1"
+          },
+          {
+            "allowed_modes": [
+              13,
+              4,
+              15,
+              8,
+              18,
+              11,
+              14,
+              16,
+              17,
+              2
+            ],
+            "current_mode": 13,
+            "fresh_deadline": 45.4543550590685,
+            "hold_deadline": 40.4046522805974,
+            "mode_locked": false,
+            "name": "Drone2:1",
+            "periodic_edit": false,
+            "post_ms": 0.15,
+            "prep_ms": 0.272267856116508,
+            "prep_ready": 37.6543550590685,
+            "recovery": false,
+            "release": 37.4543550590685,
+            "release_options": [],
+            "slot_deadline": 47.4543550590685,
+            "transport_ms": 0.3,
+            "vehicle": "Drone2"
+          },
+          {
+            "allowed_modes": [
+              5,
+              10,
+              12,
+              13,
+              4,
+              15,
+              8,
+              18,
+              11,
+              14,
+              16,
+              3,
+              17,
+              7,
+              2,
+              6
+            ],
+            "current_mode": 5,
+            "fresh_deadline": 48.1498437506984,
+            "hold_deadline": 44.3822055238396,
+            "mode_locked": false,
+            "name": "Drone3:1",
+            "periodic_edit": false,
+            "post_ms": 0.15,
+            "prep_ms": 0.47428467406289,
+            "prep_ready": 40.3498437506984,
+            "recovery": false,
+            "release": 40.1498437506984,
+            "release_options": [],
+            "slot_deadline": 50.1498437506984,
+            "transport_ms": 0.3,
+            "vehicle": "Drone3"
+          },
+          {
+            "allowed_modes": [
+              5,
+              10,
+              12,
+              13,
+              4,
+              15,
+              8,
+              18,
+              11,
+              14,
+              16,
+              3,
+              17,
+              7,
+              2,
+              6
+            ],
+            "current_mode": 5,
+            "fresh_deadline": 48.0603070304859,
+            "hold_deadline": 47.5068076915617,
+            "mode_locked": false,
+            "name": "Drone4:1",
+            "periodic_edit": false,
+            "post_ms": 0.15,
+            "prep_ms": 0.269444387828676,
+            "prep_ready": 40.2603070304859,
+            "recovery": false,
+            "release": 40.0603070304859,
+            "release_options": [],
+            "slot_deadline": 50.0603070304859,
+            "transport_ms": 0.3,
+            "vehicle": "Drone4"
+          }
+        ],
+        "order": [
+          "Drone1:0",
+          "Drone2:0",
+          "Drone3:0",
+          "Drone4:0",
+          "Drone1:1",
+          "Drone2:1",
+          "Drone3:1",
+          "Drone4:1"
+        ],
+        "pending": [],
+        "permission": null,
+        "revision": 0,
+        "scope": "finite PS/PL replay under supplied service and control qualifications",
+        "skipped": null,
+        "trace": [
+          {
+            "accepted": true,
+            "action": "keep_current",
+            "misses": [],
+            "optimistic_head_budget_ms": 1.68656262334862,
+            "overlap": [],
+            "skip_net_head_budget_ms": null
+          },
+          {
+            "accepted": true,
+            "action": "quality_upgrade",
+            "misses": [],
+            "optimistic_head_budget_ms": 1.68656262334862,
+            "overlap": [],
+            "skip_net_head_budget_ms": null
+          }
+        ]
+      },
+      "pass": true,
+      "seed": 2
+    },
+    {
+      "actual": {
+        "accepted": true,
+        "action": "quality_upgrade",
+        "checks": 3,
+        "choice": {
+          "Drone1:0": 13,
+          "Drone1:1": 13,
+          "Drone2:0": 11,
+          "Drone2:1": 13,
+          "Drone3:0": 5,
+          "Drone3:1": 5,
+          "Drone4:0": 5,
+          "Drone4:1": 5
+        },
+        "order": [
+          "Drone2:0",
+          "Drone3:0",
+          "Drone4:0",
+          "Drone1:0",
+          "Drone2:1",
+          "Drone1:1",
+          "Drone3:1",
+          "Drone4:1"
+        ],
+        "skipped": null
+      },
+      "expected": {
+        "accepted": true,
+        "action": "quality_upgrade",
+        "checks": 3,
+        "choice": {
+          "Drone1:0": 13,
+          "Drone1:1": 13,
+          "Drone2:0": 11,
+          "Drone2:1": 13,
+          "Drone3:0": 5,
+          "Drone3:1": 5,
+          "Drone4:0": 5,
+          "Drone4:1": 5
+        },
+        "order": [
+          "Drone2:0",
+          "Drone3:0",
+          "Drone4:0",
+          "Drone1:0",
+          "Drone2:1",
+          "Drone1:1",
+          "Drone3:1",
+          "Drone4:1"
+        ],
+        "skipped": null
+      },
+      "full_decision": {
+        "accepted": true,
+        "action": "quality_upgrade",
+        "candidates": 3,
+        "checks": 3,
+        "choice": {
+          "Drone1:0": 13,
+          "Drone1:1": 13,
+          "Drone2:0": 11,
+          "Drone2:1": 13,
+          "Drone3:0": 5,
+          "Drone3:1": 5,
+          "Drone4:0": 5,
+          "Drone4:1": 5
+        },
+        "commit_by": 3.0,
+        "diagnosis": {
+          "deficit": 13.3374065476798,
+          "end": 12.2644064668557,
+          "jobs": [
+            "Drone2:0",
+            "Drone3:0",
+            "Drone4:0"
+          ],
+          "kind": "pl",
+          "start": 3.14281301453545,
+          "type": "B"
+        },
+        "forecast": {
+          "command_finish": {
+            "Drone1:0": 11.5146891088932,
+            "Drone1:1": 38.269822221237,
+            "Drone2:0": 5.42107094873964,
+            "Drone2:1": 34.5780709487396,
+            "Drone3:0": 8.36682222123699,
+            "Drone3:1": 38.419822221237,
+            "Drone4:0": 11.0276891088932,
+            "Drone4:1": 41.0276891088932
+          },
+          "feasible": true,
+          "finish": {
+            "Drone1:0": 11.5146891088932,
+            "Drone1:1": 38.269822221237,
+            "Drone2:0": 5.42107094873964,
+            "Drone2:1": 34.5780709487396,
+            "Drone3:0": 8.36682222123699,
+            "Drone3:1": 38.419822221237,
+            "Drone4:0": 11.0276891088932,
+            "Drone4:1": 41.0276891088932
+          },
+          "jobs": [
+            {
+              "command_completed": false,
+              "deadline": 6.23958308617549,
+              "loop": "Drone2",
+              "mode": "11",
+              "name": "Drone2:0",
+              "release": 3.14281301453545,
+              "remaining_operations": [
+                [
+                  "ps",
+                  0.498257934204185
+                ],
+                [
+                  "pl",
+                  1.33
+                ],
+                [
+                  "ps",
+                  0.15
+                ],
+                [
+                  "delay",
+                  0.3
+                ]
+              ],
+              "segments": []
+            },
+            {
+              "command_completed": false,
+              "deadline": 11.4127263042311,
+              "loop": "Drone3",
+              "mode": "5",
+              "name": "Drone3:0",
+              "release": 7.62705341908632,
+              "remaining_operations": [
+                [
+                  "ps",
+                  0.192768802150669
+                ],
+                [
+                  "pl",
+                  0.097
+                ],
+                [
+                  "ps",
+                  0.15
+                ],
+                [
+                  "delay",
+                  0.3
+                ]
+              ],
+              "segments": []
+            },
+            {
+              "command_completed": false,
+              "deadline": 12.2644064668557,
+              "loop": "Drone4",
+              "mode": "5",
+              "name": "Drone4:0",
+              "release": 10.1442492757207,
+              "remaining_operations": [
+                [
+                  "ps",
+                  0.336439833172527
+                ],
+                [
+                  "pl",
+                  0.097
+                ],
+                [
+                  "ps",
+                  0.15
+                ],
+                [
+                  "delay",
+                  0.3
+                ]
+              ],
+              "segments": []
+            },
+            {
+              "command_completed": false,
+              "deadline": 13.3208513436722,
+              "loop": "Drone1",
+              "mode": "13",
+              "name": "Drone1:0",
+              "release": 6.94112728501733,
+              "remaining_operations": [
+                [
+                  "ps",
+                  0.332340833740022
+                ],
+                [
+                  "pl",
+                  0.487
+                ],
+                [
+                  "ps",
+                  0.15
+                ],
+                [
+                  "delay",
+                  0.3
+                ]
+              ],
+              "segments": []
+            },
+            {
+              "command_completed": false,
+              "deadline": 36.3487987808156,
+              "loop": "Drone2",
+              "mode": "13",
+              "name": "Drone2:1",
+              "release": 33.1428130145355,
+              "remaining_operations": [
+                [
+                  "ps",
+                  0.498257934204185
+                ],
+                [
+                  "pl",
+                  0.487
+                ],
+                [
+                  "ps",
+                  0.15
+                ],
+                [
+                  "delay",
+                  0.3
+                ]
+              ],
+              "segments": []
+            },
+            {
+              "command_completed": false,
+              "deadline": 41.5854485043001,
+              "loop": "Drone1",
+              "mode": "13",
+              "name": "Drone1:1",
+              "release": 36.9411272850173,
+              "remaining_operations": [
+                [
+                  "ps",
+                  0.332340833740022
+                ],
+                [
+                  "pl",
+                  0.487
+                ],
+                [
+                  "ps",
+                  0.15
+                ],
+                [
+                  "delay",
+                  0.3
+                ]
+              ],
+              "segments": []
+            },
+            {
+              "command_completed": false,
+              "deadline": 44.5931860696383,
+              "loop": "Drone3",
+              "mode": "5",
+              "name": "Drone3:1",
+              "release": 37.6270534190863,
+              "remaining_operations": [
+                [
+                  "ps",
+                  0.192768802150669
+                ],
+                [
+                  "pl",
+                  0.097
+                ],
+                [
+                  "ps",
+                  0.15
+                ],
+                [
+                  "delay",
+                  0.3
+                ]
+              ],
+              "segments": []
+            },
+            {
+              "command_completed": false,
+              "deadline": 46.4936307534416,
+              "loop": "Drone4",
+              "mode": "5",
+              "name": "Drone4:1",
+              "release": 40.1442492757207,
+              "remaining_operations": [
+                [
+                  "ps",
+                  0.336439833172527
+                ],
+                [
+                  "pl",
+                  0.097
+                ],
+                [
+                  "ps",
+                  0.15
+                ],
+                [
+                  "delay",
+                  0.3
+                ]
+              ],
+              "segments": []
+            }
+          ],
+          "misses": [],
+          "scope": "finite deterministic service envelope; not plant or infinite-horizon certificate",
+          "slack": {
+            "Drone1:0": 1.806162234779,
+            "Drone1:1": 3.3156262830631,
+            "Drone2:0": 0.818512137435852,
+            "Drone2:1": 1.77072783207599,
+            "Drone3:0": 3.04590408299413,
+            "Drone3:1": 6.17336384840127,
+            "Drone4:0": 1.23671735796246,
+            "Drone4:1": 5.46594164454838
+          },
+          "switches": 7,
+          "timeline": [
+            {
+              "end": 3.64107094873964,
+              "job": "Drone2:0",
+              "ready": 3.14281301453545,
+              "resource": "ps",
+              "start": 3.14281301453545
+            },
+            {
+              "end": 4.97107094873964,
+              "job": "Drone2:0",
+              "ready": 3.64107094873964,
+              "resource": "pl",
+              "start": 3.64107094873964
+            },
+            {
+              "end": 5.12107094873964,
+              "job": "Drone2:0",
+              "ready": 4.97107094873964,
+              "resource": "ps",
+              "start": 4.97107094873964
+            },
+            {
+              "end": 7.27346811875735,
+              "job": "Drone1:0",
+              "ready": 6.94112728501733,
+              "resource": "ps",
+              "start": 6.94112728501733
+            },
+            {
+              "end": 7.81982222123699,
+              "job": "Drone3:0",
+              "ready": 7.62705341908632,
+              "resource": "ps",
+              "start": 7.62705341908632
+            },
+            {
+              "end": 7.91682222123699,
+              "job": "Drone3:0",
+              "ready": 7.81982222123699,
+              "resource": "pl",
+              "start": 7.81982222123699
+            },
+            {
+              "end": 8.06682222123699,
+              "job": "Drone3:0",
+              "ready": 7.91682222123699,
+              "resource": "ps",
+              "start": 7.91682222123699
+            },
+            {
+              "end": 10.4806891088932,
+              "job": "Drone4:0",
+              "ready": 10.1442492757207,
+              "resource": "ps",
+              "start": 10.1442492757207
+            },
+            {
+              "end": 10.5776891088932,
+              "job": "Drone4:0",
+              "ready": 10.4806891088932,
+              "resource": "pl",
+              "start": 10.4806891088932
+            },
+            {
+              "end": 10.7276891088932,
+              "job": "Drone4:0",
+              "ready": 10.5776891088932,
+              "resource": "ps",
+              "start": 10.5776891088932
+            },
+            {
+              "end": 11.0646891088932,
+              "job": "Drone1:0",
+              "ready": 7.27346811875735,
+              "resource": "pl",
+              "start": 10.5776891088932
+            },
+            {
+              "end": 11.2146891088932,
+              "job": "Drone1:0",
+              "ready": 11.0646891088932,
+              "resource": "ps",
+              "start": 11.0646891088932
+            },
+            {
+              "end": 33.6410709487396,
+              "job": "Drone2:1",
+              "ready": 33.1428130145355,
+              "resource": "ps",
+              "start": 33.1428130145355
+            },
+            {
+              "end": 34.1280709487396,
+              "job": "Drone2:1",
+              "ready": 33.6410709487396,
+              "resource": "pl",
+              "start": 33.6410709487396
+            },
+            {
+              "end": 34.2780709487396,
+              "job": "Drone2:1",
+              "ready": 34.1280709487396,
+              "resource": "ps",
+              "start": 34.1280709487396
+            },
+            {
+              "end": 37.2734681187573,
+              "job": "Drone1:1",
+              "ready": 36.9411272850173,
+              "resource": "ps",
+              "start": 36.9411272850173
+            },
+            {
+              "end": 37.7604681187574,
+              "job": "Drone1:1",
+              "ready": 37.2734681187573,
+              "resource": "pl",
+              "start": 37.2734681187573
+            },
+            {
+              "end": 37.819822221237,
+              "job": "Drone3:1",
+              "ready": 37.6270534190863,
+              "resource": "ps",
+              "start": 37.6270534190863
+            },
+            {
+              "end": 37.969822221237,
+              "job": "Drone1:1",
+              "ready": 37.7604681187574,
+              "resource": "ps",
+              "start": 37.819822221237
+            },
+            {
+              "end": 37.916822221237,
+              "job": "Drone3:1",
+              "ready": 37.819822221237,
+              "resource": "pl",
+              "start": 37.819822221237
+            },
+            {
+              "end": 38.119822221237,
+              "job": "Drone3:1",
+              "ready": 37.916822221237,
+              "resource": "ps",
+              "start": 37.969822221237
+            },
+            {
+              "end": 40.4806891088932,
+              "job": "Drone4:1",
+              "ready": 40.1442492757207,
+              "resource": "ps",
+              "start": 40.1442492757207
+            },
+            {
+              "end": 40.5776891088932,
+              "job": "Drone4:1",
+              "ready": 40.4806891088932,
+              "resource": "pl",
+              "start": 40.4806891088932
+            },
+            {
+              "end": 40.7276891088932,
+              "job": "Drone4:1",
+              "ready": 40.5776891088932,
+              "resource": "ps",
+              "start": 40.5776891088932
+            }
+          ],
+          "waits": {
+            "Drone1:0": {
+              "pl": 3.30422099013588,
+              "ps": 0.0
+            },
+            "Drone1:1": {
+              "pl": 0.0,
+              "ps": 0.059354102479638
+            },
+            "Drone2:0": {
+              "pl": 0.0,
+              "ps": 0.0
+            },
+            "Drone2:1": {
+              "pl": 0.0,
+              "ps": 0.0
+            },
+            "Drone3:0": {
+              "pl": 0.0,
+              "ps": 0.0
+            },
+            "Drone3:1": {
+              "pl": 0.0,
+              "ps": 0.0529999999999973
+            },
+            "Drone4:0": {
+              "pl": 0.0,
+              "ps": 0.0
+            },
+            "Drone4:1": {
+              "pl": 0.0,
+              "ps": 0.0
+            }
+          },
+          "worst": "Drone2:0"
+        },
+        "jobs": [
+          {
+            "allowed_modes": [
+              13,
+              4,
+              15,
+              8,
+              18,
+              11,
+              14,
+              16,
+              17,
+              2
+            ],
+            "current_mode": 11,
+            "fresh_deadline": 6.73958308617549,
+            "hold_deadline": 36.3487987808156,
+            "mode_locked": false,
+            "name": "Drone2:0",
+            "periodic_edit": false,
+            "post_ms": 0.15,
+            "prep_ms": 0.498257934204185,
+            "prep_ready": 3.14281301453545,
+            "recovery": false,
+            "release": 2.94281301453545,
+            "release_options": [
+              [
+                0.942813014535453,
+                4.23958308617549
+              ],
+              [
+                3.94281301453545,
+                7.23958308617549
+              ]
+            ],
+            "slot_deadline": 6.23958308617549,
+            "transport_ms": 0.3,
+            "vehicle": "Drone2"
+          },
+          {
+            "allowed_modes": [
+              5,
+              10,
+              12,
+              13,
+              4,
+              15,
+              8,
+              18,
+              11,
+              14,
+              16,
+              3,
+              17,
+              7,
+              2,
+              6
+            ],
+            "current_mode": 5,
+            "fresh_deadline": 11.9127263042311,
+            "hold_deadline": 44.5931860696383,
+            "mode_locked": false,
+            "name": "Drone3:0",
+            "periodic_edit": false,
+            "post_ms": 0.15,
+            "prep_ms": 0.192768802150669,
+            "prep_ready": 7.62705341908632,
+            "recovery": false,
+            "release": 7.42705341908632,
+            "release_options": [
+              [
+                5.42705341908632,
+                9.41272630423113
+              ],
+              [
+                8.42705341908632,
+                12.4127263042311
+              ]
+            ],
+            "slot_deadline": 11.4127263042311,
+            "transport_ms": 0.3,
+            "vehicle": "Drone3"
+          },
+          {
+            "allowed_modes": [
+              5,
+              10,
+              12,
+              13,
+              4,
+              15,
+              8,
+              18,
+              11,
+              14,
+              16,
+              3,
+              17,
+              7,
+              2,
+              6
+            ],
+            "current_mode": 5,
+            "fresh_deadline": 12.7644064668557,
+            "hold_deadline": 46.4936307534416,
+            "mode_locked": false,
+            "name": "Drone4:0",
+            "periodic_edit": false,
+            "post_ms": 0.15,
+            "prep_ms": 0.336439833172527,
+            "prep_ready": 10.1442492757207,
+            "recovery": false,
+            "release": 9.9442492757207,
+            "release_options": [
+              [
+                7.9442492757207,
+                10.2644064668557
+              ],
+              [
+                10.9442492757207,
+                13.2644064668557
+              ]
+            ],
+            "slot_deadline": 12.2644064668557,
+            "transport_ms": 0.3,
+            "vehicle": "Drone4"
+          },
+          {
+            "allowed_modes": [
+              13,
+              4,
+              15,
+              8,
+              18,
+              11,
+              14,
+              16,
+              17,
+              2
+            ],
+            "current_mode": 13,
+            "fresh_deadline": 13.8208513436722,
+            "hold_deadline": 41.5854485043001,
+            "mode_locked": false,
+            "name": "Drone1:0",
+            "periodic_edit": false,
+            "post_ms": 0.15,
+            "prep_ms": 0.332340833740022,
+            "prep_ready": 6.94112728501733,
+            "recovery": false,
+            "release": 6.74112728501732,
+            "release_options": [
+              [
+                4.74112728501732,
+                11.3208513436722
+              ],
+              [
+                7.74112728501732,
+                14.3208513436722
+              ]
+            ],
+            "slot_deadline": 13.3208513436722,
+            "transport_ms": 0.3,
+            "vehicle": "Drone1"
+          },
+          {
+            "allowed_modes": [
+              13,
+              4,
+              15,
+              8,
+              18,
+              11,
+              14,
+              16,
+              17,
+              2
+            ],
+            "current_mode": 13,
+            "fresh_deadline": 40.9428130145355,
+            "hold_deadline": 36.3487987808156,
+            "mode_locked": false,
+            "name": "Drone2:1",
+            "periodic_edit": false,
+            "post_ms": 0.15,
+            "prep_ms": 0.498257934204185,
+            "prep_ready": 33.1428130145355,
+            "recovery": false,
+            "release": 32.9428130145355,
+            "release_options": [],
+            "slot_deadline": 42.9428130145355,
+            "transport_ms": 0.3,
+            "vehicle": "Drone2"
+          },
+          {
+            "allowed_modes": [
+              13,
+              4,
+              15,
+              8,
+              18,
+              11,
+              14,
+              16,
+              17,
+              2
+            ],
+            "current_mode": 13,
+            "fresh_deadline": 44.7411272850173,
+            "hold_deadline": 41.5854485043001,
+            "mode_locked": false,
+            "name": "Drone1:1",
+            "periodic_edit": false,
+            "post_ms": 0.15,
+            "prep_ms": 0.332340833740022,
+            "prep_ready": 36.9411272850173,
+            "recovery": false,
+            "release": 36.7411272850173,
+            "release_options": [],
+            "slot_deadline": 46.7411272850173,
+            "transport_ms": 0.3,
+            "vehicle": "Drone1"
+          },
+          {
+            "allowed_modes": [
+              5,
+              10,
+              12,
+              13,
+              4,
+              15,
+              8,
+              18,
+              11,
+              14,
+              16,
+              3,
+              17,
+              7,
+              2,
+              6
+            ],
+            "current_mode": 5,
+            "fresh_deadline": 45.4270534190863,
+            "hold_deadline": 44.5931860696383,
+            "mode_locked": false,
+            "name": "Drone3:1",
+            "periodic_edit": false,
+            "post_ms": 0.15,
+            "prep_ms": 0.192768802150669,
+            "prep_ready": 37.6270534190863,
+            "recovery": false,
+            "release": 37.4270534190863,
+            "release_options": [],
+            "slot_deadline": 47.4270534190863,
+            "transport_ms": 0.3,
+            "vehicle": "Drone3"
+          },
+          {
+            "allowed_modes": [
+              5,
+              10,
+              12,
+              13,
+              4,
+              15,
+              8,
+              18,
+              11,
+              14,
+              16,
+              3,
+              17,
+              7,
+              2,
+              6
+            ],
+            "current_mode": 5,
+            "fresh_deadline": 47.9442492757207,
+            "hold_deadline": 46.4936307534416,
+            "mode_locked": false,
+            "name": "Drone4:1",
+            "periodic_edit": false,
+            "post_ms": 0.15,
+            "prep_ms": 0.336439833172527,
+            "prep_ready": 40.1442492757207,
+            "recovery": false,
+            "release": 39.9442492757207,
+            "release_options": [],
+            "slot_deadline": 49.9442492757207,
+            "transport_ms": 0.3,
+            "vehicle": "Drone4"
+          }
+        ],
+        "order": [
+          "Drone2:0",
+          "Drone3:0",
+          "Drone4:0",
+          "Drone1:0",
+          "Drone2:1",
+          "Drone1:1",
+          "Drone3:1",
+          "Drone4:1"
+        ],
+        "pending": [],
+        "permission": null,
+        "revision": 0,
+        "scope": "finite PS/PL replay under supplied service and control qualifications",
+        "skipped": null,
+        "trace": [
+          {
+            "accepted": false,
+            "action": "keep_current",
+            "misses": [
+              "Drone2:0",
+              "Drone3:0",
+              "Drone4:0",
+              "Drone1:0"
+            ],
+            "optimistic_head_budget_ms": null,
+            "overlap": [],
+            "skip_net_head_budget_ms": null
+          },
+          {
+            "accepted": true,
+            "action": "faster_modes",
+            "misses": [],
+            "optimistic_head_budget_ms": 2.14851213743585,
+            "overlap": [],
+            "skip_net_head_budget_ms": null
+          },
+          {
+            "accepted": true,
+            "action": "quality_upgrade",
+            "misses": [],
+            "optimistic_head_budget_ms": 2.14851213743585,
+            "overlap": [],
+            "skip_net_head_budget_ms": null
+          }
+        ]
+      },
+      "pass": true,
+      "seed": 3
+    },
+    {
+      "actual": {
+        "accepted": true,
+        "action": "quality_upgrade",
+        "checks": 2,
+        "choice": {
+          "Drone1:0": 11,
+          "Drone1:1": 13,
+          "Drone2:0": 17,
+          "Drone2:1": 13,
+          "Drone3:0": 11,
+          "Drone3:1": 5,
+          "Drone4:0": 11,
+          "Drone4:1": 5
+        },
+        "order": [
+          "Drone1:0",
+          "Drone4:0",
+          "Drone3:0",
+          "Drone2:0",
+          "Drone1:1",
+          "Drone2:1",
+          "Drone4:1",
+          "Drone3:1"
+        ],
+        "skipped": null
+      },
+      "expected": {
+        "accepted": true,
+        "action": "quality_upgrade",
+        "checks": 2,
+        "choice": {
+          "Drone1:0": 11,
+          "Drone1:1": 13,
+          "Drone2:0": 17,
+          "Drone2:1": 13,
+          "Drone3:0": 11,
+          "Drone3:1": 5,
+          "Drone4:0": 11,
+          "Drone4:1": 5
+        },
+        "order": [
+          "Drone1:0",
+          "Drone4:0",
+          "Drone3:0",
+          "Drone2:0",
+          "Drone1:1",
+          "Drone2:1",
+          "Drone4:1",
+          "Drone3:1"
+        ],
+        "skipped": null
+      },
+      "full_decision": {
+        "accepted": true,
+        "action": "quality_upgrade",
+        "candidates": 2,
+        "checks": 2,
+        "choice": {
+          "Drone1:0": 11,
+          "Drone1:1": 13,
+          "Drone2:0": 17,
+          "Drone2:1": 13,
+          "Drone3:0": 11,
+          "Drone3:1": 5,
+          "Drone4:0": 11,
+          "Drone4:1": 5
+        },
+        "commit_by": 3.0,
+        "diagnosis": {
+          "deficit": 0.0,
+          "end": 0.0,
+          "jobs": [],
+          "kind": "none",
+          "start": 0.0,
+          "type": "C"
+        },
+        "forecast": {
+          "command_finish": {
+            "Drone1:0": 6.51431555767331,
+            "Drone1:1": 35.6713155576733,
+            "Drone2:0": 15.8156474459529,
+            "Drone2:1": 41.5957646994675,
+            "Drone3:0": 12.6866474459529,
+            "Drone3:1": 41.8957646994675,
+            "Drone4:0": 11.3566474459529,
+            "Drone4:1": 41.7457646994675
+          },
+          "feasible": true,
+          "finish": {
+            "Drone1:0": 6.51431555767331,
+            "Drone1:1": 35.6713155576733,
+            "Drone2:0": 15.8156474459529,
+            "Drone2:1": 41.5957646994675,
+            "Drone3:0": 12.6866474459529,
+            "Drone3:1": 41.8957646994675,
+            "Drone4:0": 11.3566474459529,
+            "Drone4:1": 41.7457646994675
+          },
+          "jobs": [
+            {
+              "command_completed": false,
+              "deadline": 8.82078066170357,
+              "loop": "Drone1",
+              "mode": "11",
+              "name": "Drone1:0",
+              "release": 4.62638868708408,
+              "remaining_operations": [
+                [
+                  "ps",
+                  0.107926870589229
+                ],
+                [
+                  "pl",
+                  1.33
+                ],
+                [
+                  "ps",
+                  0.15
+                ],
+                [
+                  "delay",
+                  0.3
+                ]
+              ],
+              "segments": []
+            },
+            {
+              "command_completed": false,
+              "deadline": 12.5331393488991,
+              "loop": "Drone4",
+              "mode": "11",
+              "name": "Drone4:0",
+              "release": 9.18388956240145,
+              "remaining_operations": [
+                [
+                  "ps",
+                  0.392757883551487
+                ],
+                [
+                  "pl",
+                  1.33
+                ],
+                [
+                  "ps",
+                  0.15
+                ],
+                [
+                  "delay",
+                  0.3
+                ]
+              ],
+              "segments": []
+            },
+            {
+              "command_completed": false,
+              "deadline": 13.2003056531078,
+              "loop": "Drone3",
+              "mode": "11",
+              "name": "Drone3:0",
+              "release": 10.0917077600485,
+              "remaining_operations": [
+                [
+                  "ps",
+                  0.11025587269342
+                ],
+                [
+                  "pl",
+                  1.33
+                ],
+                [
+                  "ps",
+                  0.15
+                ],
+                [
+                  "delay",
+                  0.3
+                ]
+              ],
+              "segments": []
+            },
+            {
+              "command_completed": false,
+              "deadline": 15.9699057087248,
+              "loop": "Drone2",
+              "mode": "17",
+              "name": "Drone2:0",
+              "release": 10.3440926961976,
+              "remaining_operations": [
+                [
+                  "ps",
+                  0.314672003269925
+                ],
+                [
+                  "pl",
+                  3.129
+                ],
+                [
+                  "ps",
+                  0.15
+                ],
+                [
+                  "delay",
+                  0.3
+                ]
+              ],
+              "segments": []
+            },
+            {
+              "command_completed": false,
+              "deadline": 36.9669901521833,
+              "loop": "Drone1",
+              "mode": "13",
+              "name": "Drone1:1",
+              "release": 34.6263886870841,
+              "remaining_operations": [
+                [
+                  "ps",
+                  0.107926870589229
+                ],
+                [
+                  "pl",
+                  0.487
+                ],
+                [
+                  "ps",
+                  0.15
+                ],
+                [
+                  "delay",
+                  0.3
+                ]
+              ],
+              "segments": []
+            },
+            {
+              "command_completed": false,
+              "deadline": 43.4756617503395,
+              "loop": "Drone2",
+              "mode": "13",
+              "name": "Drone2:1",
+              "release": 40.3440926961976,
+              "remaining_operations": [
+                [
+                  "ps",
+                  0.314672003269925
+                ],
+                [
+                  "pl",
+                  0.487
+                ],
+                [
+                  "ps",
+                  0.15
+                ],
+                [
+                  "delay",
+                  0.3
+                ]
+              ],
+              "segments": []
+            },
+            {
+              "command_completed": false,
+              "deadline": 44.7457431768802,
+              "loop": "Drone4",
+              "mode": "5",
+              "name": "Drone4:1",
+              "release": 39.1838895624015,
+              "remaining_operations": [
+                [
+                  "ps",
+                  0.392757883551487
+                ],
+                [
+                  "pl",
+                  0.097
+                ],
+                [
+                  "ps",
+                  0.15
+                ],
+                [
+                  "delay",
+                  0.3
+                ]
+              ],
+              "segments": []
+            },
+            {
+              "command_completed": false,
+              "deadline": 47.5494639214764,
+              "loop": "Drone3",
+              "mode": "5",
+              "name": "Drone3:1",
+              "release": 40.0917077600485,
+              "remaining_operations": [
+                [
+                  "ps",
+                  0.11025587269342
+                ],
+                [
+                  "pl",
+                  0.097
+                ],
+                [
+                  "ps",
+                  0.15
+                ],
+                [
+                  "delay",
+                  0.3
+                ]
+              ],
+              "segments": []
+            }
+          ],
+          "misses": [],
+          "scope": "finite deterministic service envelope; not plant or infinite-horizon certificate",
+          "slack": {
+            "Drone1:0": 2.30646510403026,
+            "Drone1:1": 1.29567459451,
+            "Drone2:0": 0.154258262771812,
+            "Drone2:1": 1.87989705087198,
+            "Drone3:0": 0.51365820715486,
+            "Drone3:1": 5.65369922200895,
+            "Drone4:0": 1.17649190294619,
+            "Drone4:1": 2.99997847741275
+          },
+          "switches": 7,
+          "timeline": [
+            {
+              "end": 4.73431555767331,
+              "job": "Drone1:0",
+              "ready": 4.62638868708408,
+              "resource": "ps",
+              "start": 4.62638868708408
+            },
+            {
+              "end": 6.06431555767331,
+              "job": "Drone1:0",
+              "ready": 4.73431555767331,
+              "resource": "pl",
+              "start": 4.73431555767331
+            },
+            {
+              "end": 6.21431555767331,
+              "job": "Drone1:0",
+              "ready": 6.06431555767331,
+              "resource": "ps",
+              "start": 6.06431555767331
+            },
+            {
+              "end": 9.57664744595294,
+              "job": "Drone4:0",
+              "ready": 9.18388956240145,
+              "resource": "ps",
+              "start": 9.18388956240145
+            },
+            {
+              "end": 10.9066474459529,
+              "job": "Drone4:0",
+              "ready": 9.57664744595294,
+              "resource": "pl",
+              "start": 9.57664744595294
+            },
+            {
+              "end": 10.2019636327419,
+              "job": "Drone3:0",
+              "ready": 10.0917077600485,
+              "resource": "ps",
+              "start": 10.0917077600485
+            },
+            {
+              "end": 10.6587646994675,
+              "job": "Drone2:0",
+              "ready": 10.3440926961976,
+              "resource": "ps",
+              "start": 10.3440926961976
+            },
+            {
+              "end": 11.0566474459529,
+              "job": "Drone4:0",
+              "ready": 10.9066474459529,
+              "resource": "ps",
+              "start": 10.9066474459529
+            },
+            {
+              "end": 12.2366474459529,
+              "job": "Drone3:0",
+              "ready": 10.2019636327419,
+              "resource": "pl",
+              "start": 10.9066474459529
+            },
+            {
+              "end": 12.3866474459529,
+              "job": "Drone3:0",
+              "ready": 12.2366474459529,
+              "resource": "ps",
+              "start": 12.2366474459529
+            },
+            {
+              "end": 15.3656474459529,
+              "job": "Drone2:0",
+              "ready": 10.6587646994675,
+              "resource": "pl",
+              "start": 12.2366474459529
+            },
+            {
+              "end": 15.5156474459529,
+              "job": "Drone2:0",
+              "ready": 15.3656474459529,
+              "resource": "ps",
+              "start": 15.3656474459529
+            },
+            {
+              "end": 34.7343155576733,
+              "job": "Drone1:1",
+              "ready": 34.6263886870841,
+              "resource": "ps",
+              "start": 34.6263886870841
+            },
+            {
+              "end": 35.2213155576733,
+              "job": "Drone1:1",
+              "ready": 34.7343155576733,
+              "resource": "pl",
+              "start": 34.7343155576733
+            },
+            {
+              "end": 35.3713155576733,
+              "job": "Drone1:1",
+              "ready": 35.2213155576733,
+              "resource": "ps",
+              "start": 35.2213155576733
+            },
+            {
+              "end": 39.5766474459529,
+              "job": "Drone4:1",
+              "ready": 39.1838895624015,
+              "resource": "ps",
+              "start": 39.1838895624015
+            },
+            {
+              "end": 40.201963632742,
+              "job": "Drone3:1",
+              "ready": 40.0917077600485,
+              "resource": "ps",
+              "start": 40.0917077600485
+            },
+            {
+              "end": 40.6587646994675,
+              "job": "Drone2:1",
+              "ready": 40.3440926961976,
+              "resource": "ps",
+              "start": 40.3440926961976
+            },
+            {
+              "end": 41.1457646994675,
+              "job": "Drone2:1",
+              "ready": 40.6587646994675,
+              "resource": "pl",
+              "start": 40.6587646994675
+            },
+            {
+              "end": 41.2957646994675,
+              "job": "Drone2:1",
+              "ready": 41.1457646994675,
+              "resource": "ps",
+              "start": 41.1457646994675
+            },
+            {
+              "end": 41.2427646994675,
+              "job": "Drone4:1",
+              "ready": 39.5766474459529,
+              "resource": "pl",
+              "start": 41.1457646994675
+            },
+            {
+              "end": 41.3397646994675,
+              "job": "Drone3:1",
+              "ready": 40.201963632742,
+              "resource": "pl",
+              "start": 41.2427646994675
+            },
+            {
+              "end": 41.4457646994675,
+              "job": "Drone4:1",
+              "ready": 41.2427646994675,
+              "resource": "ps",
+              "start": 41.2957646994675
+            },
+            {
+              "end": 41.5957646994675,
+              "job": "Drone3:1",
+              "ready": 41.3397646994675,
+              "resource": "ps",
+              "start": 41.4457646994675
+            }
+          ],
+          "waits": {
+            "Drone1:0": {
+              "pl": 0.0,
+              "ps": 0.0
+            },
+            "Drone1:1": {
+              "pl": 0.0,
+              "ps": 0.0
+            },
+            "Drone2:0": {
+              "pl": 1.57788274648546,
+              "ps": 0.0
+            },
+            "Drone2:1": {
+              "pl": 0.0,
+              "ps": 0.0
+            },
+            "Drone3:0": {
+              "pl": 0.704683813210989,
+              "ps": 0.0
+            },
+            "Drone3:1": {
+              "pl": 1.04080106672554,
+              "ps": 0.105999999999995
+            },
+            "Drone4:0": {
+              "pl": 0.0,
+              "ps": 0.0
+            },
+            "Drone4:1": {
+              "pl": 1.56911725351455,
+              "ps": 0.0529999999999973
+            }
+          },
+          "worst": "Drone2:0"
+        },
+        "jobs": [
+          {
+            "allowed_modes": [
+              13,
+              4,
+              15,
+              8,
+              18,
+              11,
+              14,
+              16,
+              17,
+              2
+            ],
+            "current_mode": 11,
+            "fresh_deadline": 9.32078066170357,
+            "hold_deadline": 36.9669901521833,
+            "mode_locked": false,
+            "name": "Drone1:0",
+            "periodic_edit": false,
+            "post_ms": 0.15,
+            "prep_ms": 0.107926870589229,
+            "prep_ready": 4.62638868708408,
+            "recovery": false,
+            "release": 4.42638868708408,
+            "release_options": [
+              [
+                2.42638868708408,
+                6.82078066170357
+              ],
+              [
+                5.42638868708408,
+                9.82078066170357
+              ]
+            ],
+            "slot_deadline": 8.82078066170357,
+            "transport_ms": 0.3,
+            "vehicle": "Drone1"
+          },
+          {
+            "allowed_modes": [
+              5,
+              10,
+              12,
+              13,
+              4,
+              15,
+              8,
+              18,
+              11,
+              14,
+              16,
+              3,
+              17,
+              7,
+              2,
+              6
+            ],
+            "current_mode": 11,
+            "fresh_deadline": 13.0331393488991,
+            "hold_deadline": 44.7457431768802,
+            "mode_locked": false,
+            "name": "Drone4:0",
+            "periodic_edit": false,
+            "post_ms": 0.15,
+            "prep_ms": 0.392757883551487,
+            "prep_ready": 9.18388956240145,
+            "recovery": false,
+            "release": 8.98388956240145,
+            "release_options": [
+              [
+                6.98388956240145,
+                10.5331393488991
+              ],
+              [
+                9.98388956240145,
+                13.5331393488991
+              ]
+            ],
+            "slot_deadline": 12.5331393488991,
+            "transport_ms": 0.3,
+            "vehicle": "Drone4"
+          },
+          {
+            "allowed_modes": [
+              5,
+              10,
+              12,
+              13,
+              4,
+              15,
+              8,
+              18,
+              11,
+              14,
+              16,
+              3,
+              17,
+              7,
+              2,
+              6
+            ],
+            "current_mode": 11,
+            "fresh_deadline": 13.7003056531078,
+            "hold_deadline": 47.5494639214764,
+            "mode_locked": false,
+            "name": "Drone3:0",
+            "periodic_edit": false,
+            "post_ms": 0.15,
+            "prep_ms": 0.11025587269342,
+            "prep_ready": 10.0917077600485,
+            "recovery": false,
+            "release": 9.89170776004853,
+            "release_options": [
+              [
+                7.89170776004853,
+                11.2003056531078
+              ],
+              [
+                10.8917077600485,
+                14.2003056531078
+              ]
+            ],
+            "slot_deadline": 13.2003056531078,
+            "transport_ms": 0.3,
+            "vehicle": "Drone3"
+          },
+          {
+            "allowed_modes": [
+              13,
+              4,
+              15,
+              8,
+              18,
+              11,
+              14,
+              16,
+              17,
+              2
+            ],
+            "current_mode": 17,
+            "fresh_deadline": 16.4699057087248,
+            "hold_deadline": 43.4756617503395,
+            "mode_locked": false,
+            "name": "Drone2:0",
+            "periodic_edit": false,
+            "post_ms": 0.15,
+            "prep_ms": 0.314672003269925,
+            "prep_ready": 10.3440926961976,
+            "recovery": false,
+            "release": 10.1440926961976,
+            "release_options": [
+              [
+                8.14409269619756,
+                13.9699057087248
+              ],
+              [
+                11.1440926961976,
+                16.9699057087248
+              ]
+            ],
+            "slot_deadline": 15.9699057087248,
+            "transport_ms": 0.3,
+            "vehicle": "Drone2"
+          },
+          {
+            "allowed_modes": [
+              13,
+              4,
+              15,
+              8,
+              18,
+              11,
+              14,
+              16,
+              17,
+              2
+            ],
+            "current_mode": 13,
+            "fresh_deadline": 42.4263886870841,
+            "hold_deadline": 36.9669901521833,
+            "mode_locked": false,
+            "name": "Drone1:1",
+            "periodic_edit": false,
+            "post_ms": 0.15,
+            "prep_ms": 0.107926870589229,
+            "prep_ready": 34.6263886870841,
+            "recovery": false,
+            "release": 34.4263886870841,
+            "release_options": [],
+            "slot_deadline": 44.4263886870841,
+            "transport_ms": 0.3,
+            "vehicle": "Drone1"
+          },
+          {
+            "allowed_modes": [
+              13,
+              4,
+              15,
+              8,
+              18,
+              11,
+              14,
+              16,
+              17,
+              2
+            ],
+            "current_mode": 13,
+            "fresh_deadline": 48.1440926961976,
+            "hold_deadline": 43.4756617503395,
+            "mode_locked": false,
+            "name": "Drone2:1",
+            "periodic_edit": false,
+            "post_ms": 0.15,
+            "prep_ms": 0.314672003269925,
+            "prep_ready": 40.3440926961976,
+            "recovery": false,
+            "release": 40.1440926961976,
+            "release_options": [],
+            "slot_deadline": 50.1440926961976,
+            "transport_ms": 0.3,
+            "vehicle": "Drone2"
+          },
+          {
+            "allowed_modes": [
+              5,
+              10,
+              12,
+              13,
+              4,
+              15,
+              8,
+              18,
+              11,
+              14,
+              16,
+              3,
+              17,
+              7,
+              2,
+              6
+            ],
+            "current_mode": 5,
+            "fresh_deadline": 46.9838895624015,
+            "hold_deadline": 44.7457431768802,
+            "mode_locked": false,
+            "name": "Drone4:1",
+            "periodic_edit": false,
+            "post_ms": 0.15,
+            "prep_ms": 0.392757883551487,
+            "prep_ready": 39.1838895624015,
+            "recovery": false,
+            "release": 38.9838895624015,
+            "release_options": [],
+            "slot_deadline": 48.9838895624015,
+            "transport_ms": 0.3,
+            "vehicle": "Drone4"
+          },
+          {
+            "allowed_modes": [
+              5,
+              10,
+              12,
+              13,
+              4,
+              15,
+              8,
+              18,
+              11,
+              14,
+              16,
+              3,
+              17,
+              7,
+              2,
+              6
+            ],
+            "current_mode": 5,
+            "fresh_deadline": 47.8917077600485,
+            "hold_deadline": 47.5494639214764,
+            "mode_locked": false,
+            "name": "Drone3:1",
+            "periodic_edit": false,
+            "post_ms": 0.15,
+            "prep_ms": 0.11025587269342,
+            "prep_ready": 40.0917077600485,
+            "recovery": false,
+            "release": 39.8917077600485,
+            "release_options": [],
+            "slot_deadline": 49.8917077600485,
+            "transport_ms": 0.3,
+            "vehicle": "Drone3"
+          }
+        ],
+        "order": [
+          "Drone1:0",
+          "Drone4:0",
+          "Drone3:0",
+          "Drone2:0",
+          "Drone1:1",
+          "Drone2:1",
+          "Drone4:1",
+          "Drone3:1"
+        ],
+        "pending": [],
+        "permission": null,
+        "revision": 0,
+        "scope": "finite PS/PL replay under supplied service and control qualifications",
+        "skipped": null,
+        "trace": [
+          {
+            "accepted": true,
+            "action": "keep_current",
+            "misses": [],
+            "optimistic_head_budget_ms": 3.63646510403026,
+            "overlap": [],
+            "skip_net_head_budget_ms": null
+          },
+          {
+            "accepted": true,
+            "action": "quality_upgrade",
+            "misses": [],
+            "optimistic_head_budget_ms": 3.63646510403026,
+            "overlap": [],
+            "skip_net_head_budget_ms": null
+          }
+        ]
+      },
+      "pass": true,
+      "seed": 4
+    },
+    {
+      "actual": {
+        "accepted": true,
+        "action": "quality_upgrade",
+        "checks": 3,
+        "choice": {
+          "Drone1:0": 13,
+          "Drone1:1": 13,
+          "Drone2:0": 11,
+          "Drone2:1": 13,
+          "Drone3:0": 5,
+          "Drone3:1": 5,
+          "Drone4:0": 5,
+          "Drone4:1": 5
+        },
+        "order": [
+          "Drone2:0",
+          "Drone1:0",
+          "Drone3:0",
+          "Drone4:0",
+          "Drone2:1",
+          "Drone3:1",
+          "Drone4:1",
+          "Drone1:1"
+        ],
+        "skipped": null
+      },
+      "expected": {
+        "accepted": true,
+        "action": "quality_upgrade",
+        "checks": 3,
+        "choice": {
+          "Drone1:0": 13,
+          "Drone1:1": 13,
+          "Drone2:0": 11,
+          "Drone2:1": 13,
+          "Drone3:0": 5,
+          "Drone3:1": 5,
+          "Drone4:0": 5,
+          "Drone4:1": 5
+        },
+        "order": [
+          "Drone2:0",
+          "Drone1:0",
+          "Drone3:0",
+          "Drone4:0",
+          "Drone2:1",
+          "Drone3:1",
+          "Drone4:1",
+          "Drone1:1"
+        ],
+        "skipped": null
+      },
+      "full_decision": {
+        "accepted": true,
+        "action": "quality_upgrade",
+        "candidates": 3,
+        "checks": 3,
+        "choice": {
+          "Drone1:0": 13,
+          "Drone1:1": 13,
+          "Drone2:0": 11,
+          "Drone2:1": 13,
+          "Drone3:0": 5,
+          "Drone3:1": 5,
+          "Drone4:0": 5,
+          "Drone4:1": 5
+        },
+        "commit_by": 3.0,
+        "diagnosis": {
+          "deficit": 5.01614217898678,
+          "end": 12.8135223016602,
+          "jobs": [
+            "Drone2:0",
+            "Drone1:0",
+            "Drone3:0",
+            "Drone4:0"
+          ],
+          "kind": "pl",
+          "start": 2.89766448064702,
+          "type": "B"
+        },
+        "forecast": {
+          "command_finish": {
+            "Drone1:0": 5.72736019670025,
+            "Drone1:1": 38.637753840087,
+            "Drone2:0": 5.24036019670025,
+            "Drone2:1": 34.2950246773473,
+            "Drone3:0": 8.05375384008702,
+            "Drone3:1": 38.053753840087,
+            "Drone4:0": 8.20375384008702,
+            "Drone4:1": 38.203753840087
+          },
+          "feasible": true,
+          "finish": {
+            "Drone1:0": 5.72736019670025,
+            "Drone1:1": 38.637753840087,
+            "Drone2:0": 5.24036019670025,
+            "Drone2:1": 34.2950246773473,
+            "Drone3:0": 8.05375384008702,
+            "Drone3:1": 38.053753840087,
+            "Drone4:0": 8.20375384008702,
+            "Drone4:1": 38.203753840087
+          },
+          "jobs": [
+            {
+              "command_completed": false,
+              "deadline": 9.41444806563859,
+              "loop": "Drone2",
+              "mode": "11",
+              "name": "Drone2:0",
+              "release": 2.89766448064702,
+              "remaining_operations": [
+                [
+                  "ps",
+                  0.460360196700249
+                ],
+                [
+                  "pl",
+                  1.33
+                ],
+                [
+                  "ps",
+                  0.15
+                ],
+                [
+                  "delay",
+                  0.3
+                ]
+              ],
+              "segments": []
+            },
+            {
+              "command_completed": false,
+              "deadline": 9.49579436068645,
+              "loop": "Drone1",
+              "mode": "13",
+              "name": "Drone1:0",
+              "release": 4.24356013189477,
+              "remaining_operations": [
+                [
+                  "ps",
+                  0.360812678701654
+                ],
+                [
+                  "pl",
+                  0.487
+                ],
+                [
+                  "ps",
+                  0.15
+                ],
+                [
+                  "delay",
+                  0.3
+                ]
+              ],
+              "segments": []
+            },
+            {
+              "command_completed": false,
+              "deadline": 10.6150273454525,
+              "loop": "Drone3",
+              "mode": "5",
+              "name": "Drone3:0",
+              "release": 6.91123776022865,
+              "remaining_operations": [
+                [
+                  "ps",
+                  0.199732285777075
+                ],
+                [
+                  "pl",
+                  0.097
+                ],
+                [
+                  "ps",
+                  0.15
+                ],
+                [
+                  "delay",
+                  0.3
+                ]
+              ],
+              "segments": []
+            },
+            {
+              "command_completed": false,
+              "deadline": 12.8135223016602,
+              "loop": "Drone4",
+              "mode": "5",
+              "name": "Drone4:0",
+              "release": 7.18489504351454,
+              "remaining_operations": [
+                [
+                  "ps",
+                  0.418858796572482
+                ],
+                [
+                  "pl",
+                  0.097
+                ],
+                [
+                  "ps",
+                  0.15
+                ],
+                [
+                  "delay",
+                  0.3
+                ]
+              ],
+              "segments": []
+            },
+            {
+              "command_completed": false,
+              "deadline": 38.5915117994686,
+              "loop": "Drone2",
+              "mode": "13",
+              "name": "Drone2:1",
+              "release": 32.897664480647,
+              "remaining_operations": [
+                [
+                  "ps",
+                  0.460360196700249
+                ],
+                [
+                  "pl",
+                  0.487
+                ],
+                [
+                  "ps",
+                  0.15
+                ],
+                [
+                  "delay",
+                  0.3
+                ]
+              ],
+              "segments": []
+            },
+            {
+              "command_completed": false,
+              "deadline": 39.3230841732721,
+              "loop": "Drone3",
+              "mode": "5",
+              "name": "Drone3:1",
+              "release": 36.9112377602287,
+              "remaining_operations": [
+                [
+                  "ps",
+                  0.199732285777075
+                ],
+                [
+                  "pl",
+                  0.097
+                ],
+                [
+                  "ps",
+                  0.15
+                ],
+                [
+                  "delay",
+                  0.3
+                ]
+              ],
+              "segments": []
+            },
+            {
+              "command_completed": false,
+              "deadline": 39.9425203176628,
+              "loop": "Drone4",
+              "mode": "5",
+              "name": "Drone4:1",
+              "release": 37.1848950435145,
+              "remaining_operations": [
+                [
+                  "ps",
+                  0.418858796572482
+                ],
+                [
+                  "pl",
+                  0.097
+                ],
+                [
+                  "ps",
+                  0.15
+                ],
+                [
+                  "delay",
+                  0.3
+                ]
+              ],
+              "segments": []
+            },
+            {
+              "command_completed": false,
+              "deadline": 41.0926259187884,
+              "loop": "Drone1",
+              "mode": "13",
+              "name": "Drone1:1",
+              "release": 34.2435601318948,
+              "remaining_operations": [
+                [
+                  "ps",
+                  0.360812678701654
+                ],
+                [
+                  "pl",
+                  0.487
+                ],
+                [
+                  "ps",
+                  0.15
+                ],
+                [
+                  "delay",
+                  0.3
+                ]
+              ],
+              "segments": []
+            }
+          ],
+          "misses": [],
+          "scope": "finite deterministic service envelope; not plant or infinite-horizon certificate",
+          "slack": {
+            "Drone1:0": 3.7684341639862,
+            "Drone1:1": 2.45487207870134,
+            "Drone2:0": 4.17408786893834,
+            "Drone2:1": 4.29648712212129,
+            "Drone3:0": 2.56127350536545,
+            "Drone3:1": 1.26933033318512,
+            "Drone4:0": 4.60976846157322,
+            "Drone4:1": 1.73876647757575
+          },
+          "switches": 7,
+          "timeline": [
+            {
+              "end": 3.46036019670025,
+              "job": "Drone2:0",
+              "ready": 2.89766448064702,
+              "resource": "ps",
+              "start": 3.0
+            },
+            {
+              "end": 4.79036019670025,
+              "job": "Drone2:0",
+              "ready": 3.46036019670025,
+              "resource": "pl",
+              "start": 3.46036019670025
+            },
+            {
+              "end": 4.60437281059642,
+              "job": "Drone1:0",
+              "ready": 4.24356013189477,
+              "resource": "ps",
+              "start": 4.24356013189477
+            },
+            {
+              "end": 4.94036019670025,
+              "job": "Drone2:0",
+              "ready": 4.79036019670025,
+              "resource": "ps",
+              "start": 4.79036019670025
+            },
+            {
+              "end": 5.27736019670025,
+              "job": "Drone1:0",
+              "ready": 4.60437281059642,
+              "resource": "pl",
+              "start": 4.79036019670025
+            },
+            {
+              "end": 5.42736019670025,
+              "job": "Drone1:0",
+              "ready": 5.27736019670025,
+              "resource": "ps",
+              "start": 5.27736019670025
+            },
+            {
+              "end": 7.11097004600572,
+              "job": "Drone3:0",
+              "ready": 6.91123776022865,
+              "resource": "ps",
+              "start": 6.91123776022865
+            },
+            {
+              "end": 7.20797004600572,
+              "job": "Drone3:0",
+              "ready": 7.11097004600572,
+              "resource": "pl",
+              "start": 7.11097004600572
+            },
+            {
+              "end": 7.60375384008702,
+              "job": "Drone4:0",
+              "ready": 7.18489504351454,
+              "resource": "ps",
+              "start": 7.18489504351454
+            },
+            {
+              "end": 7.75375384008702,
+              "job": "Drone3:0",
+              "ready": 7.20797004600572,
+              "resource": "ps",
+              "start": 7.60375384008702
+            },
+            {
+              "end": 7.70075384008702,
+              "job": "Drone4:0",
+              "ready": 7.60375384008702,
+              "resource": "pl",
+              "start": 7.60375384008702
+            },
+            {
+              "end": 7.90375384008702,
+              "job": "Drone4:0",
+              "ready": 7.70075384008702,
+              "resource": "ps",
+              "start": 7.75375384008702
+            },
+            {
+              "end": 33.3580246773473,
+              "job": "Drone2:1",
+              "ready": 32.897664480647,
+              "resource": "ps",
+              "start": 32.897664480647
+            },
+            {
+              "end": 33.8450246773473,
+              "job": "Drone2:1",
+              "ready": 33.3580246773473,
+              "resource": "pl",
+              "start": 33.3580246773473
+            },
+            {
+              "end": 33.9950246773473,
+              "job": "Drone2:1",
+              "ready": 33.8450246773473,
+              "resource": "ps",
+              "start": 33.8450246773473
+            },
+            {
+              "end": 34.6043728105964,
+              "job": "Drone1:1",
+              "ready": 34.2435601318948,
+              "resource": "ps",
+              "start": 34.2435601318948
+            },
+            {
+              "end": 37.1109700460057,
+              "job": "Drone3:1",
+              "ready": 36.9112377602287,
+              "resource": "ps",
+              "start": 36.9112377602287
+            },
+            {
+              "end": 37.2079700460057,
+              "job": "Drone3:1",
+              "ready": 37.1109700460057,
+              "resource": "pl",
+              "start": 37.1109700460057
+            },
+            {
+              "end": 37.603753840087,
+              "job": "Drone4:1",
+              "ready": 37.1848950435145,
+              "resource": "ps",
+              "start": 37.1848950435145
+            },
+            {
+              "end": 37.753753840087,
+              "job": "Drone3:1",
+              "ready": 37.2079700460057,
+              "resource": "ps",
+              "start": 37.603753840087
+            },
+            {
+              "end": 37.700753840087,
+              "job": "Drone4:1",
+              "ready": 37.603753840087,
+              "resource": "pl",
+              "start": 37.603753840087
+            },
+            {
+              "end": 38.187753840087,
+              "job": "Drone1:1",
+              "ready": 34.6043728105964,
+              "resource": "pl",
+              "start": 37.700753840087
+            },
+            {
+              "end": 37.903753840087,
+              "job": "Drone4:1",
+              "ready": 37.700753840087,
+              "resource": "ps",
+              "start": 37.753753840087
+            },
+            {
+              "end": 38.337753840087,
+              "job": "Drone1:1",
+              "ready": 38.187753840087,
+              "resource": "ps",
+              "start": 38.187753840087
+            }
+          ],
+          "waits": {
+            "Drone1:0": {
+              "pl": 0.185987386103828,
+              "ps": 0.0
+            },
+            "Drone1:1": {
+              "pl": 3.0963810294906,
+              "ps": 0.0
+            },
+            "Drone2:0": {
+              "pl": 0.0,
+              "ps": 0.102335519352977
+            },
+            "Drone2:1": {
+              "pl": 0.0,
+              "ps": 0.0
+            },
+            "Drone3:0": {
+              "pl": 0.0,
+              "ps": 0.395783794081296
+            },
+            "Drone3:1": {
+              "pl": 0.0,
+              "ps": 0.395783794081296
+            },
+            "Drone4:0": {
+              "pl": 0.0,
+              "ps": 0.0529999999999999
+            },
+            "Drone4:1": {
+              "pl": 0.0,
+              "ps": 0.0529999999999973
+            }
+          },
+          "worst": "Drone3:1"
+        },
+        "jobs": [
+          {
+            "allowed_modes": [
+              13,
+              4,
+              15,
+              8,
+              18,
+              11,
+              14,
+              16,
+              17,
+              2
+            ],
+            "current_mode": 11,
+            "fresh_deadline": 9.91444806563859,
+            "hold_deadline": 38.5915117994686,
+            "mode_locked": false,
+            "name": "Drone2:0",
+            "periodic_edit": false,
+            "post_ms": 0.15,
+            "prep_ms": 0.460360196700249,
+            "prep_ready": 2.89766448064702,
+            "recovery": false,
+            "release": 2.69766448064702,
+            "release_options": [
+              [
+                0.697664480647023,
+                7.41444806563859
+              ],
+              [
+                3.69766448064702,
+                10.4144480656386
+              ]
+            ],
+            "slot_deadline": 9.41444806563859,
+            "transport_ms": 0.3,
+            "vehicle": "Drone2"
+          },
+          {
+            "allowed_modes": [
+              13,
+              4,
+              15,
+              8,
+              18,
+              11,
+              14,
+              16,
+              17,
+              2
+            ],
+            "current_mode": 13,
+            "fresh_deadline": 9.99579436068645,
+            "hold_deadline": 41.0926259187884,
+            "mode_locked": false,
+            "name": "Drone1:0",
+            "periodic_edit": false,
+            "post_ms": 0.15,
+            "prep_ms": 0.360812678701654,
+            "prep_ready": 4.24356013189477,
+            "recovery": false,
+            "release": 4.04356013189477,
+            "release_options": [
+              [
+                2.04356013189477,
+                7.49579436068645
+              ],
+              [
+                5.04356013189477,
+                10.4957943606864
+              ]
+            ],
+            "slot_deadline": 9.49579436068645,
+            "transport_ms": 0.3,
+            "vehicle": "Drone1"
+          },
+          {
+            "allowed_modes": [
+              5,
+              10,
+              12,
+              13,
+              4,
+              15,
+              8,
+              18,
+              11,
+              14,
+              16,
+              3,
+              17,
+              7,
+              2,
+              6
+            ],
+            "current_mode": 5,
+            "fresh_deadline": 11.1150273454525,
+            "hold_deadline": 39.3230841732721,
+            "mode_locked": false,
+            "name": "Drone3:0",
+            "periodic_edit": false,
+            "post_ms": 0.15,
+            "prep_ms": 0.199732285777075,
+            "prep_ready": 6.91123776022865,
+            "recovery": false,
+            "release": 6.71123776022865,
+            "release_options": [
+              [
+                4.71123776022865,
+                8.61502734545248
+              ],
+              [
+                7.71123776022865,
+                11.6150273454525
+              ]
+            ],
+            "slot_deadline": 10.6150273454525,
+            "transport_ms": 0.3,
+            "vehicle": "Drone3"
+          },
+          {
+            "allowed_modes": [
+              5,
+              10,
+              12,
+              13,
+              4,
+              15,
+              8,
+              18,
+              11,
+              14,
+              16,
+              3,
+              17,
+              7,
+              2,
+              6
+            ],
+            "current_mode": 5,
+            "fresh_deadline": 13.3135223016602,
+            "hold_deadline": 39.9425203176628,
+            "mode_locked": false,
+            "name": "Drone4:0",
+            "periodic_edit": false,
+            "post_ms": 0.15,
+            "prep_ms": 0.418858796572482,
+            "prep_ready": 7.18489504351454,
+            "recovery": false,
+            "release": 6.98489504351454,
+            "release_options": [
+              [
+                4.98489504351454,
+                10.8135223016602
+              ],
+              [
+                7.98489504351454,
+                13.8135223016602
+              ]
+            ],
+            "slot_deadline": 12.8135223016602,
+            "transport_ms": 0.3,
+            "vehicle": "Drone4"
+          },
+          {
+            "allowed_modes": [
+              13,
+              4,
+              15,
+              8,
+              18,
+              11,
+              14,
+              16,
+              17,
+              2
+            ],
+            "current_mode": 13,
+            "fresh_deadline": 40.697664480647,
+            "hold_deadline": 38.5915117994686,
+            "mode_locked": false,
+            "name": "Drone2:1",
+            "periodic_edit": false,
+            "post_ms": 0.15,
+            "prep_ms": 0.460360196700249,
+            "prep_ready": 32.897664480647,
+            "recovery": false,
+            "release": 32.697664480647,
+            "release_options": [],
+            "slot_deadline": 42.697664480647,
+            "transport_ms": 0.3,
+            "vehicle": "Drone2"
+          },
+          {
+            "allowed_modes": [
+              5,
+              10,
+              12,
+              13,
+              4,
+              15,
+              8,
+              18,
+              11,
+              14,
+              16,
+              3,
+              17,
+              7,
+              2,
+              6
+            ],
+            "current_mode": 5,
+            "fresh_deadline": 44.7112377602286,
+            "hold_deadline": 39.3230841732721,
+            "mode_locked": false,
+            "name": "Drone3:1",
+            "periodic_edit": false,
+            "post_ms": 0.15,
+            "prep_ms": 0.199732285777075,
+            "prep_ready": 36.9112377602287,
+            "recovery": false,
+            "release": 36.7112377602286,
+            "release_options": [],
+            "slot_deadline": 46.7112377602286,
+            "transport_ms": 0.3,
+            "vehicle": "Drone3"
+          },
+          {
+            "allowed_modes": [
+              5,
+              10,
+              12,
+              13,
+              4,
+              15,
+              8,
+              18,
+              11,
+              14,
+              16,
+              3,
+              17,
+              7,
+              2,
+              6
+            ],
+            "current_mode": 5,
+            "fresh_deadline": 44.9848950435145,
+            "hold_deadline": 39.9425203176628,
+            "mode_locked": false,
+            "name": "Drone4:1",
+            "periodic_edit": false,
+            "post_ms": 0.15,
+            "prep_ms": 0.418858796572482,
+            "prep_ready": 37.1848950435145,
+            "recovery": false,
+            "release": 36.9848950435145,
+            "release_options": [],
+            "slot_deadline": 46.9848950435145,
+            "transport_ms": 0.3,
+            "vehicle": "Drone4"
+          },
+          {
+            "allowed_modes": [
+              13,
+              4,
+              15,
+              8,
+              18,
+              11,
+              14,
+              16,
+              17,
+              2
+            ],
+            "current_mode": 13,
+            "fresh_deadline": 42.0435601318948,
+            "hold_deadline": 41.0926259187884,
+            "mode_locked": false,
+            "name": "Drone1:1",
+            "periodic_edit": false,
+            "post_ms": 0.15,
+            "prep_ms": 0.360812678701654,
+            "prep_ready": 34.2435601318948,
+            "recovery": false,
+            "release": 34.0435601318948,
+            "release_options": [],
+            "slot_deadline": 44.0435601318948,
+            "transport_ms": 0.3,
+            "vehicle": "Drone1"
+          }
+        ],
+        "order": [
+          "Drone2:0",
+          "Drone1:0",
+          "Drone3:0",
+          "Drone4:0",
+          "Drone2:1",
+          "Drone3:1",
+          "Drone4:1",
+          "Drone1:1"
+        ],
+        "pending": [],
+        "permission": null,
+        "revision": 0,
+        "scope": "finite PS/PL replay under supplied service and control qualifications",
+        "skipped": null,
+        "trace": [
+          {
+            "accepted": false,
+            "action": "keep_current",
+            "misses": [
+              "Drone1:0",
+              "Drone3:0",
+              "Drone4:0"
+            ],
+            "optimistic_head_budget_ms": null,
+            "overlap": [],
+            "skip_net_head_budget_ms": null
+          },
+          {
+            "accepted": true,
+            "action": "faster_modes",
+            "misses": [],
+            "optimistic_head_budget_ms": 5.0984341639862,
+            "overlap": [],
+            "skip_net_head_budget_ms": null
+          },
+          {
+            "accepted": true,
+            "action": "quality_upgrade",
+            "misses": [],
+            "optimistic_head_budget_ms": 5.0984341639862,
+            "overlap": [],
+            "skip_net_head_budget_ms": null
+          }
+        ]
+      },
+      "pass": true,
+      "seed": 5
+    }
+  ],
+  "scope": "numerical frozen-fixture parity, not live flight or WCET",
+  "status": "PASS"
+}

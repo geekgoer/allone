@@ -1,5 +1,15 @@
 # 路线 B 代码与实验阅读指南
 
+2026-11-17最新：[完整管理计时与一次最新状态重验证](PS_MANAGEMENT_REVALIDATION_RESULTS_20261117.md)。本轮独立控制源码见 `results/ps_management_repair_20261116_004/control_source/`；可编辑调度增量在 `ps_planner_repair/live/`，管理入口生成逻辑为 `ps_planner_repair/prepare_control.py`。先读 `scheduler/revalidate.cpp`、`scheduler/live_calendar.cpp` 的profiled/重验证方法，再核对 `adaptive_runtime.cpp` 管理线程接线。板端167项回归及7736请求通过；真实skip/补更仍为0，长尾未消除。原迁移v5仍是冻结基线。
+
+2026-11-16最新：主控制链已由Ubuntu迁到PS并完成实测，阅读[迁移结果接收与源码定位](PS_MIGRATION_DELIVERY_REVIEW_20261116.md)。源码在 `ubuntu_tras/PS_MIGRATION_RESULTS_20261116_run001/ps_migration_20261116_run001/`，优先读 `MIGRATION_IMPLEMENTATION.md`、`adaptive_runtime.cpp`、`adaptive_live.hpp`、`scheduler/live_calendar.*`、`scheduler/scheduler.*`；实测v5对应 `build_adaptive_005/source/`。下述Windows/Python链路为历史实现，不能代表当前PS执行位置。
+
+PS移植及本轮验收资料优先看[Python＋C++统一交接入口](PS_UNIFIED_HANDOFF_20261116.md)。正在阅读旧工程的Agent看[增量说明](UBUNTU_READING_CORRECTION_20261116.md)，无需推倒重读。下文为旧运行链追溯资料。
+
+最新阅读入口：[2026-11-16 精简源码指南](ROUTE_B_SOURCE_GUIDE_20261116.md)，按7个核心文件、飞行支撑和导入兼容分层阅读，模型和大日志另行引用。
+
+2026-11-16 新增[release001 实时框架](ROUTE_B_LIVE_RELEASE001_20261116.md)。`fly_ip37_joint.py --scheduler obligation` 已接入新有限义务日历和实际模型选择，单/双机实飞完成；该入口暂用 Python 日历采样，不能与 `--native-sampling` 组合。下述固定 ID11 和 C++ 链路描述保留2026-11-09时点的旧入口；新实现优先阅读实时框架文档。
+
 更新于 2026-11-09。本文帮助协作者定位当前真实板端双机实验的源码、数据流和证据。当前用户指示及后续进度记录优先。先读[总体框架](../../docs/FRAMEWORK.md)和[协作进度](../../docs/COLLABORATION_STATUS.md)，再按下列顺序阅读。日期文档记录特定时点的设计或实验，不自动代表当前运行方式。
 
 ## 当前研究目标与边界

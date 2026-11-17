@@ -8,6 +8,7 @@
 - [协作进度与任务认领](docs/COLLABORATION_STATUS.md)：已经做了什么、当前问题、后续工作、产物和协作更新方式。
 - [Agent入口](AGENTS.md)：阅读顺序与协作约定。
 - [研究分支文档索引](controller_architecture_study/docs/README.md)：实现、实验、量化与Ubuntu交接的导航。
+- [路线B最新PS迁移接收与复现](controller_architecture_study/docs/PS_MIGRATION_DELIVERY_REVIEW_20261116.md)：原生C++主控制链已在PS接真实DPU实测，6000正式＋12004压力请求按期；真实跳更补更未验收。原始交接材料保留在[统一迁移包说明](controller_architecture_study/docs/PS_UNIFIED_HANDOFF_20261116.md)，不替代最新执行状态。
 - [同事克隆后补齐237D产物](controller_architecture_study/docs/SHARE_237D_ARTIFACTS_20261105.md)：模型和验证数据另行交接，包含路径迁移、zip校验和单模型运行命令。
 
 最新完成原生采样/命令分核、后台快照通知修复及16轮六机试飞，均零碰撞。动态周期有实际安装，1.75m两轮平均J约提高0.98%，但丢任务增加；1.60m新配置未采用。尚无静态碰撞、动态救回的证据，全程硬期限和新超网上板效果待验证。具体看[最新阶段结果](controller_architecture_study/docs/RT_SPLIT_IO_RESULTS_20261105.md)。

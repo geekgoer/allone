@@ -1,5 +1,15 @@
 # 状态感知的动态控制与共享加速器框架
 
+2026-11-16 PS迁移已完成主链路实测：Windows仅AirSim，AXU3EGB原生C++执行发布、采样、参考/237D、保持分析、义务日历、本地DNNDK和下发。正式6000＋压力12004条按期，实际全ID11，无换档/改期/跳更。89份skip候选均因搜索期间上下文变化而未安装，真实补更仍未验收。[接收复核与下一步](../controller_architecture_study/docs/PS_MIGRATION_DELIVERY_REVIEW_20261116.md)记录本地重现；完整修订研究设计见[Obligation-Protected Budget Allocation](../controller_architecture_study/docs/OBLIGATION_PROTECTED_BUDGET_FRAMEWORK_20261116.md)，其中新收益交换/分段扩展尚未实现。下列Windows执行描述保留历史时间点。
+
+2026-11-16 新18档 release001 的有限日历核心已接入真实板端，使用 `--scheduler obligation`。已完成单/双机控制及实际换模，保留三期限、版本提交和限时补更状态；本批没有实际跳过或周期改变。原静止起飞仍有量程拒绝，成功接入试验采用明确记录的参考匹配飞行初态。物理资格和严格时限仍待验证。[实时实现与实测边界](../controller_architecture_study/docs/ROUTE_B_LIVE_RELEASE001_20261116.md) · [此前离线回放](../controller_architecture_study/docs/ROUTE_B_RELEASE001_IMPLEMENTATION_20261116.md)。
+
+2026-11-15 面向初次接触项目的读者，见[路线 B 中文论文初稿](../controller_architecture_study/docs/ROUTE_B_PAPER_DRAFT_20261115.md)。
+
+2026-11-15 当前路线 B 的完整设计见[框架中文总览](../controller_architecture_study/docs/ROUTE_B_FRAMEWORK_OVERVIEW_20261115.md)。
+
+2026-11-14 路线 B 的相位感知设计与离线对照见[周期、模型与派发联合调整](../controller_architecture_study/docs/ROUTE_B_PHASE_AWARE_FRAMEWORK_20261114.md)。现有在线运行入口及其能力以代码指南为准。
+
 2026-11-09 路线B当前实现和代码阅读见[路线B代码指南](../controller_architecture_study/docs/ROUTE_B_CODE_GUIDE_20261109.md)，最新问题见[协作进度](COLLABORATION_STATUS.md)。下列旧日期的进展和拟议步骤为历史记录。
 
 当前执行目标（2026-11-08）见[研究目标与分阶段计划](RESEARCH_GOALS_AND_PLAN.md)：保留增益3.5的现有板端DNN，先环境初筛、再按测量选择Windows/PS部署位置，冻结环境后研究时序与模型差异。微调、全量迁移PS和三个旋钮同时成立均不是预设前提；下文历史状态不替代该最新路线。

@@ -117,7 +117,7 @@ def isolated_finish(job, platform):
     return max(release, platform.decision)+sum(cost for _, cost in operations)
 
 
-def simulate(scenario, choice, policy):
+def simulate(scenario, choice, policy, *, pl_order=None):
     """Two concurrent resources; PS/PL atomic operations, no intra-segment preemption.
 
     PS dispatch handshakes are charged per PL segment. Every job is drained even
@@ -127,6 +127,12 @@ def simulate(scenario, choice, policy):
     order, group = policy
     if group not in scenario.legal_groups:raise ValueError('unsupported accelerator preemption boundary')
     jobs = make_jobs(scenario, choice, group); p = scenario.platform
+    if pl_order is not None and (len(pl_order) != len(jobs) or set(pl_order) != {j.name for j in jobs}):
+        raise ValueError('PL order must contain every job exactly once')
+    if pl_order is not None and any(sum(resource == 'pl' for resource, _ in chain(j, p)) != 1 for j in jobs):
+        raise ValueError('Explicit PL order requires one accelerator operation per job')
+    pl_rank = {name: rank for rank, name in enumerate(pl_order or ())}
+    pl_position = 0
     pending_pl = {}
     if order == 'guarded_edf':
         for job in jobs:
@@ -163,6 +169,8 @@ def simulate(scenario, choice, policy):
         else:
             j = by_name[name]
             priority = j.release if order == 'fifo' else j.deadline
+            if resource == 'pl' and pl_order is not None:
+                priority = pl_rank[name]
             heapq.heappush(queues[resource], (priority, j.release, name, now, duration))
     for j in jobs: event(max(0.,j.release), 'release', j.name)
     event(p.decision, 'ps', None); event(p.initial_pl_block, 'pl', None)
@@ -174,6 +182,8 @@ def simulate(scenario, choice, policy):
             if name is not None: advance(name,now)
         for resource in ('ps','pl'):
             if busy[resource] or not queues[resource]: continue
+            if resource == 'pl' and pl_order is not None and queues['pl'][0][2] != pl_order[pl_position]:
+                continue
             if resource == 'pl' and order == 'guarded_edf':
                 _, _, next_job, _, cost = queues['pl'][0]
                 end = now+cost+(p.switch if last_pl is not None and last_pl != next_job else 0.)
@@ -188,6 +198,8 @@ def simulate(scenario, choice, policy):
             _, _, name, ready, duration = heapq.heappop(queues[resource])
             waits[name][resource] += now-ready
             if resource == 'pl':
+                if pl_order is not None:
+                    pl_position += 1
                 if last_pl is not None and last_pl != name:
                     duration += p.switch; switches += 1
                 last_pl = name

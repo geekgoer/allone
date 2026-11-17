@@ -1,0 +1,2942 @@
+{
+  "asset": "1M_Cube",
+  "asset_scale_multiplier": 1.0,
+  "calibration": {
+    "calibration_complete": true,
+    "hover_throttle": 0.6,
+    "hover_thrust_accel": 9.81,
+    "max_throttle": 1.0,
+    "min_throttle": 0.0,
+    "notes": "Measured NED velocity bracket; slope remains an engineering assumption.",
+    "thrust_accel_per_throttle": 19.62,
+    "vehicle_name": ""
+  },
+  "calibration_source_path": "/home/cwc/dpu_work/windows_framework/route_b_ps_handoff_20261116/project/configs/thrust_calibration.json",
+  "case_source_path": "/home/cwc/dpu_work/windows_framework/route_b_ps_handoff_20261116/project/controller_architecture_study/results/release001_live_case_20261116/case.json",
+  "created_actors": [],
+  "duration_s": 20.0,
+  "effective_control": [
+    9.81,
+    0.0,
+    0.0,
+    0.0
+  ],
+  "events": [
+    {
+      "ps_monotonic_ns": 112406527072489,
+      "stage": "read_frozen_inputs"
+    },
+    {
+      "ps_monotonic_ns": 112406528402509,
+      "stage": "offline_geometry_only"
+    },
+    {
+      "ps_monotonic_ns": 112406530379637,
+      "stage": "finished"
+    }
+  ],
+  "extents_mean_y": [
+    0.100850254125885,
+    0.15504797536301
+  ],
+  "gate_center_height_m": 4.0,
+  "gate_center_width_m": 4.0,
+  "gate_objects": [
+    {
+      "gate_index": 1,
+      "is_blueprint": false,
+      "name": "PSMIG20261116_Drone1_1_left",
+      "orientation_wxyz": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "part": "left",
+      "physics_enabled": false,
+      "position": [
+        9.29531536338755,
+        -8.20796141710987,
+        -4.0
+      ],
+      "scale": [
+        0.15,
+        0.15,
+        4.0
+      ],
+      "vehicle": "Drone1"
+    },
+    {
+      "gate_index": 1,
+      "is_blueprint": false,
+      "name": "PSMIG20261116_Drone1_1_right",
+      "orientation_wxyz": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "part": "right",
+      "physics_enabled": false,
+      "position": [
+        9.29531536338755,
+        -4.20796141710987,
+        -4.0
+      ],
+      "scale": [
+        0.15,
+        0.15,
+        4.0
+      ],
+      "vehicle": "Drone1"
+    },
+    {
+      "gate_index": 1,
+      "is_blueprint": false,
+      "name": "PSMIG20261116_Drone1_1_top",
+      "orientation_wxyz": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "part": "top",
+      "physics_enabled": false,
+      "position": [
+        9.29531536338755,
+        -6.20796141710987,
+        -6.0
+      ],
+      "scale": [
+        0.15,
+        4.0,
+        0.15
+      ],
+      "vehicle": "Drone1"
+    },
+    {
+      "gate_index": 1,
+      "is_blueprint": false,
+      "name": "PSMIG20261116_Drone1_1_bottom",
+      "orientation_wxyz": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "part": "bottom",
+      "physics_enabled": false,
+      "position": [
+        9.29531536338755,
+        -6.20796141710987,
+        -2.0
+      ],
+      "scale": [
+        0.15,
+        4.0,
+        0.15
+      ],
+      "vehicle": "Drone1"
+    },
+    {
+      "gate_index": 2,
+      "is_blueprint": false,
+      "name": "PSMIG20261116_Drone1_2_left",
+      "orientation_wxyz": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "part": "left",
+      "physics_enabled": false,
+      "position": [
+        18.5906307267751,
+        -8.2337777300605,
+        -4.0
+      ],
+      "scale": [
+        0.15,
+        0.15,
+        4.0
+      ],
+      "vehicle": "Drone1"
+    },
+    {
+      "gate_index": 2,
+      "is_blueprint": false,
+      "name": "PSMIG20261116_Drone1_2_right",
+      "orientation_wxyz": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "part": "right",
+      "physics_enabled": false,
+      "position": [
+        18.5906307267751,
+        -4.2337777300605,
+        -4.0
+      ],
+      "scale": [
+        0.15,
+        0.15,
+        4.0
+      ],
+      "vehicle": "Drone1"
+    },
+    {
+      "gate_index": 2,
+      "is_blueprint": false,
+      "name": "PSMIG20261116_Drone1_2_top",
+      "orientation_wxyz": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "part": "top",
+      "physics_enabled": false,
+      "position": [
+        18.5906307267751,
+        -6.2337777300605,
+        -6.0
+      ],
+      "scale": [
+        0.15,
+        4.0,
+        0.15
+      ],
+      "vehicle": "Drone1"
+    },
+    {
+      "gate_index": 2,
+      "is_blueprint": false,
+      "name": "PSMIG20261116_Drone1_2_bottom",
+      "orientation_wxyz": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "part": "bottom",
+      "physics_enabled": false,
+      "position": [
+        18.5906307267751,
+        -6.2337777300605,
+        -2.0
+      ],
+      "scale": [
+        0.15,
+        4.0,
+        0.15
+      ],
+      "vehicle": "Drone1"
+    },
+    {
+      "gate_index": 3,
+      "is_blueprint": false,
+      "name": "PSMIG20261116_Drone1_3_left",
+      "orientation_wxyz": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "part": "left",
+      "physics_enabled": false,
+      "position": [
+        27.8859460901627,
+        -7.96057727886325,
+        -4.0
+      ],
+      "scale": [
+        0.15,
+        0.15,
+        4.0
+      ],
+      "vehicle": "Drone1"
+    },
+    {
+      "gate_index": 3,
+      "is_blueprint": false,
+      "name": "PSMIG20261116_Drone1_3_right",
+      "orientation_wxyz": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "part": "right",
+      "physics_enabled": false,
+      "position": [
+        27.8859460901627,
+        -3.96057727886325,
+        -4.0
+      ],
+      "scale": [
+        0.15,
+        0.15,
+        4.0
+      ],
+      "vehicle": "Drone1"
+    },
+    {
+      "gate_index": 3,
+      "is_blueprint": false,
+      "name": "PSMIG20261116_Drone1_3_top",
+      "orientation_wxyz": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "part": "top",
+      "physics_enabled": false,
+      "position": [
+        27.8859460901627,
+        -5.96057727886325,
+        -6.0
+      ],
+      "scale": [
+        0.15,
+        4.0,
+        0.15
+      ],
+      "vehicle": "Drone1"
+    },
+    {
+      "gate_index": 3,
+      "is_blueprint": false,
+      "name": "PSMIG20261116_Drone1_3_bottom",
+      "orientation_wxyz": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "part": "bottom",
+      "physics_enabled": false,
+      "position": [
+        27.8859460901627,
+        -5.96057727886325,
+        -2.0
+      ],
+      "scale": [
+        0.15,
+        4.0,
+        0.15
+      ],
+      "vehicle": "Drone1"
+    },
+    {
+      "gate_index": 4,
+      "is_blueprint": false,
+      "name": "PSMIG20261116_Drone1_4_left",
+      "orientation_wxyz": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "part": "left",
+      "physics_enabled": false,
+      "position": [
+        37.1812614535502,
+        -7.93406981654466,
+        -4.0
+      ],
+      "scale": [
+        0.15,
+        0.15,
+        4.0
+      ],
+      "vehicle": "Drone1"
+    },
+    {
+      "gate_index": 4,
+      "is_blueprint": false,
+      "name": "PSMIG20261116_Drone1_4_right",
+      "orientation_wxyz": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "part": "right",
+      "physics_enabled": false,
+      "position": [
+        37.1812614535502,
+        -3.93406981654466,
+        -4.0
+      ],
+      "scale": [
+        0.15,
+        0.15,
+        4.0
+      ],
+      "vehicle": "Drone1"
+    },
+    {
+      "gate_index": 4,
+      "is_blueprint": false,
+      "name": "PSMIG20261116_Drone1_4_top",
+      "orientation_wxyz": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "part": "top",
+      "physics_enabled": false,
+      "position": [
+        37.1812614535502,
+        -5.93406981654466,
+        -6.0
+      ],
+      "scale": [
+        0.15,
+        4.0,
+        0.15
+      ],
+      "vehicle": "Drone1"
+    },
+    {
+      "gate_index": 4,
+      "is_blueprint": false,
+      "name": "PSMIG20261116_Drone1_4_bottom",
+      "orientation_wxyz": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "part": "bottom",
+      "physics_enabled": false,
+      "position": [
+        37.1812614535502,
+        -5.93406981654466,
+        -2.0
+      ],
+      "scale": [
+        0.15,
+        4.0,
+        0.15
+      ],
+      "vehicle": "Drone1"
+    },
+    {
+      "gate_index": 5,
+      "is_blueprint": false,
+      "name": "PSMIG20261116_Drone1_5_left",
+      "orientation_wxyz": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "part": "left",
+      "physics_enabled": false,
+      "position": [
+        46.4765768169378,
+        -7.9306597720782,
+        -4.0
+      ],
+      "scale": [
+        0.15,
+        0.15,
+        4.0
+      ],
+      "vehicle": "Drone1"
+    },
+    {
+      "gate_index": 5,
+      "is_blueprint": false,
+      "name": "PSMIG20261116_Drone1_5_right",
+      "orientation_wxyz": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "part": "right",
+      "physics_enabled": false,
+      "position": [
+        46.4765768169378,
+        -3.9306597720782,
+        -4.0
+      ],
+      "scale": [
+        0.15,
+        0.15,
+        4.0
+      ],
+      "vehicle": "Drone1"
+    },
+    {
+      "gate_index": 5,
+      "is_blueprint": false,
+      "name": "PSMIG20261116_Drone1_5_top",
+      "orientation_wxyz": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "part": "top",
+      "physics_enabled": false,
+      "position": [
+        46.4765768169378,
+        -5.9306597720782,
+        -6.0
+      ],
+      "scale": [
+        0.15,
+        4.0,
+        0.15
+      ],
+      "vehicle": "Drone1"
+    },
+    {
+      "gate_index": 5,
+      "is_blueprint": false,
+      "name": "PSMIG20261116_Drone1_5_bottom",
+      "orientation_wxyz": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "part": "bottom",
+      "physics_enabled": false,
+      "position": [
+        46.4765768169378,
+        -5.9306597720782,
+        -2.0
+      ],
+      "scale": [
+        0.15,
+        4.0,
+        0.15
+      ],
+      "vehicle": "Drone1"
+    },
+    {
+      "gate_index": 1,
+      "is_blueprint": false,
+      "name": "PSMIG20261116_Drone2_1_left",
+      "orientation_wxyz": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "part": "left",
+      "physics_enabled": false,
+      "position": [
+        9.25548408255957,
+        3.87829070430654,
+        -4.0
+      ],
+      "scale": [
+        0.15,
+        0.15,
+        4.0
+      ],
+      "vehicle": "Drone2"
+    },
+    {
+      "gate_index": 1,
+      "is_blueprint": false,
+      "name": "PSMIG20261116_Drone2_1_right",
+      "orientation_wxyz": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "part": "right",
+      "physics_enabled": false,
+      "position": [
+        9.25548408255957,
+        7.87829070430654,
+        -4.0
+      ],
+      "scale": [
+        0.15,
+        0.15,
+        4.0
+      ],
+      "vehicle": "Drone2"
+    },
+    {
+      "gate_index": 1,
+      "is_blueprint": false,
+      "name": "PSMIG20261116_Drone2_1_top",
+      "orientation_wxyz": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "part": "top",
+      "physics_enabled": false,
+      "position": [
+        9.25548408255957,
+        5.87829070430654,
+        -6.0
+      ],
+      "scale": [
+        0.15,
+        4.0,
+        0.15
+      ],
+      "vehicle": "Drone2"
+    },
+    {
+      "gate_index": 1,
+      "is_blueprint": false,
+      "name": "PSMIG20261116_Drone2_1_bottom",
+      "orientation_wxyz": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "part": "bottom",
+      "physics_enabled": false,
+      "position": [
+        9.25548408255957,
+        5.87829070430654,
+        -2.0
+      ],
+      "scale": [
+        0.15,
+        4.0,
+        0.15
+      ],
+      "vehicle": "Drone2"
+    },
+    {
+      "gate_index": 2,
+      "is_blueprint": false,
+      "name": "PSMIG20261116_Drone2_2_left",
+      "orientation_wxyz": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "part": "left",
+      "physics_enabled": false,
+      "position": [
+        18.5109681651191,
+        3.82560077527876,
+        -4.0
+      ],
+      "scale": [
+        0.15,
+        0.15,
+        4.0
+      ],
+      "vehicle": "Drone2"
+    },
+    {
+      "gate_index": 2,
+      "is_blueprint": false,
+      "name": "PSMIG20261116_Drone2_2_right",
+      "orientation_wxyz": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "part": "right",
+      "physics_enabled": false,
+      "position": [
+        18.5109681651191,
+        7.82560077527876,
+        -4.0
+      ],
+      "scale": [
+        0.15,
+        0.15,
+        4.0
+      ],
+      "vehicle": "Drone2"
+    },
+    {
+      "gate_index": 2,
+      "is_blueprint": false,
+      "name": "PSMIG20261116_Drone2_2_top",
+      "orientation_wxyz": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "part": "top",
+      "physics_enabled": false,
+      "position": [
+        18.5109681651191,
+        5.82560077527876,
+        -6.0
+      ],
+      "scale": [
+        0.15,
+        4.0,
+        0.15
+      ],
+      "vehicle": "Drone2"
+    },
+    {
+      "gate_index": 2,
+      "is_blueprint": false,
+      "name": "PSMIG20261116_Drone2_2_bottom",
+      "orientation_wxyz": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "part": "bottom",
+      "physics_enabled": false,
+      "position": [
+        18.5109681651191,
+        5.82560077527876,
+        -2.0
+      ],
+      "scale": [
+        0.15,
+        4.0,
+        0.15
+      ],
+      "vehicle": "Drone2"
+    },
+    {
+      "gate_index": 3,
+      "is_blueprint": false,
+      "name": "PSMIG20261116_Drone2_3_left",
+      "orientation_wxyz": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "part": "left",
+      "physics_enabled": false,
+      "position": [
+        27.7664522476787,
+        3.69193927606169,
+        -4.0
+      ],
+      "scale": [
+        0.15,
+        0.15,
+        4.0
+      ],
+      "vehicle": "Drone2"
+    },
+    {
+      "gate_index": 3,
+      "is_blueprint": false,
+      "name": "PSMIG20261116_Drone2_3_right",
+      "orientation_wxyz": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "part": "right",
+      "physics_enabled": false,
+      "position": [
+        27.7664522476787,
+        7.69193927606169,
+        -4.0
+      ],
+      "scale": [
+        0.15,
+        0.15,
+        4.0
+      ],
+      "vehicle": "Drone2"
+    },
+    {
+      "gate_index": 3,
+      "is_blueprint": false,
+      "name": "PSMIG20261116_Drone2_3_top",
+      "orientation_wxyz": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "part": "top",
+      "physics_enabled": false,
+      "position": [
+        27.7664522476787,
+        5.69193927606169,
+        -6.0
+      ],
+      "scale": [
+        0.15,
+        4.0,
+        0.15
+      ],
+      "vehicle": "Drone2"
+    },
+    {
+      "gate_index": 3,
+      "is_blueprint": false,
+      "name": "PSMIG20261116_Drone2_3_bottom",
+      "orientation_wxyz": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "part": "bottom",
+      "physics_enabled": false,
+      "position": [
+        27.7664522476787,
+        5.69193927606169,
+        -2.0
+      ],
+      "scale": [
+        0.15,
+        4.0,
+        0.15
+      ],
+      "vehicle": "Drone2"
+    },
+    {
+      "gate_index": 4,
+      "is_blueprint": false,
+      "name": "PSMIG20261116_Drone2_4_left",
+      "orientation_wxyz": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "part": "left",
+      "physics_enabled": false,
+      "position": [
+        37.0219363302383,
+        4.08304870002213,
+        -4.0
+      ],
+      "scale": [
+        0.15,
+        0.15,
+        4.0
+      ],
+      "vehicle": "Drone2"
+    },
+    {
+      "gate_index": 4,
+      "is_blueprint": false,
+      "name": "PSMIG20261116_Drone2_4_right",
+      "orientation_wxyz": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "part": "right",
+      "physics_enabled": false,
+      "position": [
+        37.0219363302383,
+        8.08304870002213,
+        -4.0
+      ],
+      "scale": [
+        0.15,
+        0.15,
+        4.0
+      ],
+      "vehicle": "Drone2"
+    },
+    {
+      "gate_index": 4,
+      "is_blueprint": false,
+      "name": "PSMIG20261116_Drone2_4_top",
+      "orientation_wxyz": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "part": "top",
+      "physics_enabled": false,
+      "position": [
+        37.0219363302383,
+        6.08304870002213,
+        -6.0
+      ],
+      "scale": [
+        0.15,
+        4.0,
+        0.15
+      ],
+      "vehicle": "Drone2"
+    },
+    {
+      "gate_index": 4,
+      "is_blueprint": false,
+      "name": "PSMIG20261116_Drone2_4_bottom",
+      "orientation_wxyz": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "part": "bottom",
+      "physics_enabled": false,
+      "position": [
+        37.0219363302383,
+        6.08304870002213,
+        -2.0
+      ],
+      "scale": [
+        0.15,
+        4.0,
+        0.15
+      ],
+      "vehicle": "Drone2"
+    },
+    {
+      "gate_index": 5,
+      "is_blueprint": false,
+      "name": "PSMIG20261116_Drone2_5_left",
+      "orientation_wxyz": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "part": "left",
+      "physics_enabled": false,
+      "position": [
+        46.2774204127979,
+        4.10317043291099,
+        -4.0
+      ],
+      "scale": [
+        0.15,
+        0.15,
+        4.0
+      ],
+      "vehicle": "Drone2"
+    },
+    {
+      "gate_index": 5,
+      "is_blueprint": false,
+      "name": "PSMIG20261116_Drone2_5_right",
+      "orientation_wxyz": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "part": "right",
+      "physics_enabled": false,
+      "position": [
+        46.2774204127979,
+        8.10317043291099,
+        -4.0
+      ],
+      "scale": [
+        0.15,
+        0.15,
+        4.0
+      ],
+      "vehicle": "Drone2"
+    },
+    {
+      "gate_index": 5,
+      "is_blueprint": false,
+      "name": "PSMIG20261116_Drone2_5_top",
+      "orientation_wxyz": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "part": "top",
+      "physics_enabled": false,
+      "position": [
+        46.2774204127979,
+        6.10317043291099,
+        -6.0
+      ],
+      "scale": [
+        0.15,
+        4.0,
+        0.15
+      ],
+      "vehicle": "Drone2"
+    },
+    {
+      "gate_index": 5,
+      "is_blueprint": false,
+      "name": "PSMIG20261116_Drone2_5_bottom",
+      "orientation_wxyz": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "part": "bottom",
+      "physics_enabled": false,
+      "position": [
+        46.2774204127979,
+        6.10317043291099,
+        -2.0
+      ],
+      "scale": [
+        0.15,
+        4.0,
+        0.15
+      ],
+      "vehicle": "Drone2"
+    }
+  ],
+  "gate_thickness_m": 0.15,
+  "host": "",
+  "initial_state_scope": "reference-matched flying diagnostic; NOT stationary takeoff acceptance",
+  "initial_states": {
+    "Drone1": {
+      "acceleration": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "angular_velocity": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "has_collided": false,
+      "landed_state": 0,
+      "orientation_wxyz": [
+        0.999850650670281,
+        0.00486859971965713,
+        0.0165821160119631,
+        8.07437443912694e-05
+      ],
+      "position": [
+        3.15785016279603,
+        -3.18581100607541,
+        -4.5
+      ],
+      "quaternion": [
+        0.999850650670281,
+        0.00486859971965713,
+        0.0165821160119631,
+        8.07437443912694e-05
+      ],
+      "timestamp_ns": 0,
+      "velocity": [
+        6.13807903395849,
+        -0.0703019259995931,
+        0.0
+      ]
+    },
+    "Drone2": {
+      "acceleration": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "angular_velocity": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "has_collided": false,
+      "landed_state": 0,
+      "orientation_wxyz": [
+        0.999828802538504,
+        -0.00154075989767356,
+        0.0184388412316091,
+        -2.84146916523131e-05
+      ],
+      "position": [
+        6.16478774624841,
+        -14.1284928730185,
+        -3.5
+      ],
+      "quaternion": [
+        0.999828802538504,
+        -0.00154075989767356,
+        0.0184388412316091,
+        -2.84146916523131e-05
+      ],
+      "timestamp_ns": 0,
+      "velocity": [
+        6.1307914072313,
+        0.0218035009322996,
+        0.0
+      ]
+    }
+  },
+  "initialization_ignore_collision": true,
+  "layouts": {
+    "Drone1": {
+      "duration": 11.1175572788326,
+      "environment_id": 48,
+      "gates": [
+        {
+          "center": [
+            7.29531536338755,
+            -3.20796141710987,
+            -4.5
+          ],
+          "index": 1,
+          "orientation": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "center": [
+            16.5906307267751,
+            -3.2337777300605,
+            -4.5
+          ],
+          "index": 2,
+          "orientation": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "center": [
+            25.8859460901627,
+            -2.96057727886325,
+            -4.5
+          ],
+          "index": 3,
+          "orientation": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "center": [
+            35.1812614535502,
+            -2.93406981654466,
+            -4.5
+          ],
+          "index": 4,
+          "orientation": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "center": [
+            44.4765768169378,
+            -2.9306597720782,
+            -4.5
+          ],
+          "index": 5,
+          "orientation": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "geometry_family": 0,
+      "heading_yaw": 0.0,
+      "parent_route_generator_id": 200960,
+      "route_id": 960,
+      "segments": [
+        {
+          "coefficients": [
+            [
+              -2.0,
+              0.0,
+              0.0,
+              4.26191787648023,
+              -2.40707425248378,
+              0.389753512148068
+            ],
+            [
+              -3.10085025412589,
+              0.0,
+              0.0,
+              -0.0949192436189449,
+              0.063477338010791,
+              -0.0113201420135266
+            ],
+            [
+              -4.5,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "duration": 2.24298733831928,
+          "heading_orientation": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "start_time": 0.0
+        },
+        {
+          "coefficients": [
+            [
+              7.29531536338755,
+              5.0,
+              0.0,
+              -5.57963865136991e-05,
+              4.50195898175441e-05,
+              -9.68647419174028e-06
+            ],
+            [
+              -3.20796141710987,
+              0.0,
+              0.0,
+              -0.0401797119449335,
+              0.0324191988723834,
+              -0.00697535749363627
+            ],
+            [
+              -4.5,
+              0.0,
+              0.0,
+              0.0,
+              -0.0,
+              0.0
+            ]
+          ],
+          "duration": 1.8590702427487,
+          "heading_orientation": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "start_time": 2.24298733831928
+        },
+        {
+          "coefficients": [
+            [
+              16.5906307267751,
+              5.0,
+              0.0,
+              -0.00623921665581152,
+              0.00503198921158227,
+              -0.00108222626107591
+            ],
+            [
+              -3.2337777300605,
+              0.0,
+              0.0,
+              0.424655290427463,
+              -0.342488642076878,
+              0.0736587832348068
+            ],
+            [
+              -4.5,
+              0.0,
+              0.0,
+              0.0,
+              -0.0,
+              0.0
+            ]
+          ],
+          "duration": 1.85986586818903,
+          "heading_orientation": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "start_time": 4.10205758106798
+        },
+        {
+          "coefficients": [
+            [
+              25.8859460901627,
+              5.0,
+              0.0,
+              -5.88238746186534e-05,
+              4.74623236033918e-05,
+              -1.02120538706971e-05
+            ],
+            [
+              -2.96057727886325,
+              0.0,
+              0.0,
+              0.0412553695691996,
+              -0.0332870915689385,
+              0.00716209292957026
+            ],
+            [
+              -4.5,
+              0.0,
+              0.0,
+              0.0,
+              -0.0,
+              0.0
+            ]
+          ],
+          "duration": 1.85907063179845,
+          "heading_orientation": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "start_time": 5.96192344925701
+        },
+        {
+          "coefficients": [
+            [
+              35.1812614535502,
+              5.0,
+              0.0,
+              -9.73516870204921e-07,
+              7.85489867721245e-07,
+              -1.69007674114674e-07
+            ],
+            [
+              -2.93406981654466,
+              0.0,
+              0.0,
+              0.00530734819923744,
+              -0.00428227631442285,
+              0.00092138369896046
+            ],
+            [
+              -4.5,
+              0.0,
+              0.0,
+              0.0,
+              -0.0,
+              0.0
+            ]
+          ],
+          "duration": 1.85906319777712,
+          "heading_orientation": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "start_time": 7.82099408105546
+        },
+        {
+          "coefficients": [
+            [
+              44.4765768169378,
+              5.0,
+              0.0,
+              2.31445713816061,
+              -4.09832726441087,
+              1.37459423775271
+            ],
+            [
+              -2.9306597720782,
+              0.0,
+              0.0,
+              0.0,
+              -0.0,
+              0.0
+            ],
+            [
+              -4.5,
+              0.0,
+              0.0,
+              0.0,
+              -0.0,
+              0.0
+            ]
+          ],
+          "duration": 1.4375,
+          "heading_orientation": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "start_time": 9.68005727883257
+        }
+      ]
+    },
+    "Drone2": {
+      "duration": 11.079181150177,
+      "environment_id": 50,
+      "gates": [
+        {
+          "center": [
+            10.2554840825596,
+            -14.1217092956935,
+            -3.5
+          ],
+          "index": 1,
+          "orientation": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "center": [
+            19.5109681651191,
+            -14.1743992247212,
+            -3.5
+          ],
+          "index": 2,
+          "orientation": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "center": [
+            28.7664522476787,
+            -14.3080607239383,
+            -3.5
+          ],
+          "index": 3,
+          "orientation": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "center": [
+            38.0219363302383,
+            -13.9169512999779,
+            -3.5
+          ],
+          "index": 4,
+          "orientation": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "center": [
+            47.2774204127979,
+            -13.896829567089,
+            -3.5
+          ],
+          "index": 5,
+          "orientation": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "geometry_family": 0,
+      "heading_yaw": 0.0,
+      "parent_route_generator_id": 201004,
+      "route_id": 1004,
+      "segments": [
+        {
+          "coefficients": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              4.28327961855681,
+              -2.42654534417055,
+              0.394153723586182
+            ],
+            [
+              -14.155047975363,
+              0.0,
+              0.0,
+              0.0298451792418476,
+              -0.0200266073201589,
+              0.00358351564926315
+            ],
+            [
+              -3.5,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "duration": 2.23541452364265,
+          "heading_orientation": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "start_time": 0.0
+        },
+        {
+          "coefficients": [
+            [
+              10.2554840825596,
+              5.0,
+              0.0,
+              -0.00023643624914133,
+              0.00019158837279944,
+              -4.13992972456559e-05
+            ],
+            [
+              -14.1217092956935,
+              0.0,
+              0.0,
+              -0.0830651971182584,
+              0.0673091626599059,
+              -0.0145444736107796
+            ],
+            [
+              -3.5,
+              0.0,
+              0.0,
+              0.0,
+              -0.0,
+              0.0
+            ]
+          ],
+          "duration": 1.85112681176774,
+          "heading_orientation": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "start_time": 2.23541452364265
+        },
+        {
+          "coefficients": [
+            [
+              19.5109681651191,
+              5.0,
+              0.0,
+              -0.00152102948783348,
+              0.00123240790988847,
+              -0.000266280922406761
+            ],
+            [
+              -14.1743992247212,
+              0.0,
+              0.0,
+              -0.21066048562522,
+              0.170686795267372,
+              -0.0368795403873728
+            ],
+            [
+              -3.5,
+              0.0,
+              0.0,
+              0.0,
+              -0.0,
+              0.0
+            ]
+          ],
+          "duration": 1.85128983142982,
+          "heading_orientation": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "start_time": 4.08654133541039
+        },
+        {
+          "coefficients": [
+            [
+              28.7664522476787,
+              5.0,
+              0.0,
+              -0.0129874552779384,
+              0.0105147459806177,
+              -0.00227008562074455
+            ],
+            [
+              -14.3080607239383,
+              0.0,
+              0.0,
+              0.614962543137932,
+              -0.497878513558695,
+              0.107489696526256
+            ],
+            [
+              -3.5,
+              0.0,
+              0.0,
+              0.0,
+              -0.0,
+              0.0
+            ]
+          ],
+          "duration": 1.8527487922978,
+          "heading_orientation": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "start_time": 5.93783116684021
+        },
+        {
+          "coefficients": [
+            [
+              38.0219363302383,
+              5.0,
+              0.0,
+              -3.44834437762631e-05,
+              2.79429163110001e-05,
+              -6.03811751540528e-06
+            ],
+            [
+              -13.9169512999779,
+              0.0,
+              0.0,
+              0.0317230473031201,
+              -0.0257060884542849,
+              0.00555476676882406
+            ],
+            [
+              -3.5,
+              0.0,
+              0.0,
+              0.0,
+              -0.0,
+              0.0
+            ]
+          ],
+          "duration": 1.85110119103898,
+          "heading_orientation": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "start_time": 7.79057995913801
+        },
+        {
+          "coefficients": [
+            [
+              47.2774204127979,
+              5.0,
+              0.0,
+              2.31445713816061,
+              -4.09832726441087,
+              1.37459423775271
+            ],
+            [
+              -13.896829567089,
+              0.0,
+              0.0,
+              0.0,
+              -0.0,
+              0.0
+            ],
+            [
+              -3.5,
+              0.0,
+              0.0,
+              0.0,
+              -0.0,
+              0.0
+            ]
+          ],
+          "duration": 1.4375,
+          "heading_orientation": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "start_time": 9.64168115017699
+        }
+      ]
+    }
+  },
+  "offsets": {
+    "Drone1": [
+      2.0,
+      -3.0,
+      0.5
+    ],
+    "Drone2": [
+      -1.0,
+      20.0,
+      -0.5
+    ]
+  },
+  "original_case": {
+    "duration_s": 20.0,
+    "gate_center_height_m": 4.0,
+    "gate_center_width_m": 4.0,
+    "layouts": {
+      "Drone1": {
+        "duration": 11.1175572788326,
+        "environment_id": 48,
+        "gates": [
+          {
+            "center": [
+              9.29531536338755,
+              -0.107111162983985,
+              -4.0
+            ],
+            "index": 1,
+            "orientation": [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "center": [
+              18.5906307267751,
+              -0.132927475934611,
+              -4.0
+            ],
+            "index": 2,
+            "orientation": [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "center": [
+              27.8859460901627,
+              0.140272975262634,
+              -4.0
+            ],
+            "index": 3,
+            "orientation": [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "center": [
+              37.1812614535502,
+              0.166780437581227,
+              -4.0
+            ],
+            "index": 4,
+            "orientation": [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "center": [
+              46.4765768169378,
+              0.170190482047683,
+              -4.0
+            ],
+            "index": 5,
+            "orientation": [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          }
+        ],
+        "geometry_family": 0,
+        "heading_yaw": 0.0,
+        "parent_route_generator_id": 200960,
+        "route_id": 960,
+        "segments": [
+          {
+            "coefficients": [
+              [
+                0.0,
+                0.0,
+                0.0,
+                4.26191787648023,
+                -2.40707425248378,
+                0.389753512148068
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                -0.0949192436189449,
+                0.063477338010791,
+                -0.0113201420135266
+              ],
+              [
+                -4.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            ],
+            "duration": 2.24298733831928,
+            "heading_orientation": [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "start_time": 0.0
+          },
+          {
+            "coefficients": [
+              [
+                9.29531536338755,
+                5.0,
+                0.0,
+                -5.57963865136991e-05,
+                4.50195898175441e-05,
+                -9.68647419174028e-06
+              ],
+              [
+                -0.107111162983985,
+                0.0,
+                0.0,
+                -0.0401797119449335,
+                0.0324191988723834,
+                -0.00697535749363627
+              ],
+              [
+                -4.0,
+                0.0,
+                0.0,
+                0.0,
+                -0.0,
+                0.0
+              ]
+            ],
+            "duration": 1.8590702427487,
+            "heading_orientation": [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "start_time": 2.24298733831928
+          },
+          {
+            "coefficients": [
+              [
+                18.5906307267751,
+                5.0,
+                0.0,
+                -0.00623921665581152,
+                0.00503198921158227,
+                -0.00108222626107591
+              ],
+              [
+                -0.132927475934611,
+                0.0,
+                0.0,
+                0.424655290427463,
+                -0.342488642076878,
+                0.0736587832348068
+              ],
+              [
+                -4.0,
+                0.0,
+                0.0,
+                0.0,
+                -0.0,
+                0.0
+              ]
+            ],
+            "duration": 1.85986586818903,
+            "heading_orientation": [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "start_time": 4.10205758106798
+          },
+          {
+            "coefficients": [
+              [
+                27.8859460901627,
+                5.0,
+                0.0,
+                -5.88238746186534e-05,
+                4.74623236033918e-05,
+                -1.02120538706971e-05
+              ],
+              [
+                0.140272975262634,
+                0.0,
+                0.0,
+                0.0412553695691996,
+                -0.0332870915689385,
+                0.00716209292957026
+              ],
+              [
+                -4.0,
+                0.0,
+                0.0,
+                0.0,
+                -0.0,
+                0.0
+              ]
+            ],
+            "duration": 1.85907063179845,
+            "heading_orientation": [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "start_time": 5.96192344925701
+          },
+          {
+            "coefficients": [
+              [
+                37.1812614535502,
+                5.0,
+                0.0,
+                -9.73516870204921e-07,
+                7.85489867721245e-07,
+                -1.69007674114674e-07
+              ],
+              [
+                0.166780437581227,
+                0.0,
+                0.0,
+                0.00530734819923744,
+                -0.00428227631442285,
+                0.00092138369896046
+              ],
+              [
+                -4.0,
+                0.0,
+                0.0,
+                0.0,
+                -0.0,
+                0.0
+              ]
+            ],
+            "duration": 1.85906319777712,
+            "heading_orientation": [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "start_time": 7.82099408105546
+          },
+          {
+            "coefficients": [
+              [
+                46.4765768169378,
+                5.0,
+                0.0,
+                2.31445713816061,
+                -4.09832726441087,
+                1.37459423775271
+              ],
+              [
+                0.170190482047683,
+                0.0,
+                0.0,
+                0.0,
+                -0.0,
+                0.0
+              ],
+              [
+                -4.0,
+                0.0,
+                0.0,
+                0.0,
+                -0.0,
+                0.0
+              ]
+            ],
+            "duration": 1.4375,
+            "heading_orientation": [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "start_time": 9.68005727883257
+          }
+        ]
+      },
+      "Drone2": {
+        "duration": 11.079181150177,
+        "environment_id": 50,
+        "gates": [
+          {
+            "center": [
+              9.25548408255957,
+              0.033338679669548,
+              -4.0
+            ],
+            "index": 1,
+            "orientation": [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "center": [
+              18.5109681651191,
+              -0.019351249358234,
+              -4.0
+            ],
+            "index": 2,
+            "orientation": [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "center": [
+              27.7664522476787,
+              -0.153012748575303,
+              -4.0
+            ],
+            "index": 3,
+            "orientation": [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "center": [
+              37.0219363302383,
+              0.238096675385138,
+              -4.0
+            ],
+            "index": 4,
+            "orientation": [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "center": [
+              46.2774204127979,
+              0.258218408273999,
+              -4.0
+            ],
+            "index": 5,
+            "orientation": [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          }
+        ],
+        "geometry_family": 0,
+        "heading_yaw": 0.0,
+        "parent_route_generator_id": 201004,
+        "route_id": 1004,
+        "segments": [
+          {
+            "coefficients": [
+              [
+                0.0,
+                0.0,
+                0.0,
+                4.28327961855681,
+                -2.42654534417055,
+                0.394153723586182
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0298451792418476,
+                -0.0200266073201589,
+                0.00358351564926315
+              ],
+              [
+                -4.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            ],
+            "duration": 2.23541452364265,
+            "heading_orientation": [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "start_time": 0.0
+          },
+          {
+            "coefficients": [
+              [
+                9.25548408255957,
+                5.0,
+                0.0,
+                -0.00023643624914133,
+                0.00019158837279944,
+                -4.13992972456559e-05
+              ],
+              [
+                0.033338679669548,
+                0.0,
+                0.0,
+                -0.0830651971182584,
+                0.0673091626599059,
+                -0.0145444736107796
+              ],
+              [
+                -4.0,
+                0.0,
+                0.0,
+                0.0,
+                -0.0,
+                0.0
+              ]
+            ],
+            "duration": 1.85112681176774,
+            "heading_orientation": [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "start_time": 2.23541452364265
+          },
+          {
+            "coefficients": [
+              [
+                18.5109681651191,
+                5.0,
+                0.0,
+                -0.00152102948783348,
+                0.00123240790988847,
+                -0.000266280922406761
+              ],
+              [
+                -0.019351249358234,
+                0.0,
+                0.0,
+                -0.21066048562522,
+                0.170686795267372,
+                -0.0368795403873728
+              ],
+              [
+                -4.0,
+                0.0,
+                0.0,
+                0.0,
+                -0.0,
+                0.0
+              ]
+            ],
+            "duration": 1.85128983142982,
+            "heading_orientation": [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "start_time": 4.08654133541039
+          },
+          {
+            "coefficients": [
+              [
+                27.7664522476787,
+                5.0,
+                0.0,
+                -0.0129874552779384,
+                0.0105147459806177,
+                -0.00227008562074455
+              ],
+              [
+                -0.153012748575303,
+                0.0,
+                0.0,
+                0.614962543137932,
+                -0.497878513558695,
+                0.107489696526256
+              ],
+              [
+                -4.0,
+                0.0,
+                0.0,
+                0.0,
+                -0.0,
+                0.0
+              ]
+            ],
+            "duration": 1.8527487922978,
+            "heading_orientation": [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "start_time": 5.93783116684021
+          },
+          {
+            "coefficients": [
+              [
+                37.0219363302383,
+                5.0,
+                0.0,
+                -3.44834437762631e-05,
+                2.79429163110001e-05,
+                -6.03811751540528e-06
+              ],
+              [
+                0.238096675385138,
+                0.0,
+                0.0,
+                0.0317230473031201,
+                -0.0257060884542849,
+                0.00555476676882406
+              ],
+              [
+                -4.0,
+                0.0,
+                0.0,
+                0.0,
+                -0.0,
+                0.0
+              ]
+            ],
+            "duration": 1.85110119103898,
+            "heading_orientation": [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "start_time": 7.79057995913801
+          },
+          {
+            "coefficients": [
+              [
+                46.2774204127979,
+                5.0,
+                0.0,
+                2.31445713816061,
+                -4.09832726441087,
+                1.37459423775271
+              ],
+              [
+                0.258218408273999,
+                0.0,
+                0.0,
+                0.0,
+                -0.0,
+                0.0
+              ],
+              [
+                -4.0,
+                0.0,
+                0.0,
+                0.0,
+                -0.0,
+                0.0
+              ]
+            ],
+            "duration": 1.4375,
+            "heading_orientation": [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "start_time": 9.64168115017699
+          }
+        ]
+      }
+    },
+    "sources": {
+      "Drone1": {
+        "environment": 48,
+        "route": 0,
+        "sha256": "f0c141d7248949dd3036d1700675bb4dbf83338857f5b38cbe8a24053cb2ded4"
+      },
+      "Drone2": {
+        "environment": 50,
+        "route": 4,
+        "sha256": "5e2f03983f4c60ba1dfe08c5d1e8884375aa80559b04c37b3a293e72587f1bfa"
+      }
+    },
+    "version": "ip37_natural_turn_gates_v1"
+  },
+  "port": 41451,
+  "prime_command": {
+    "duration": 1.0,
+    "pitch_rate": 0.0,
+    "roll_rate": 0.0,
+    "throttle": 0.6,
+    "yaw_rate": 0.0
+  },
+  "priming_scope": "Direct calibrated physical hover+zero rates while paused; no wait for duration; ping is RPC-return proxy only",
+  "reference_start_s": 1.5,
+  "scene_prefix": "PSMIG20261116_",
+  "schema": "ps-prepared-case/v1",
+  "shifts": {
+    "Drone1": [
+      -2.0,
+      -3.10085025412589,
+      -0.5
+    ],
+    "Drone2": [
+      1.0,
+      -14.155047975363,
+      0.5
+    ]
+  },
+  "simulation_touched": false,
+  "spacing_m": 12.0,
+  "stage": "finished",
+  "status": "OFFLINE_LAYOUT_ONLY",
+  "translated_layouts": {
+    "Drone1": {
+      "duration": 11.1175572788326,
+      "environment_id": 48,
+      "gates": [
+        {
+          "center": [
+            7.29531536338755,
+            -3.20796141710987,
+            -4.5
+          ],
+          "index": 1,
+          "orientation": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "center": [
+            16.5906307267751,
+            -3.2337777300605,
+            -4.5
+          ],
+          "index": 2,
+          "orientation": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "center": [
+            25.8859460901627,
+            -2.96057727886325,
+            -4.5
+          ],
+          "index": 3,
+          "orientation": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "center": [
+            35.1812614535502,
+            -2.93406981654466,
+            -4.5
+          ],
+          "index": 4,
+          "orientation": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "center": [
+            44.4765768169378,
+            -2.9306597720782,
+            -4.5
+          ],
+          "index": 5,
+          "orientation": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "geometry_family": 0,
+      "heading_yaw": 0.0,
+      "parent_route_generator_id": 200960,
+      "route_id": 960,
+      "segments": [
+        {
+          "coefficients": [
+            [
+              -2.0,
+              0.0,
+              0.0,
+              4.26191787648023,
+              -2.40707425248378,
+              0.389753512148068
+            ],
+            [
+              -3.10085025412589,
+              0.0,
+              0.0,
+              -0.0949192436189449,
+              0.063477338010791,
+              -0.0113201420135266
+            ],
+            [
+              -4.5,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "duration": 2.24298733831928,
+          "heading_orientation": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "start_time": 0.0
+        },
+        {
+          "coefficients": [
+            [
+              7.29531536338755,
+              5.0,
+              0.0,
+              -5.57963865136991e-05,
+              4.50195898175441e-05,
+              -9.68647419174028e-06
+            ],
+            [
+              -3.20796141710987,
+              0.0,
+              0.0,
+              -0.0401797119449335,
+              0.0324191988723834,
+              -0.00697535749363627
+            ],
+            [
+              -4.5,
+              0.0,
+              0.0,
+              0.0,
+              -0.0,
+              0.0
+            ]
+          ],
+          "duration": 1.8590702427487,
+          "heading_orientation": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "start_time": 2.24298733831928
+        },
+        {
+          "coefficients": [
+            [
+              16.5906307267751,
+              5.0,
+              0.0,
+              -0.00623921665581152,
+              0.00503198921158227,
+              -0.00108222626107591
+            ],
+            [
+              -3.2337777300605,
+              0.0,
+              0.0,
+              0.424655290427463,
+              -0.342488642076878,
+              0.0736587832348068
+            ],
+            [
+              -4.5,
+              0.0,
+              0.0,
+              0.0,
+              -0.0,
+              0.0
+            ]
+          ],
+          "duration": 1.85986586818903,
+          "heading_orientation": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "start_time": 4.10205758106798
+        },
+        {
+          "coefficients": [
+            [
+              25.8859460901627,
+              5.0,
+              0.0,
+              -5.88238746186534e-05,
+              4.74623236033918e-05,
+              -1.02120538706971e-05
+            ],
+            [
+              -2.96057727886325,
+              0.0,
+              0.0,
+              0.0412553695691996,
+              -0.0332870915689385,
+              0.00716209292957026
+            ],
+            [
+              -4.5,
+              0.0,
+              0.0,
+              0.0,
+              -0.0,
+              0.0
+            ]
+          ],
+          "duration": 1.85907063179845,
+          "heading_orientation": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "start_time": 5.96192344925701
+        },
+        {
+          "coefficients": [
+            [
+              35.1812614535502,
+              5.0,
+              0.0,
+              -9.73516870204921e-07,
+              7.85489867721245e-07,
+              -1.69007674114674e-07
+            ],
+            [
+              -2.93406981654466,
+              0.0,
+              0.0,
+              0.00530734819923744,
+              -0.00428227631442285,
+              0.00092138369896046
+            ],
+            [
+              -4.5,
+              0.0,
+              0.0,
+              0.0,
+              -0.0,
+              0.0
+            ]
+          ],
+          "duration": 1.85906319777712,
+          "heading_orientation": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "start_time": 7.82099408105546
+        },
+        {
+          "coefficients": [
+            [
+              44.4765768169378,
+              5.0,
+              0.0,
+              2.31445713816061,
+              -4.09832726441087,
+              1.37459423775271
+            ],
+            [
+              -2.9306597720782,
+              0.0,
+              0.0,
+              0.0,
+              -0.0,
+              0.0
+            ],
+            [
+              -4.5,
+              0.0,
+              0.0,
+              0.0,
+              -0.0,
+              0.0
+            ]
+          ],
+          "duration": 1.4375,
+          "heading_orientation": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "start_time": 9.68005727883257
+        }
+      ]
+    },
+    "Drone2": {
+      "duration": 11.079181150177,
+      "environment_id": 50,
+      "gates": [
+        {
+          "center": [
+            10.2554840825596,
+            -14.1217092956935,
+            -3.5
+          ],
+          "index": 1,
+          "orientation": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "center": [
+            19.5109681651191,
+            -14.1743992247212,
+            -3.5
+          ],
+          "index": 2,
+          "orientation": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "center": [
+            28.7664522476787,
+            -14.3080607239383,
+            -3.5
+          ],
+          "index": 3,
+          "orientation": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "center": [
+            38.0219363302383,
+            -13.9169512999779,
+            -3.5
+          ],
+          "index": 4,
+          "orientation": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "center": [
+            47.2774204127979,
+            -13.896829567089,
+            -3.5
+          ],
+          "index": 5,
+          "orientation": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "geometry_family": 0,
+      "heading_yaw": 0.0,
+      "parent_route_generator_id": 201004,
+      "route_id": 1004,
+      "segments": [
+        {
+          "coefficients": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              4.28327961855681,
+              -2.42654534417055,
+              0.394153723586182
+            ],
+            [
+              -14.155047975363,
+              0.0,
+              0.0,
+              0.0298451792418476,
+              -0.0200266073201589,
+              0.00358351564926315
+            ],
+            [
+              -3.5,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "duration": 2.23541452364265,
+          "heading_orientation": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "start_time": 0.0
+        },
+        {
+          "coefficients": [
+            [
+              10.2554840825596,
+              5.0,
+              0.0,
+              -0.00023643624914133,
+              0.00019158837279944,
+              -4.13992972456559e-05
+            ],
+            [
+              -14.1217092956935,
+              0.0,
+              0.0,
+              -0.0830651971182584,
+              0.0673091626599059,
+              -0.0145444736107796
+            ],
+            [
+              -3.5,
+              0.0,
+              0.0,
+              0.0,
+              -0.0,
+              0.0
+            ]
+          ],
+          "duration": 1.85112681176774,
+          "heading_orientation": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "start_time": 2.23541452364265
+        },
+        {
+          "coefficients": [
+            [
+              19.5109681651191,
+              5.0,
+              0.0,
+              -0.00152102948783348,
+              0.00123240790988847,
+              -0.000266280922406761
+            ],
+            [
+              -14.1743992247212,
+              0.0,
+              0.0,
+              -0.21066048562522,
+              0.170686795267372,
+              -0.0368795403873728
+            ],
+            [
+              -3.5,
+              0.0,
+              0.0,
+              0.0,
+              -0.0,
+              0.0
+            ]
+          ],
+          "duration": 1.85128983142982,
+          "heading_orientation": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "start_time": 4.08654133541039
+        },
+        {
+          "coefficients": [
+            [
+              28.7664522476787,
+              5.0,
+              0.0,
+              -0.0129874552779384,
+              0.0105147459806177,
+              -0.00227008562074455
+            ],
+            [
+              -14.3080607239383,
+              0.0,
+              0.0,
+              0.614962543137932,
+              -0.497878513558695,
+              0.107489696526256
+            ],
+            [
+              -3.5,
+              0.0,
+              0.0,
+              0.0,
+              -0.0,
+              0.0
+            ]
+          ],
+          "duration": 1.8527487922978,
+          "heading_orientation": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "start_time": 5.93783116684021
+        },
+        {
+          "coefficients": [
+            [
+              38.0219363302383,
+              5.0,
+              0.0,
+              -3.44834437762631e-05,
+              2.79429163110001e-05,
+              -6.03811751540528e-06
+            ],
+            [
+              -13.9169512999779,
+              0.0,
+              0.0,
+              0.0317230473031201,
+              -0.0257060884542849,
+              0.00555476676882406
+            ],
+            [
+              -3.5,
+              0.0,
+              0.0,
+              0.0,
+              -0.0,
+              0.0
+            ]
+          ],
+          "duration": 1.85110119103898,
+          "heading_orientation": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "start_time": 7.79057995913801
+        },
+        {
+          "coefficients": [
+            [
+              47.2774204127979,
+              5.0,
+              0.0,
+              2.31445713816061,
+              -4.09832726441087,
+              1.37459423775271
+            ],
+            [
+              -13.896829567089,
+              0.0,
+              0.0,
+              0.0,
+              -0.0,
+              0.0
+            ],
+            [
+              -3.5,
+              0.0,
+              0.0,
+              0.0,
+              -0.0,
+              0.0
+            ]
+          ],
+          "duration": 1.4375,
+          "heading_orientation": [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "start_time": 9.64168115017699
+        }
+      ]
+    }
+  },
+  "vehicles": [
+    "Drone1",
+    "Drone2"
+  ]
+}

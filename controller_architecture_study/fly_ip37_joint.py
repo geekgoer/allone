@@ -105,8 +105,10 @@ class Pilot:
         self.trace, self.error, self.contact = [], None, None
         self.stamp = int(self.client.simGetCollisionInfo(vehicle_name=name).time_stamp)
         raw = self.drone.get_raw_state()  # paused initial state; its clock starts on launch
-        first = self.window.window(0.)[0]
-        if (np.linalg.norm(raw.position-first.position) > .05 or np.linalg.norm(raw.velocity) > .2
+        reference_start = getattr(args, 'reference_start_s', 0.)
+        first = self.window.window(reference_start)[0]
+        expected_velocity = first.velocity if reference_start else np.zeros(3)
+        if (np.linalg.norm(raw.position-first.position) > .05 or np.linalg.norm(raw.velocity-expected_velocity) > .2
                 or abs(float(np.dot(raw.quaternion, first.orientation))) < .999):
             raise RuntimeError('paused initial state does not match route start')
         self.initial = raw
@@ -125,7 +127,8 @@ class Pilot:
         self.client.ping()
 
     def publish(self, raw, sample_s, *, mark=None):
-        refs = self.window.window(max(0., sample_s-self.origin), include_body_rates=self.teacher is not None)
+        refs = self.window.window(max(0., sample_s-self.origin)+getattr(self.args, 'reference_start_s', 0.),
+                                  include_body_rates=self.teacher is not None)
         if mark is not None:
             mark('reference_ready')
         error = float(np.linalg.norm(raw.position-refs[0].position))
@@ -148,6 +151,14 @@ class Pilot:
         if mark is not None:
             mark('safety_deadline_ready')
         self.runtime.observe(self.name, sample_s, deadline['deadline_s'], analysis, self.version)
+        if hasattr(self.runtime, 'observe_phase'):
+            # Development gate for a holding experiment. The held-control
+            # analyzer must independently cover the entire deferred interval.
+            velocities = [np.asarray(ref.velocity) for ref in refs[:6]]
+            reference_change = max((np.linalg.norm(v-velocities[0]) for v in velocities), default=0.)
+            stable = error < .15 and reference_change < .3
+            self.runtime.observe_phase(self.name, sample_s, stable,
+                                       'experimental error<0.15m and reference speed-vector change<0.3m/s')
         if mark is not None:
             mark('observation_published')
         return refs, analysis, deadline, (now-start)*1000
@@ -206,6 +217,11 @@ class Pilot:
             row.update(safety_deadline_s=physical['deadline_s'], budget_ms=analysis['budget_s']*1000,
                        safety_ms=safety_ms, held_version=self.version,
                        held_control=self.held.tolist())
+            if getattr(self.args, 'scheduler', 'abc') == 'obligation':
+                row['fresh_deadline_s'] = sample+self.args.fresh_ms/1000
+                deadline = min(deadline, physical['deadline_s'], row['fresh_deadline_s'],
+                               row.get('recovery_due_s', float('inf')))
+                row['actuation_deadline_s'] = deadline
             mark('encode_start')
             feature = encode(raw, refs)
             row['feature_ready_s'] = time.perf_counter()
@@ -411,7 +427,10 @@ def serve_board(runtime, board):
                 runtime.cv.wait(.002)
                 continue
         try:
-            action, timing = predict(board, row['model_id'], row['feature'])
+            if hasattr(runtime, 'backend'):
+                action, timing = runtime.backend.infer(row['model_id'], row['feature'])
+            else:
+                action, timing = predict(board, row['model_id'], row['feature'])
             runtime.board_done(row, time.perf_counter(), action=action, timing=timing)
         except Exception as exc:
             runtime.board_done(row, time.perf_counter(), error=f'{type(exc).__name__}: {exc}')
@@ -424,7 +443,8 @@ def plan_live(runtime, failures):
                 if runtime.closed or not runtime.adaptive:
                     return
             started, cpu_started = time.perf_counter(), thread_time()
-            runtime.plan_once()
+            if started >= runtime.origin+getattr(runtime, 'adaptation_delay_ms', 0.)/1000:
+                runtime.plan_once()
             runtime.planner_calls.append(dict(wall_ms=1000*(time.perf_counter()-started),
                                               cpu_ms=1000*(thread_time()-cpu_started)))
             # A bounded service interval; no dependency on a foreground idle slot.
@@ -462,7 +482,19 @@ def run(args):
             any(t not in args.periods_ms for t in initial_periods.values())):
         raise ValueError('initial-periods must specify one supported period for every selected vehicle')
     reference_teacher = getattr(args, 'reference_teacher', False)
+    obligation = getattr(args, 'scheduler', 'abc') == 'obligation'
+    reference_start = getattr(args, 'reference_start_s', 0.)
+    if not np.isfinite(reference_start) or reference_start < 0:
+        raise ValueError('reference-start-s must be finite and nonnegative')
+    if not np.isfinite(getattr(args, 'adaptation_delay_ms', 0.)) or getattr(args, 'adaptation_delay_ms', 0.) < 0:
+        raise ValueError('adaptation-delay-ms must be finite and nonnegative')
+    if obligation and (args.delivery is None or not np.isfinite(args.fresh_ms) or args.fresh_ms <= 0):
+        raise ValueError('obligation runtime requires delivery and a positive fresh-ms')
+    if reference_start and getattr(args, 'evaluation_ms', 0.):
+        raise ValueError('independent evaluator does not yet support a reference time offset')
     native_sampling = getattr(args, 'native_sampling', False)
+    if obligation and (native_sampling or reference_teacher):
+        raise ValueError('obligation runtime currently uses the Python release calendar and board backend')
     split_native_prep = getattr(args, 'split_native_prep', False)
     if split_native_prep and not native_sampling:
         raise ValueError('split-native-prep requires native-sampling')
@@ -504,8 +536,28 @@ def run(args):
                 warm.append((time.perf_counter()-start)*1000)
                 if np.max(abs(action-x[237:241])) > 1e-4:
                     raise ValueError('board golden output mismatch')
+        backend = None
+        if obligation:
+            from .controller_backend import IP37Backend
+            from .requant18_profile import read_profile
+            modes, profile_identity = read_profile(args.delivery)
+            if profile_identity['tag'] != manifest['wire_tag_hex']:
+                raise ValueError('Runtime costs and board bundle have different identities')
+            ids = tuple(args.model_ids)
+            if args.model_id not in ids or len(set(ids)) != len(ids):
+                raise ValueError('model-ids must be unique and include initial model-id')
+            backend = IP37Backend(board, manifest, modes)
+            for key in ids:
+                item = next(m for m in manifest['models'] if m['numeric_id'] == key)
+                values = np.loadtxt(args.bundle/item['golden_file'])
+                for x in values[:2]:
+                    action, _ = backend.infer(key, x[:237].astype(np.float32))
+                    if np.max(abs(action-x[237:241])) > 1e-4:
+                        raise ValueError(f'golden output mismatch for configuration {key}')
         cost = max(warm)+1. if warm else 1.  # unused replay estimate in fixed teacher diagnostic
         planners0 = [StoredRoutePlanner(layout) for layout, _ in layouts]
+        if reference_start >= min(p.trajectory.segments[0].end_time for p in planners0):
+            raise ValueError('reference-start-s must precede the first gate')
         duration = args.duration or max(20., max(p.trajectory.duration for p in planners0)+2.)
         extents = [np.array([r.position for r in p.reference_window_for_trajectory(
             p.trajectory, elapsed=0., dt=duration/200, horizon=201)]) for p in planners0]
@@ -527,7 +579,8 @@ def run(args):
             local = translate_layout(layouts[i][0], shift)
             planner = planners[name] = StoredRoutePlanner(local)
             gates[name] = [Gate(g['index'], g['center'], g['orientation']) for g in local['gates']]
-            first = planner.reference_window_for_trajectory(planner.trajectory, elapsed=0., dt=.1, horizon=21)[0]
+            first = planner.reference_window_for_trajectory(planner.trajectory, elapsed=reference_start,
+                                                            dt=.1, horizon=21)[0]
             drone = AirSimDrone(client, name)
             drone.enable_api_control(True)
             drone.arm()
@@ -536,6 +589,8 @@ def run(args):
             q = first.orientation
             kin.orientation = airsim.Quaternionr(float(q[1]), float(q[2]), float(q[3]), float(q[0]))
             kin.linear_velocity = kin.angular_velocity = airsim.Vector3r(0., 0., 0.)
+            if reference_start:
+                kin.linear_velocity = airsim.Vector3r(*map(float, first.velocity))
             kin.linear_acceleration = kin.angular_acceleration = airsim.Vector3r(0., 0., 0.)
             client.simSetKinematics(kin, ignore_collision=True, vehicle_name=name)
             drone.hover()
@@ -545,11 +600,19 @@ def run(args):
         bounds = HoldBounds(2., .01, .05, .15, 10., 'Route-B development assumptions; not plant-certified')
         # Thread/RPC initialization takes place while physics is paused.
         origin = 0.
-        runtime = JointRuntime(args.vehicles, origin, args.period_ms, args.periods_ms, args.model_id, cost,
+        runtime_class = JointRuntime
+        extra = {}
+        if obligation:
+            from .ip37_obligation_runtime import ObligationRuntime
+            runtime_class = ObligationRuntime
+            extra = dict(backend=backend, candidate_ids=ids, fresh_ms=args.fresh_ms,
+                         enable_skip=args.enable_planned_skip)
+        runtime = runtime_class(args.vehicles, origin, args.period_ms, args.periods_ms, args.model_id, cost,
                                adaptive=args.policy == 'adaptive', order=args.order,
                                prep_ms=args.prep_ms, post_ms=args.post_ms, decision_ms=args.decision_ms,
                                initial_periods=initial_periods,
-                               qualified_periods=qualification['periods_ms'] if qualification else None)
+                               qualified_periods=qualification['periods_ms'] if qualification else None, **extra)
+        runtime.adaptation_delay_ms = getattr(args, 'adaptation_delay_ms', 0.)
         for name in args.vehicles:
             ex = executors[name] = ThreadPoolExecutor(max_workers=1, thread_name_prefix=name)
             pilots[name] = ex.submit(Pilot, args, name, planners[name], gates[name], offsets[name],
@@ -608,6 +671,14 @@ def run(args):
             forecast_scope='first physical obligation plus finite future period deadlines; refreshed online',
             execution='single CPU teacher diagnostic' if reference_teacher else
                       'host EDF, one outstanding real whole-task IP37 request, no DPU preemption')
+        if obligation:
+            setup.update(scheduler='obligation', controller_configurations=list(ids),
+                         model_switching_enabled=True, profile_identity=profile_identity,
+                         fresh_ms=args.fresh_ms, planned_skip_enabled=args.enable_planned_skip,
+                         qualification='exploratory selected model pool; hold-based experimental skip gate')
+        setup['reference_start_s'] = reference_start
+        setup['adaptation_delay_ms'] = runtime.adaptation_delay_ms
+        setup['initial_state_scope'] = ('reference-matched flying state' if reference_start else 'route start at rest')
         if reference_teacher:
             setup['teacher_signature'] = pilots[args.vehicles[0]].teacher.signature()
             if getattr(args, 'teacher_variant', None) is not None:
@@ -745,6 +816,7 @@ def run(args):
         except Exception as exc:
             errors.append(f'scene cleanup: {type(exc).__name__}: {exc}')
         if board is not None:
+            atomic_json(args.output/'rejected_inputs.json', getattr(board, 'rejected_inputs', []))
             board.close()
         if timer:
             import ctypes
@@ -822,6 +894,19 @@ def run(args):
             guarantee=('CPU teacher capability diagnostic; not board deployment or a safety certificate'
                        if reference_teacher else
                        'exploratory real-board control; empirical costs and uncertified plant bounds'))
+        if obligation and runtime is not None:
+            result.update(configurations_used=dict(Counter(r['model_id'] for r in rows if 'board_start_s' in r)),
+                          configuration_updates=sum(len(d.get('model_updates', [])) for d in decisions),
+                          actual_backend_switches=sum(bool((r.get('board_timing') or {}).get('switched'))
+                                                      for r in rows),
+                          planned_skips=sum(r['status'] == 'planned_skip' for r in rows),
+                          pending_recovery=runtime.pending_recovery,
+                          recovery_failures=sum(r.get('recovery_on_time') is False for r in rows),
+                          kept_jobs_timing_passed=bool(rows) and all(
+                              r['status'] in ('delivered', 'planned_skip') for r in rows),
+                          actuation_deadline_misses=sum(
+                              r['command_return_s'] > r.get('actuation_deadline_s', r['deadline_s'])
+                              for r in rows if 'command_return_s' in r))
         if native_sampling:
             result['native_sampling_ms'] = {
                 'sample_rpc': describe([1000*(r['native_sample_finished_s']-r['sample_start_s'])
@@ -875,7 +960,17 @@ def main():
                         help='isolated CPU teacher diagnostic; requires --reference-teacher')
     parser.add_argument('--board', default='192.168.77.2')
     parser.add_argument('--board-port', type=int, default=5238)
-    parser.add_argument('--model-id', type=int, default=11, choices=(11,))
+    parser.add_argument('--model-id', type=int, default=11, choices=range(1, 19))
+    parser.add_argument('--scheduler', choices=('abc', 'obligation'), default='abc')
+    parser.add_argument('--delivery', type=Path, help='requant18 delivery root for obligation costs')
+    parser.add_argument('--model-ids', nargs='+', type=int, default=[5, 10, 13, 8, 11])
+    parser.add_argument('--fresh-ms', type=float, default=80.)
+    parser.add_argument('--enable-planned-skip', action='store_true',
+                        help='experimental hold/phase-qualified single-slot skips with mandatory recovery')
+    parser.add_argument('--reference-start-s', type=float, default=0.,
+                        help='diagnostic matched flying initial state before first gate; recorded in setup')
+    parser.add_argument('--adaptation-delay-ms', type=float, default=0.,
+                        help='diagnostic fixed initial interval before enabling online planning')
     parser.add_argument('--airsim-host', default='127.0.0.1')
     parser.add_argument('--vehicles', nargs='+', default=['Drone1', 'Drone2', 'Drone3'])
     parser.add_argument('--policy', choices=('fixed', 'adaptive'), default='adaptive')

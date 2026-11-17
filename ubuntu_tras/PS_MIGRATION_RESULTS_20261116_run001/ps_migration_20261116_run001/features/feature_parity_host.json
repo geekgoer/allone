@@ -1,0 +1,3030 @@
+{
+  "commands": [
+    {
+      "command": {
+        "duration": 1.0,
+        "pitch_rate": -0.0,
+        "roll_rate": 0.0,
+        "throttle": 0.6,
+        "thrust_accel": 9.81,
+        "yaw_rate": -0.0
+      },
+      "effective_physical": [
+        9.81,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "physical_control": [
+        9.81,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "command": {
+        "duration": 1.0,
+        "pitch_rate": 0.2,
+        "roll_rate": 0.3,
+        "throttle": 0.619877675840979,
+        "thrust_accel": 10.2,
+        "yaw_rate": -0.1
+      },
+      "effective_physical": [
+        10.2,
+        0.3,
+        -0.2,
+        0.1
+      ],
+      "physical_control": [
+        10.2,
+        0.3,
+        -0.2,
+        0.1
+      ]
+    },
+    {
+      "command": {
+        "duration": 1.0,
+        "pitch_rate": 3.0,
+        "roll_rate": 3.0,
+        "throttle": 1.0,
+        "thrust_accel": 20.0,
+        "yaw_rate": -2.0
+      },
+      "effective_physical": [
+        17.658,
+        3.0,
+        -3.0,
+        2.0
+      ],
+      "physical_control": [
+        20.0,
+        3.0,
+        -3.0,
+        2.0
+      ]
+    }
+  ],
+  "feature_cases": [
+    {
+      "polynomial_raw237_max_abs": 0.0,
+      "raw237_max_abs": 0.0,
+      "reference_max_abs": 7.105427357601e-15,
+      "reference_time_s": 1.5,
+      "vehicle": "Drone1"
+    },
+    {
+      "polynomial_raw237_max_abs": 0.0,
+      "raw237_max_abs": 0.0,
+      "reference_max_abs": 1.11022302462516e-16,
+      "reference_time_s": 3.0,
+      "vehicle": "Drone1"
+    },
+    {
+      "polynomial_raw237_max_abs": 0.0,
+      "raw237_max_abs": 0.0,
+      "reference_max_abs": 5.55111512312578e-17,
+      "reference_time_s": 6.0,
+      "vehicle": "Drone1"
+    },
+    {
+      "polynomial_raw237_max_abs": 0.0,
+      "raw237_max_abs": 0.0,
+      "reference_max_abs": 1.4210854715202e-14,
+      "reference_time_s": 9.0,
+      "vehicle": "Drone1"
+    },
+    {
+      "polynomial_raw237_max_abs": 0.0,
+      "raw237_max_abs": 0.0,
+      "reference_max_abs": 0.0,
+      "reference_time_s": 12.0,
+      "vehicle": "Drone1"
+    },
+    {
+      "polynomial_raw237_max_abs": 0.0,
+      "raw237_max_abs": 0.0,
+      "reference_max_abs": 7.105427357601e-15,
+      "reference_time_s": 1.5,
+      "vehicle": "Drone2"
+    },
+    {
+      "polynomial_raw237_max_abs": 0.0,
+      "raw237_max_abs": 0.0,
+      "reference_max_abs": 2.22044604925031e-16,
+      "reference_time_s": 3.0,
+      "vehicle": "Drone2"
+    },
+    {
+      "polynomial_raw237_max_abs": 0.0,
+      "raw237_max_abs": 0.0,
+      "reference_max_abs": 3.5527136788005e-15,
+      "reference_time_s": 6.0,
+      "vehicle": "Drone2"
+    },
+    {
+      "polynomial_raw237_max_abs": 0.0,
+      "raw237_max_abs": 0.0,
+      "reference_max_abs": 7.105427357601e-15,
+      "reference_time_s": 9.0,
+      "vehicle": "Drone2"
+    },
+    {
+      "polynomial_raw237_max_abs": 0.0,
+      "raw237_max_abs": 0.0,
+      "reference_max_abs": 0.0,
+      "reference_time_s": 12.0,
+      "vehicle": "Drone2"
+    }
+  ],
+  "feature_values_checked": 2370,
+  "hold_cases": [
+    {
+      "actual": {
+        "binding_obstacle": "1:left",
+        "budget_s": 0.15,
+        "is_safety_certificate": false,
+        "mesh_margin_m": 3.43746520059153,
+        "mesh_rate_mps": -6.33807903395849,
+        "nominal_acceleration": [
+          -0.325300239475105,
+          0.0954813911040539,
+          0.00250990215611324
+        ],
+        "per_obstacle_period_s": [
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15
+        ],
+        "plant_bounds_verified": false,
+        "separating_face": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "valid": true
+      },
+      "effective_control": [
+        9.81,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "state": {
+        "acceleration": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "angular_velocity": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "position": [
+          5.25785016279603,
+          -0.284960751949528,
+          -3.95
+        ],
+        "quaternion": [
+          0.999850650670281,
+          0.00486859971965713,
+          0.0165821160119631,
+          8.07437443912694e-05
+        ],
+        "timestamp_ns": null,
+        "velocity": [
+          6.33807903395849,
+          -0.170301925999593,
+          0.05
+        ]
+      },
+      "vehicle": "Drone1"
+    },
+    {
+      "actual": {
+        "binding_obstacle": "1:left",
+        "budget_s": 0.15,
+        "is_safety_certificate": false,
+        "mesh_margin_m": 3.43746520059153,
+        "mesh_rate_mps": -6.33807903395849,
+        "nominal_acceleration": [
+          -0.338232664897663,
+          0.0992772873864781,
+          -0.387257135372847
+        ],
+        "per_obstacle_period_s": [
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15
+        ],
+        "plant_bounds_verified": false,
+        "separating_face": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "valid": true
+      },
+      "effective_control": [
+        10.2,
+        0.3,
+        -0.2,
+        0.1
+      ],
+      "state": {
+        "acceleration": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "angular_velocity": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "position": [
+          5.25785016279603,
+          -0.284960751949528,
+          -3.95
+        ],
+        "quaternion": [
+          0.999850650670281,
+          0.00486859971965713,
+          0.0165821160119631,
+          8.07437443912694e-05
+        ],
+        "timestamp_ns": null,
+        "velocity": [
+          6.33807903395849,
+          -0.170301925999593,
+          0.05
+        ]
+      },
+      "vehicle": "Drone1"
+    },
+    {
+      "actual": {
+        "binding_obstacle": "1:left",
+        "budget_s": 0.15,
+        "is_safety_certificate": false,
+        "mesh_margin_m": 3.43746520059153,
+        "mesh_rate_mps": -6.33807903395849,
+        "nominal_acceleration": [
+          -0.585540431055189,
+          0.171866503987297,
+          -7.840802176119
+        ],
+        "per_obstacle_period_s": [
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15
+        ],
+        "plant_bounds_verified": false,
+        "separating_face": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "valid": true
+      },
+      "effective_control": [
+        17.658,
+        3.0,
+        -3.0,
+        2.0
+      ],
+      "state": {
+        "acceleration": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "angular_velocity": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "position": [
+          5.25785016279603,
+          -0.284960751949528,
+          -3.95
+        ],
+        "quaternion": [
+          0.999850650670281,
+          0.00486859971965713,
+          0.0165821160119631,
+          8.07437443912694e-05
+        ],
+        "timestamp_ns": null,
+        "velocity": [
+          6.33807903395849,
+          -0.170301925999593,
+          0.05
+        ]
+      },
+      "vehicle": "Drone1"
+    },
+    {
+      "actual": {
+        "binding_obstacle": "1:left",
+        "budget_s": 0.15,
+        "is_safety_certificate": false,
+        "mesh_margin_m": 3.28505147943875,
+        "mesh_rate_mps": 5.19996629063358,
+        "nominal_acceleration": [
+          -2.78932056228507e-05,
+          -0.0200862643116105,
+          -0.00332943632951732
+        ],
+        "per_obstacle_period_s": [
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15
+        ],
+        "plant_bounds_verified": false,
+        "separating_face": [
+          3,
+          1,
+          3,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "valid": true
+      },
+      "effective_control": [
+        9.81,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "state": {
+        "acceleration": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "angular_velocity": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "position": [
+          13.1803668428263,
+          -0.315629356189135,
+          -3.95
+        ],
+        "quaternion": [
+          -0.999999475951176,
+          0.00102376528225483,
+          -1.42167130507164e-06,
+          1.45545848764157e-09
+        ],
+        "timestamp_ns": null,
+        "velocity": [
+          5.19996629063358,
+          -0.124274558215706,
+          0.05
+        ]
+      },
+      "vehicle": "Drone1"
+    },
+    {
+      "actual": {
+        "binding_obstacle": "1:left",
+        "budget_s": 0.15,
+        "is_safety_certificate": false,
+        "mesh_margin_m": 3.28505147943875,
+        "mesh_rate_mps": 5.19996629063358,
+        "nominal_acceleration": [
+          -2.90021098219243e-05,
+          -0.0208848008132954,
+          -0.393328618813564
+        ],
+        "per_obstacle_period_s": [
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15
+        ],
+        "plant_bounds_verified": false,
+        "separating_face": [
+          3,
+          1,
+          3,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "valid": true
+      },
+      "effective_control": [
+        10.2,
+        0.3,
+        -0.2,
+        0.1
+      ],
+      "state": {
+        "acceleration": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "angular_velocity": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "position": [
+          13.1803668428263,
+          -0.315629356189135,
+          -3.95
+        ],
+        "quaternion": [
+          -0.999999475951176,
+          0.00102376528225483,
+          -1.42167130507164e-06,
+          1.45545848764157e-09
+        ],
+        "timestamp_ns": null,
+        "velocity": [
+          5.19996629063358,
+          -0.124274558215706,
+          0.05
+        ]
+      },
+      "vehicle": "Drone1"
+    },
+    {
+      "actual": {
+        "binding_obstacle": "1:left",
+        "budget_s": 0.15,
+        "is_safety_certificate": false,
+        "mesh_margin_m": 3.28505147943875,
+        "mesh_rate_mps": 5.19996629063358,
+        "nominal_acceleration": [
+          -5.02077701211313e-05,
+          -0.036155275760899,
+          -7.85131298539313
+        ],
+        "per_obstacle_period_s": [
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15
+        ],
+        "plant_bounds_verified": false,
+        "separating_face": [
+          3,
+          1,
+          3,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "valid": true
+      },
+      "effective_control": [
+        17.658,
+        3.0,
+        -3.0,
+        2.0
+      ],
+      "state": {
+        "acceleration": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "angular_velocity": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "position": [
+          13.1803668428263,
+          -0.315629356189135,
+          -3.95
+        ],
+        "quaternion": [
+          -0.999999475951176,
+          0.00102376528225483,
+          -1.42167130507164e-06,
+          1.45545848764157e-09
+        ],
+        "timestamp_ns": null,
+        "velocity": [
+          5.19996629063358,
+          -0.124274558215706,
+          0.05
+        ]
+      },
+      "vehicle": "Drone1"
+    },
+    {
+      "actual": {
+        "binding_obstacle": "1:left",
+        "budget_s": 0.15,
+        "is_safety_certificate": false,
+        "mesh_margin_m": 1.20000220807737,
+        "mesh_rate_mps": -0.0998278360476364,
+        "nominal_acceleration": [
+          -1.2628764231352e-05,
+          0.00885702172705066,
+          -0.00334600168148214
+        ],
+        "per_obstacle_period_s": [
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15
+        ],
+        "plant_bounds_verified": false,
+        "separating_face": [
+          3,
+          1,
+          3,
+          2,
+          3,
+          1,
+          3,
+          2,
+          4,
+          1,
+          5,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "valid": true
+      },
+      "effective_control": [
+        9.81,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "state": {
+        "acceleration": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "angular_velocity": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "position": [
+          28.1763288407292,
+          -0.0597248166599978,
+          -3.95
+        ],
+        "quaternion": [
+          0.999999898106047,
+          0.000451428268579581,
+          6.436678361143e-07,
+          2.90569886404758e-10
+        ],
+        "timestamp_ns": null,
+        "velocity": [
+          5.19999975452042,
+          -0.0998278360476364,
+          0.05
+        ]
+      },
+      "vehicle": "Drone1"
+    },
+    {
+      "actual": {
+        "binding_obstacle": "1:left",
+        "budget_s": 0.15,
+        "is_safety_certificate": false,
+        "mesh_margin_m": 1.20000220807737,
+        "mesh_rate_mps": -0.0998278360476364,
+        "nominal_acceleration": [
+          -1.3130825194678e-05,
+          0.00920913574066429,
+          -0.393345842726923
+        ],
+        "per_obstacle_period_s": [
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15
+        ],
+        "plant_bounds_verified": false,
+        "separating_face": [
+          3,
+          1,
+          3,
+          2,
+          3,
+          1,
+          3,
+          2,
+          4,
+          1,
+          5,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "valid": true
+      },
+      "effective_control": [
+        10.2,
+        0.3,
+        -0.2,
+        0.1
+      ],
+      "state": {
+        "acceleration": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "angular_velocity": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "position": [
+          28.1763288407292,
+          -0.0597248166599978,
+          -3.95
+        ],
+        "quaternion": [
+          0.999999898106047,
+          0.000451428268579581,
+          6.436678361143e-07,
+          2.90569886404758e-10
+        ],
+        "timestamp_ns": null,
+        "velocity": [
+          5.19999975452042,
+          -0.0998278360476364,
+          0.05
+        ]
+      },
+      "vehicle": "Drone1"
+    },
+    {
+      "actual": {
+        "binding_obstacle": "1:left",
+        "budget_s": 0.15,
+        "is_safety_certificate": false,
+        "mesh_margin_m": 1.20000220807737,
+        "mesh_rate_mps": -0.0998278360476364,
+        "nominal_acceleration": [
+          -2.27317756164337e-05,
+          0.0159426391086912,
+          -7.85134280302667
+        ],
+        "per_obstacle_period_s": [
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15
+        ],
+        "plant_bounds_verified": false,
+        "separating_face": [
+          3,
+          1,
+          3,
+          2,
+          3,
+          1,
+          3,
+          2,
+          4,
+          1,
+          5,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "valid": true
+      },
+      "effective_control": [
+        17.658,
+        3.0,
+        -3.0,
+        2.0
+      ],
+      "state": {
+        "acceleration": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "angular_velocity": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "position": [
+          28.1763288407292,
+          -0.0597248166599978,
+          -3.95
+        ],
+        "quaternion": [
+          0.999999898106047,
+          0.000451428268579581,
+          6.436678361143e-07,
+          2.90569886404758e-10
+        ],
+        "timestamp_ns": null,
+        "velocity": [
+          5.19999975452042,
+          -0.0998278360476364,
+          0.05
+        ]
+      },
+      "vehicle": "Drone1"
+    },
+    {
+      "actual": {
+        "binding_obstacle": "1:left",
+        "budget_s": 0.15,
+        "is_safety_certificate": false,
+        "mesh_margin_m": 2.70028623140284,
+        "mesh_rate_mps": -5.19999945675044,
+        "nominal_acceleration": [
+          6.76354310919928e-07,
+          -0.00368729905353542,
+          -0.00334930702470793
+        ],
+        "per_obstacle_period_s": [
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15
+        ],
+        "plant_bounds_verified": false,
+        "separating_face": [
+          3,
+          1,
+          3,
+          2,
+          3,
+          1,
+          3,
+          2,
+          3,
+          1,
+          3,
+          2,
+          3,
+          1,
+          3,
+          2,
+          0,
+          0,
+          0,
+          0
+        ],
+        "valid": true
+      },
+      "effective_control": [
+        9.81,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "state": {
+        "acceleration": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "angular_velocity": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "position": [
+          43.1762905855349,
+          -0.0306968411637571,
+          -3.95
+        ],
+        "quaternion": [
+          -0.999999982340079,
+          0.000187935734895659,
+          3.44726961761246e-08,
+          -6.47865160410724e-12
+        ],
+        "timestamp_ns": null,
+        "velocity": [
+          5.19999945675044,
+          -0.0970383516855432,
+          0.05
+        ]
+      },
+      "vehicle": "Drone1"
+    },
+    {
+      "actual": {
+        "binding_obstacle": "1:left",
+        "budget_s": 0.15,
+        "is_safety_certificate": false,
+        "mesh_margin_m": 2.70028623140284,
+        "mesh_rate_mps": -5.19999945675044,
+        "nominal_acceleration": [
+          7.03243014412158e-07,
+          -0.00383388892416526,
+          -0.393349279475231
+        ],
+        "per_obstacle_period_s": [
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15
+        ],
+        "plant_bounds_verified": false,
+        "separating_face": [
+          3,
+          1,
+          3,
+          2,
+          3,
+          1,
+          3,
+          2,
+          3,
+          1,
+          3,
+          2,
+          3,
+          1,
+          3,
+          2,
+          0,
+          0,
+          0,
+          0
+        ],
+        "valid": true
+      },
+      "effective_control": [
+        10.2,
+        0.3,
+        -0.2,
+        0.1
+      ],
+      "state": {
+        "acceleration": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "angular_velocity": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "position": [
+          43.1762905855349,
+          -0.0306968411637571,
+          -3.95
+        ],
+        "quaternion": [
+          -0.999999982340079,
+          0.000187935734895659,
+          3.44726961761246e-08,
+          -6.47865160410724e-12
+        ],
+        "timestamp_ns": null,
+        "velocity": [
+          5.19999945675044,
+          -0.0970383516855432,
+          0.05
+        ]
+      },
+      "vehicle": "Drone1"
+    },
+    {
+      "actual": {
+        "binding_obstacle": "1:left",
+        "budget_s": 0.15,
+        "is_safety_certificate": false,
+        "mesh_margin_m": 2.70028623140284,
+        "mesh_rate_mps": -5.19999945675044,
+        "nominal_acceleration": [
+          1.21743775965587e-06,
+          -0.00663713829636375,
+          -7.85134875264447
+        ],
+        "per_obstacle_period_s": [
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15
+        ],
+        "plant_bounds_verified": false,
+        "separating_face": [
+          3,
+          1,
+          3,
+          2,
+          3,
+          1,
+          3,
+          2,
+          3,
+          1,
+          3,
+          2,
+          3,
+          1,
+          3,
+          2,
+          0,
+          0,
+          0,
+          0
+        ],
+        "valid": true
+      },
+      "effective_control": [
+        17.658,
+        3.0,
+        -3.0,
+        2.0
+      ],
+      "state": {
+        "acceleration": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "angular_velocity": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "position": [
+          43.1762905855349,
+          -0.0306968411637571,
+          -3.95
+        ],
+        "quaternion": [
+          -0.999999982340079,
+          0.000187935734895659,
+          3.44726961761246e-08,
+          -6.47865160410724e-12
+        ],
+        "timestamp_ns": null,
+        "velocity": [
+          5.19999945675044,
+          -0.0970383516855432,
+          0.05
+        ]
+      },
+      "vehicle": "Drone1"
+    },
+    {
+      "actual": {
+        "binding_obstacle": "1:left",
+        "budget_s": 0.15,
+        "is_safety_certificate": false,
+        "mesh_margin_m": 4.5,
+        "mesh_rate_mps": 0.200000000000007,
+        "nominal_acceleration": [
+          0.0,
+          0.0,
+          -0.00335000000000107
+        ],
+        "per_obstacle_period_s": [
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15
+        ],
+        "plant_bounds_verified": false,
+        "separating_face": [
+          3,
+          1,
+          3,
+          2,
+          3,
+          1,
+          3,
+          2,
+          3,
+          1,
+          3,
+          2,
+          3,
+          1,
+          3,
+          2,
+          3,
+          1,
+          3,
+          2
+        ],
+        "valid": true
+      },
+      "effective_control": [
+        9.81,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "state": {
+        "acceleration": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "angular_velocity": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "position": [
+          51.5765768169378,
+          -0.0298095179523166,
+          -3.95
+        ],
+        "quaternion": [
+          1.0,
+          -0.0,
+          -0.0,
+          0.0
+        ],
+        "timestamp_ns": null,
+        "velocity": [
+          0.200000000000007,
+          -0.1,
+          0.05
+        ]
+      },
+      "vehicle": "Drone1"
+    },
+    {
+      "actual": {
+        "binding_obstacle": "1:left",
+        "budget_s": 0.15,
+        "is_safety_certificate": false,
+        "mesh_margin_m": 4.5,
+        "mesh_rate_mps": 0.200000000000007,
+        "nominal_acceleration": [
+          0.0,
+          0.0,
+          -0.39335
+        ],
+        "per_obstacle_period_s": [
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15
+        ],
+        "plant_bounds_verified": false,
+        "separating_face": [
+          3,
+          1,
+          3,
+          2,
+          3,
+          1,
+          3,
+          2,
+          3,
+          1,
+          3,
+          2,
+          3,
+          1,
+          3,
+          2,
+          3,
+          1,
+          3,
+          2
+        ],
+        "valid": true
+      },
+      "effective_control": [
+        10.2,
+        0.3,
+        -0.2,
+        0.1
+      ],
+      "state": {
+        "acceleration": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "angular_velocity": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "position": [
+          51.5765768169378,
+          -0.0298095179523166,
+          -3.95
+        ],
+        "quaternion": [
+          1.0,
+          -0.0,
+          -0.0,
+          0.0
+        ],
+        "timestamp_ns": null,
+        "velocity": [
+          0.200000000000007,
+          -0.1,
+          0.05
+        ]
+      },
+      "vehicle": "Drone1"
+    },
+    {
+      "actual": {
+        "binding_obstacle": "1:left",
+        "budget_s": 0.15,
+        "is_safety_certificate": false,
+        "mesh_margin_m": 4.5,
+        "mesh_rate_mps": 0.200000000000007,
+        "nominal_acceleration": [
+          0.0,
+          0.0,
+          -7.85135
+        ],
+        "per_obstacle_period_s": [
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15
+        ],
+        "plant_bounds_verified": false,
+        "separating_face": [
+          3,
+          1,
+          3,
+          2,
+          3,
+          1,
+          3,
+          2,
+          3,
+          1,
+          3,
+          2,
+          3,
+          1,
+          3,
+          2,
+          3,
+          1,
+          3,
+          2
+        ],
+        "valid": true
+      },
+      "effective_control": [
+        17.658,
+        3.0,
+        -3.0,
+        2.0
+      ],
+      "state": {
+        "acceleration": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "angular_velocity": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "position": [
+          51.5765768169378,
+          -0.0298095179523166,
+          -3.95
+        ],
+        "quaternion": [
+          1.0,
+          -0.0,
+          -0.0,
+          0.0
+        ],
+        "timestamp_ns": null,
+        "velocity": [
+          0.200000000000007,
+          -0.1,
+          0.05
+        ]
+      },
+      "vehicle": "Drone1"
+    },
+    {
+      "actual": {
+        "binding_obstacle": "1:left",
+        "budget_s": 0.15,
+        "is_safety_certificate": false,
+        "mesh_margin_m": 3.39069633631116,
+        "mesh_rate_mps": -6.3307914072313,
+        "nominal_acceleration": [
+          -0.361708989815269,
+          -0.0302142543580347,
+          0.00336719751386205
+        ],
+        "per_obstacle_period_s": [
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15
+        ],
+        "plant_bounds_verified": false,
+        "separating_face": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "valid": true
+      },
+      "effective_control": [
+        9.81,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "state": {
+        "acceleration": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "angular_velocity": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "position": [
+          5.26478774624841,
+          -0.173444897655477,
+          -3.95
+        ],
+        "quaternion": [
+          0.999828802538504,
+          -0.00154075989767356,
+          0.0184388412316091,
+          -2.84146916523131e-05
+        ],
+        "timestamp_ns": null,
+        "velocity": [
+          6.3307914072313,
+          -0.0781964990677004,
+          0.05
+        ]
+      },
+      "vehicle": "Drone2"
+    },
+    {
+      "actual": {
+        "binding_obstacle": "1:left",
+        "budget_s": 0.15,
+        "is_safety_certificate": false,
+        "mesh_margin_m": 3.39069633631116,
+        "mesh_rate_mps": -6.3307914072313,
+        "nominal_acceleration": [
+          -0.376088857911901,
+          -0.0314154326658464,
+          -0.386365757936655
+        ],
+        "per_obstacle_period_s": [
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15
+        ],
+        "plant_bounds_verified": false,
+        "separating_face": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "valid": true
+      },
+      "effective_control": [
+        10.2,
+        0.3,
+        -0.2,
+        0.1
+      ],
+      "state": {
+        "acceleration": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "angular_velocity": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "position": [
+          5.26478774624841,
+          -0.173444897655477,
+          -3.95
+        ],
+        "quaternion": [
+          0.999828802538504,
+          -0.00154075989767356,
+          0.0184388412316091,
+          -2.84146916523131e-05
+        ],
+        "timestamp_ns": null,
+        "velocity": [
+          6.3307914072313,
+          -0.0781964990677004,
+          0.05
+        ]
+      },
+      "vehicle": "Drone2"
+    },
+    {
+      "actual": {
+        "binding_obstacle": "1:left",
+        "budget_s": 0.15,
+        "is_safety_certificate": false,
+        "mesh_margin_m": 3.39069633631116,
+        "mesh_rate_mps": -6.3307914072313,
+        "nominal_acceleration": [
+          -0.651076181667485,
+          -0.0543856578444624,
+          -7.83925904447505
+        ],
+        "per_obstacle_period_s": [
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15
+        ],
+        "plant_bounds_verified": false,
+        "separating_face": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "valid": true
+      },
+      "effective_control": [
+        17.658,
+        3.0,
+        -3.0,
+        2.0
+      ],
+      "state": {
+        "acceleration": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "angular_velocity": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "position": [
+          5.26478774624841,
+          -0.173444897655477,
+          -3.95
+        ],
+        "quaternion": [
+          0.999828802538504,
+          -0.00154075989767356,
+          0.0184388412316091,
+          -2.84146916523131e-05
+        ],
+        "timestamp_ns": null,
+        "velocity": [
+          6.3307914072313,
+          -0.0781964990677004,
+          0.05
+        ]
+      },
+      "vehicle": "Drone2"
+    },
+    {
+      "actual": {
+        "binding_obstacle": "1:left",
+        "budget_s": 0.15,
+        "is_safety_certificate": false,
+        "mesh_margin_m": 3.32287635919906,
+        "mesh_rate_mps": 5.19985714101262,
+        "nominal_acceleration": [
+          -0.000110766575222154,
+          -0.0389147071921395,
+          -0.00327281484900155
+        ],
+        "per_obstacle_period_s": [
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15
+        ],
+        "plant_bounds_verified": false,
+        "separating_face": [
+          3,
+          1,
+          3,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "valid": true
+      },
+      "effective_control": [
+        9.81,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "state": {
+        "acceleration": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "angular_velocity": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "position": [
+          13.1783604417586,
+          -0.184586665189252,
+          -3.95
+        ],
+        "quaternion": [
+          -0.999998032996256,
+          0.00198342424765062,
+          -5.64558396266139e-06,
+          1.11976101494311e-08
+        ],
+        "timestamp_ns": null,
+        "velocity": [
+          5.19985714101262,
+          -0.150189469634601,
+          0.05
+        ]
+      },
+      "vehicle": "Drone2"
+    },
+    {
+      "actual": {
+        "binding_obstacle": "1:left",
+        "budget_s": 0.15,
+        "is_safety_certificate": false,
+        "mesh_margin_m": 3.32287635919906,
+        "mesh_rate_mps": 5.19985714101262,
+        "nominal_acceleration": [
+          -0.000115170139374717,
+          -0.0404617750621634,
+          -0.393269746326178
+        ],
+        "per_obstacle_period_s": [
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15
+        ],
+        "plant_bounds_verified": false,
+        "separating_face": [
+          3,
+          1,
+          3,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "valid": true
+      },
+      "effective_control": [
+        10.2,
+        0.3,
+        -0.2,
+        0.1
+      ],
+      "state": {
+        "acceleration": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "angular_velocity": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "position": [
+          13.1783604417586,
+          -0.184586665189252,
+          -3.95
+        ],
+        "quaternion": [
+          -0.999998032996256,
+          0.00198342424765062,
+          -5.64558396266139e-06,
+          1.11976101494311e-08
+        ],
+        "timestamp_ns": null,
+        "velocity": [
+          5.19985714101262,
+          -0.150189469634601,
+          0.05
+        ]
+      },
+      "vehicle": "Drone2"
+    },
+    {
+      "actual": {
+        "binding_obstacle": "1:left",
+        "budget_s": 0.15,
+        "is_safety_certificate": false,
+        "mesh_margin_m": 3.32287635919906,
+        "mesh_rate_mps": 5.19985714101262,
+        "nominal_acceleration": [
+          -0.000199379835399877,
+          -0.0700464729458511,
+          -7.8512110667282
+        ],
+        "per_obstacle_period_s": [
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15
+        ],
+        "plant_bounds_verified": false,
+        "separating_face": [
+          3,
+          1,
+          3,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "valid": true
+      },
+      "effective_control": [
+        17.658,
+        3.0,
+        -3.0,
+        2.0
+      ],
+      "state": {
+        "acceleration": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "angular_velocity": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "position": [
+          13.1783604417586,
+          -0.184586665189252,
+          -3.95
+        ],
+        "quaternion": [
+          -0.999998032996256,
+          0.00198342424765062,
+          -5.64558396266139e-06,
+          1.11976101494311e-08
+        ],
+        "timestamp_ns": null,
+        "velocity": [
+          5.19985714101262,
+          -0.150189469634601,
+          0.05
+        ]
+      },
+      "vehicle": "Drone2"
+    },
+    {
+      "actual": {
+        "binding_obstacle": "1:left",
+        "budget_s": 0.15,
+        "is_safety_certificate": false,
+        "mesh_margin_m": 1.20014042591957,
+        "mesh_rate_mps": -0.0933400692666953,
+        "nominal_acceleration": [
+          -0.0043682720034725,
+          0.206839877626905,
+          -0.00116821728069283
+        ],
+        "per_obstacle_period_s": [
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15
+        ],
+        "plant_bounds_verified": false,
+        "separating_face": [
+          3,
+          1,
+          3,
+          2,
+          3,
+          1,
+          3,
+          2,
+          4,
+          1,
+          5,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "valid": true
+      },
+      "effective_control": [
+        9.81,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "state": {
+        "acceleration": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "angular_velocity": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "position": [
+          28.1772934478087,
+          -0.352872322655733,
+          -3.95
+        ],
+        "quaternion": [
+          0.999944397464694,
+          0.0105428842681802,
+          0.000222631464474956,
+          2.34730828070648e-06
+        ],
+        "timestamp_ns": null,
+        "velocity": [
+          5.19985934825866,
+          -0.0933400692666953,
+          0.05
+        ]
+      },
+      "vehicle": "Drone2"
+    },
+    {
+      "actual": {
+        "binding_obstacle": "1:left",
+        "budget_s": 0.15,
+        "is_safety_certificate": false,
+        "mesh_margin_m": 1.20014042591957,
+        "mesh_rate_mps": -0.0933400692666953,
+        "nominal_acceleration": [
+          -0.004541934193213,
+          0.215062869703815,
+          -0.391081479741393
+        ],
+        "per_obstacle_period_s": [
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15
+        ],
+        "plant_bounds_verified": false,
+        "separating_face": [
+          3,
+          1,
+          3,
+          2,
+          3,
+          1,
+          3,
+          2,
+          4,
+          1,
+          5,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "valid": true
+      },
+      "effective_control": [
+        10.2,
+        0.3,
+        -0.2,
+        0.1
+      ],
+      "state": {
+        "acceleration": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "angular_velocity": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "position": [
+          28.1772934478087,
+          -0.352872322655733,
+          -3.95
+        ],
+        "quaternion": [
+          0.999944397464694,
+          0.0105428842681802,
+          0.000222631464474956,
+          2.34730828070648e-06
+        ],
+        "timestamp_ns": null,
+        "velocity": [
+          5.19985934825866,
+          -0.0933400692666953,
+          0.05
+        ]
+      },
+      "vehicle": "Drone2"
+    },
+    {
+      "actual": {
+        "binding_obstacle": "1:left",
+        "budget_s": 0.15,
+        "is_safety_certificate": false,
+        "mesh_margin_m": 1.20014042591957,
+        "mesh_rate_mps": -0.0933400692666953,
+        "nominal_acceleration": [
+          -0.0078628896062505,
+          0.372311779728429,
+          -7.84742279110525
+        ],
+        "per_obstacle_period_s": [
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15
+        ],
+        "plant_bounds_verified": false,
+        "separating_face": [
+          3,
+          1,
+          3,
+          2,
+          3,
+          1,
+          3,
+          2,
+          4,
+          1,
+          5,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "valid": true
+      },
+      "effective_control": [
+        17.658,
+        3.0,
+        -3.0,
+        2.0
+      ],
+      "state": {
+        "acceleration": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "angular_velocity": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "position": [
+          28.1772934478087,
+          -0.352872322655733,
+          -3.95
+        ],
+        "quaternion": [
+          0.999944397464694,
+          0.0105428842681802,
+          0.000222631464474956,
+          2.34730828070648e-06
+        ],
+        "timestamp_ns": null,
+        "velocity": [
+          5.19985934825866,
+          -0.0933400692666953,
+          0.05
+        ]
+      },
+      "vehicle": "Drone2"
+    },
+    {
+      "actual": {
+        "binding_obstacle": "1:left",
+        "budget_s": 0.15,
+        "is_safety_certificate": false,
+        "mesh_margin_m": 2.50840072043195,
+        "mesh_rate_mps": -5.19998181704555,
+        "nominal_acceleration": [
+          2.66131230630026e-05,
+          -0.0244827450323429,
+          -0.00331944921274818
+        ],
+        "per_obstacle_period_s": [
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15
+        ],
+        "plant_bounds_verified": false,
+        "separating_face": [
+          3,
+          1,
+          3,
+          2,
+          3,
+          1,
+          3,
+          2,
+          3,
+          1,
+          3,
+          2,
+          3,
+          1,
+          3,
+          2,
+          0,
+          0,
+          0,
+          0
+        ],
+        "valid": true
+      },
+      "effective_control": [
+        9.81,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "state": {
+        "acceleration": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "angular_velocity": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "position": [
+          43.1690196923659,
+          0.0535906425568483,
+          -3.95
+        ],
+        "quaternion": [
+          -0.999999221437331,
+          0.00124784730345332,
+          1.35642723461098e-06,
+          -1.69261538484711e-09
+        ],
+        "timestamp_ns": null,
+        "velocity": [
+          5.19998181704555,
+          -0.083272589366985,
+          0.05
+        ]
+      },
+      "vehicle": "Drone2"
+    },
+    {
+      "actual": {
+        "binding_obstacle": "1:left",
+        "budget_s": 0.15,
+        "is_safety_certificate": false,
+        "mesh_margin_m": 2.50840072043195,
+        "mesh_rate_mps": -5.19998181704555,
+        "nominal_acceleration": [
+          2.76711371297275e-05,
+          -0.0254560651712434,
+          -0.393318234655457
+        ],
+        "per_obstacle_period_s": [
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15
+        ],
+        "plant_bounds_verified": false,
+        "separating_face": [
+          3,
+          1,
+          3,
+          2,
+          3,
+          1,
+          3,
+          2,
+          3,
+          1,
+          3,
+          2,
+          3,
+          1,
+          3,
+          2,
+          0,
+          0,
+          0,
+          0
+        ],
+        "valid": true
+      },
+      "effective_control": [
+        10.2,
+        0.3,
+        -0.2,
+        0.1
+      ],
+      "state": {
+        "acceleration": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "angular_velocity": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "position": [
+          43.1690196923659,
+          0.0535906425568483,
+          -3.95
+        ],
+        "quaternion": [
+          -0.999999221437331,
+          0.00124784730345332,
+          1.35642723461098e-06,
+          -1.69261538484711e-09
+        ],
+        "timestamp_ns": null,
+        "velocity": [
+          5.19998181704555,
+          -0.083272589366985,
+          0.05
+        ]
+      },
+      "vehicle": "Drone2"
+    },
+    {
+      "actual": {
+        "binding_obstacle": "1:left",
+        "budget_s": 0.15,
+        "is_safety_certificate": false,
+        "mesh_margin_m": 2.50840072043195,
+        "mesh_rate_mps": -5.19998181704555,
+        "nominal_acceleration": [
+          4.79036215134047e-05,
+          -0.0440689410582173,
+          -7.85129500858295
+        ],
+        "per_obstacle_period_s": [
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15
+        ],
+        "plant_bounds_verified": false,
+        "separating_face": [
+          3,
+          1,
+          3,
+          2,
+          3,
+          1,
+          3,
+          2,
+          3,
+          1,
+          3,
+          2,
+          3,
+          1,
+          3,
+          2,
+          0,
+          0,
+          0,
+          0
+        ],
+        "valid": true
+      },
+      "effective_control": [
+        17.658,
+        3.0,
+        -3.0,
+        2.0
+      ],
+      "state": {
+        "acceleration": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "angular_velocity": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "position": [
+          43.1690196923659,
+          0.0535906425568483,
+          -3.95
+        ],
+        "quaternion": [
+          -0.999999221437331,
+          0.00124784730345332,
+          1.35642723461098e-06,
+          -1.69261538484711e-09
+        ],
+        "timestamp_ns": null,
+        "velocity": [
+          5.19998181704555,
+          -0.083272589366985,
+          0.05
+        ]
+      },
+      "vehicle": "Drone2"
+    },
+    {
+      "actual": {
+        "binding_obstacle": "1:left",
+        "budget_s": 0.15,
+        "is_safety_certificate": false,
+        "mesh_margin_m": 4.50000000000001,
+        "mesh_rate_mps": 0.200000000000007,
+        "nominal_acceleration": [
+          0.0,
+          0.0,
+          -0.00335000000000107
+        ],
+        "per_obstacle_period_s": [
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15
+        ],
+        "plant_bounds_verified": false,
+        "separating_face": [
+          3,
+          1,
+          3,
+          2,
+          3,
+          1,
+          3,
+          2,
+          3,
+          1,
+          3,
+          2,
+          3,
+          1,
+          3,
+          2,
+          3,
+          1,
+          3,
+          2
+        ],
+        "valid": true
+      },
+      "effective_control": [
+        9.81,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "state": {
+        "acceleration": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "angular_velocity": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "position": [
+          51.3774204127979,
+          0.0582184082739985,
+          -3.95
+        ],
+        "quaternion": [
+          1.0,
+          -0.0,
+          -0.0,
+          0.0
+        ],
+        "timestamp_ns": null,
+        "velocity": [
+          0.200000000000007,
+          -0.1,
+          0.05
+        ]
+      },
+      "vehicle": "Drone2"
+    },
+    {
+      "actual": {
+        "binding_obstacle": "1:left",
+        "budget_s": 0.15,
+        "is_safety_certificate": false,
+        "mesh_margin_m": 4.50000000000001,
+        "mesh_rate_mps": 0.200000000000007,
+        "nominal_acceleration": [
+          0.0,
+          0.0,
+          -0.39335
+        ],
+        "per_obstacle_period_s": [
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15
+        ],
+        "plant_bounds_verified": false,
+        "separating_face": [
+          3,
+          1,
+          3,
+          2,
+          3,
+          1,
+          3,
+          2,
+          3,
+          1,
+          3,
+          2,
+          3,
+          1,
+          3,
+          2,
+          3,
+          1,
+          3,
+          2
+        ],
+        "valid": true
+      },
+      "effective_control": [
+        10.2,
+        0.3,
+        -0.2,
+        0.1
+      ],
+      "state": {
+        "acceleration": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "angular_velocity": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "position": [
+          51.3774204127979,
+          0.0582184082739985,
+          -3.95
+        ],
+        "quaternion": [
+          1.0,
+          -0.0,
+          -0.0,
+          0.0
+        ],
+        "timestamp_ns": null,
+        "velocity": [
+          0.200000000000007,
+          -0.1,
+          0.05
+        ]
+      },
+      "vehicle": "Drone2"
+    },
+    {
+      "actual": {
+        "binding_obstacle": "1:left",
+        "budget_s": 0.15,
+        "is_safety_certificate": false,
+        "mesh_margin_m": 4.50000000000001,
+        "mesh_rate_mps": 0.200000000000007,
+        "nominal_acceleration": [
+          0.0,
+          0.0,
+          -7.85135
+        ],
+        "per_obstacle_period_s": [
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15
+        ],
+        "plant_bounds_verified": false,
+        "separating_face": [
+          3,
+          1,
+          3,
+          2,
+          3,
+          1,
+          3,
+          2,
+          3,
+          1,
+          3,
+          2,
+          3,
+          1,
+          3,
+          2,
+          3,
+          1,
+          3,
+          2
+        ],
+        "valid": true
+      },
+      "effective_control": [
+        17.658,
+        3.0,
+        -3.0,
+        2.0
+      ],
+      "state": {
+        "acceleration": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "angular_velocity": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "position": [
+          51.3774204127979,
+          0.0582184082739985,
+          -3.95
+        ],
+        "quaternion": [
+          1.0,
+          -0.0,
+          -0.0,
+          0.0
+        ],
+        "timestamp_ns": null,
+        "velocity": [
+          0.200000000000007,
+          -0.1,
+          0.05
+        ]
+      },
+      "vehicle": "Drone2"
+    }
+  ],
+  "holding_self_tests": "PASS",
+  "raw237_max_abs": 0.0,
+  "reference_max_abs": 1.4210854715202e-14,
+  "scope": "offline numerical parity, not flight/PS execution proof",
+  "status": "PASS"
+}

@@ -1,0 +1,36 @@
+--- a/scheduler/scheduler.cpp
++++ b/scheduler/scheduler.cpp
+@@ -111,7 +111,12 @@
+     if(finish.size()!=jobs.size())throw std::runtime_error("Dispatch order failed to drain");
+     Json slack=Json::object(),misses=Json::array(),raw_jobs=Json::array();std::string worst;double worst_slack=inf;
+     for(const auto&j:jobs){double s=j.deadline-command_finish.at(j.name).get<double>();slack[j.name]=s;if(s < -epsilon)misses.push_back(j.name);if(s<worst_slack){worst_slack=s;worst=j.name;}raw_jobs.push_back(demand_json(j));}
+-    return Json{{"feasible",misses.empty()},{"misses",misses},{"worst",worst.empty()?Json(nullptr):Json(worst)},{"finish",finish},{"command_finish",command_finish},{"slack",slack},{"waits",waits},{"timeline",timeline},{"switches",jobs.empty()?0:int(jobs.size())-1},{"jobs",raw_jobs},{"scope","finite deterministic service envelope; not plant or infinite-horizon certificate"}};
++    Json report{{"feasible",misses.empty()},{"worst",worst.empty()?Json(nullptr):Json(worst)},
++        {"switches",jobs.empty()?0:int(jobs.size())-1},{"scope","finite deterministic service envelope; not plant or infinite-horizon certificate"}};
++    report["misses"]=std::move(misses); report["finish"]=std::move(finish);
++    report["command_finish"]=std::move(command_finish); report["slack"]=std::move(slack);
++    report["waits"]=std::move(waits); report["timeline"]=std::move(timeline);
++    report["jobs"]=std::move(raw_jobs); return report;
+ }
+ double tail(const Jobs&jobs,const Sequence&order,const Choice&choice,const Modes&modes,double now){
+     double latest=inf;
+@@ -127,7 +132,8 @@
+     Json forecast=simulate(demands(jobs,choice,modes,now),order,decision,std::max(0.,block-now));Json overlap=Json::array();std::set<std::string> vehicles;
+     for(const auto&j:jobs)vehicles.insert(j.at("vehicle").get<std::string>());
+     for(const auto&v:vehicles){Jobs loop;for(const auto&j:jobs)if(j.at("vehicle")==v)loop.push_back(j);std::stable_sort(loop.begin(),loop.end(),[](const Json&a,const Json&b){return number(a,"release")<number(b,"release");});for(std::size_t i=1;i<loop.size();++i)if(now+forecast.at("finish").at(name_of(loop[i-1])).get<double>()>number(loop[i],"release")+epsilon)overlap.push_back(name_of(loop[i-1]));}
+-    return Json{{"accepted",forecast.at("feasible").get<bool>()&&overlap.empty()},{"overlap",overlap},{"forecast",forecast}};
++    Json checked{{"accepted",forecast.at("feasible").get<bool>()&&overlap.empty()}};
++    checked["overlap"]=std::move(overlap);checked["forecast"]=std::move(forecast);return checked;
+ }
+ Json diagnose_impl(const Jobs&jobs,const Choice&choice,const Modes&modes,double now,double decision,double block){
+     const auto all=demands(jobs,choice,modes,now);Json worst{{"deficit",0.},{"kind","none"},{"start",0.},{"end",0.},{"jobs",Json::array()}};
+@@ -180,7 +186,8 @@
+         Json updated=Json::array();double commit_by=commit_time;
+         if(!permission.is_null())commit_by=std::min(commit_by,number(permission,"valid_until"));
+         for(auto j:jobs){j["current_mode"]=choice.at(name_of(j));updated.push_back(j);for(const auto&old:original)if(name_of(old)==name_of(j)&&number(old,"release")!=number(j,"release"))commit_by=std::min(commit_by,number(j,"release"));}
+-        approved=Json{{"accepted",true},{"revision",calendar.value("revision",0)},{"jobs",updated},{"order",seq},{"choice",choice_json(choice)},{"pending",pending},{"skipped",permission.is_null()?Json(nullptr):permission.at("job")},{"permission",permission},{"commit_by",commit_by},{"forecast",result.at("forecast")},{"action",action}};
++        approved=Json{{"accepted",true},{"revision",calendar.value("revision",0)},{"order",seq},{"choice",choice_json(choice)},{"pending",pending},{"skipped",permission.is_null()?Json(nullptr):permission.at("job")},{"permission",permission},{"commit_by",commit_by},{"action",action}};
++        approved["jobs"]=std::move(updated);approved["forecast"]=std::move(result.at("forecast"));
+     };
+     attempt(initial,order,base,"keep_current",nullptr);
+     if(approved.is_null()&&fast!=base)attempt(initial,order,fast,"faster_modes",nullptr);

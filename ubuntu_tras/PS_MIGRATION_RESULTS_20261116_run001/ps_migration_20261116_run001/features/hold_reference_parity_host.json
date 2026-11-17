@@ -1,0 +1,407 @@
+{
+  "status": "PASS",
+  "cases": 30,
+  "maximum_abs_difference": 4.263256414560601e-14,
+  "scope": "offline numeric parity only; not flight/plant safety verification",
+  "shim": "selected helper type annotations stripped in memory, numeric bodies unchanged",
+  "python": "3.6.9 (default, Mar 10 2023, 16:46:00) \n[GCC 8.4.0]",
+  "numpy": "1.19.5",
+  "cases_detail": [
+    {
+      "case": 0,
+      "vehicle": "Drone1",
+      "errors": {
+        "budget_s": 0.0,
+        "nominal_acceleration": 1.6653345369377348e-16,
+        "per_obstacle_period_s": 0.0,
+        "mesh_margin_m": 8.43769498715119e-15,
+        "mesh_rate_mps": 0.0
+      },
+      "budget_s": 0.15,
+      "binding_obstacle": "1:left"
+    },
+    {
+      "case": 1,
+      "vehicle": "Drone1",
+      "errors": {
+        "budget_s": 0.0,
+        "nominal_acceleration": 2.220446049250313e-16,
+        "per_obstacle_period_s": 0.0,
+        "mesh_margin_m": 8.43769498715119e-15,
+        "mesh_rate_mps": 0.0
+      },
+      "budget_s": 0.15,
+      "binding_obstacle": "1:left"
+    },
+    {
+      "case": 2,
+      "vehicle": "Drone1",
+      "errors": {
+        "budget_s": 0.0,
+        "nominal_acceleration": 3.552713678800501e-15,
+        "per_obstacle_period_s": 0.0,
+        "mesh_margin_m": 8.43769498715119e-15,
+        "mesh_rate_mps": 0.0
+      },
+      "budget_s": 0.15,
+      "binding_obstacle": "1:left"
+    },
+    {
+      "case": 3,
+      "vehicle": "Drone1",
+      "errors": {
+        "budget_s": 0.0,
+        "nominal_acceleration": 5.551115123125783e-17,
+        "per_obstacle_period_s": 0.0,
+        "mesh_margin_m": 8.881784197001252e-16,
+        "mesh_rate_mps": 0.0
+      },
+      "budget_s": 0.15,
+      "binding_obstacle": "1:left"
+    },
+    {
+      "case": 4,
+      "vehicle": "Drone1",
+      "errors": {
+        "budget_s": 0.0,
+        "nominal_acceleration": 2.7755575615628914e-16,
+        "per_obstacle_period_s": 0.0,
+        "mesh_margin_m": 8.881784197001252e-16,
+        "mesh_rate_mps": 0.0
+      },
+      "budget_s": 0.15,
+      "binding_obstacle": "1:left"
+    },
+    {
+      "case": 5,
+      "vehicle": "Drone1",
+      "errors": {
+        "budget_s": 0.0,
+        "nominal_acceleration": 8.881784197001252e-16,
+        "per_obstacle_period_s": 0.0,
+        "mesh_margin_m": 8.881784197001252e-16,
+        "mesh_rate_mps": 0.0
+      },
+      "budget_s": 0.15,
+      "binding_obstacle": "1:left"
+    },
+    {
+      "case": 6,
+      "vehicle": "Drone1",
+      "errors": {
+        "budget_s": 0.0,
+        "nominal_acceleration": 1.7806936480901925e-15,
+        "per_obstacle_period_s": 0.0,
+        "mesh_margin_m": 1.5543122344752192e-15,
+        "mesh_rate_mps": 0.0
+      },
+      "budget_s": 0.15,
+      "binding_obstacle": "1:left"
+    },
+    {
+      "case": 7,
+      "vehicle": "Drone1",
+      "errors": {
+        "budget_s": 0.0,
+        "nominal_acceleration": 3.608224830031759e-15,
+        "per_obstacle_period_s": 0.0,
+        "mesh_margin_m": 1.5543122344752192e-15,
+        "mesh_rate_mps": 0.0
+      },
+      "budget_s": 0.15,
+      "binding_obstacle": "1:left"
+    },
+    {
+      "case": 8,
+      "vehicle": "Drone1",
+      "errors": {
+        "budget_s": 0.0,
+        "nominal_acceleration": 3.552713678800501e-15,
+        "per_obstacle_period_s": 0.0,
+        "mesh_margin_m": 1.5543122344752192e-15,
+        "mesh_rate_mps": 0.0
+      },
+      "budget_s": 0.15,
+      "binding_obstacle": "1:left"
+    },
+    {
+      "case": 9,
+      "vehicle": "Drone1",
+      "errors": {
+        "budget_s": 0.0,
+        "nominal_acceleration": 5.204170427930421e-18,
+        "per_obstacle_period_s": 0.0,
+        "mesh_margin_m": 1.5987211554602254e-14,
+        "mesh_rate_mps": 0.0
+      },
+      "budget_s": 0.15,
+      "binding_obstacle": "1:left"
+    },
+    {
+      "case": 10,
+      "vehicle": "Drone1",
+      "errors": {
+        "budget_s": 0.0,
+        "nominal_acceleration": 1.1102230246251565e-16,
+        "per_obstacle_period_s": 0.0,
+        "mesh_margin_m": 1.5987211554602254e-14,
+        "mesh_rate_mps": 0.0
+      },
+      "budget_s": 0.15,
+      "binding_obstacle": "1:left"
+    },
+    {
+      "case": 11,
+      "vehicle": "Drone1",
+      "errors": {
+        "budget_s": 0.0,
+        "nominal_acceleration": 4.440892098500626e-15,
+        "per_obstacle_period_s": 0.0,
+        "mesh_margin_m": 1.5987211554602254e-14,
+        "mesh_rate_mps": 0.0
+      },
+      "budget_s": 0.15,
+      "binding_obstacle": "1:left"
+    },
+    {
+      "case": 12,
+      "vehicle": "Drone1",
+      "errors": {
+        "budget_s": 0.0,
+        "nominal_acceleration": 4.336808689942018e-18,
+        "per_obstacle_period_s": 0.0,
+        "mesh_margin_m": 4.263256414560601e-14,
+        "mesh_rate_mps": 0.0
+      },
+      "budget_s": 0.15,
+      "binding_obstacle": "1:left"
+    },
+    {
+      "case": 13,
+      "vehicle": "Drone1",
+      "errors": {
+        "budget_s": 0.0,
+        "nominal_acceleration": 1.1102230246251565e-16,
+        "per_obstacle_period_s": 0.0,
+        "mesh_margin_m": 4.263256414560601e-14,
+        "mesh_rate_mps": 0.0
+      },
+      "budget_s": 0.15,
+      "binding_obstacle": "1:left"
+    },
+    {
+      "case": 14,
+      "vehicle": "Drone1",
+      "errors": {
+        "budget_s": 0.0,
+        "nominal_acceleration": 1.7763568394002505e-15,
+        "per_obstacle_period_s": 0.0,
+        "mesh_margin_m": 4.263256414560601e-14,
+        "mesh_rate_mps": 0.0
+      },
+      "budget_s": 0.15,
+      "binding_obstacle": "1:left"
+    },
+    {
+      "case": 15,
+      "vehicle": "Drone2",
+      "errors": {
+        "budget_s": 0.0,
+        "nominal_acceleration": 1.7737547541862853e-15,
+        "per_obstacle_period_s": 0.0,
+        "mesh_margin_m": 3.1086244689504383e-15,
+        "mesh_rate_mps": 0.0
+      },
+      "budget_s": 0.15,
+      "binding_obstacle": "1:left"
+    },
+    {
+      "case": 16,
+      "vehicle": "Drone2",
+      "errors": {
+        "budget_s": 0.0,
+        "nominal_acceleration": 2.0539125955565396e-15,
+        "per_obstacle_period_s": 0.0,
+        "mesh_margin_m": 3.1086244689504383e-15,
+        "mesh_rate_mps": 0.0
+      },
+      "budget_s": 0.15,
+      "binding_obstacle": "1:left"
+    },
+    {
+      "case": 17,
+      "vehicle": "Drone2",
+      "errors": {
+        "budget_s": 0.0,
+        "nominal_acceleration": 1.7763568394002505e-15,
+        "per_obstacle_period_s": 0.0,
+        "mesh_margin_m": 3.1086244689504383e-15,
+        "mesh_rate_mps": 0.0
+      },
+      "budget_s": 0.15,
+      "binding_obstacle": "1:left"
+    },
+    {
+      "case": 18,
+      "vehicle": "Drone2",
+      "errors": {
+        "budget_s": 0.0,
+        "nominal_acceleration": 3.469446951953614e-17,
+        "per_obstacle_period_s": 0.0,
+        "mesh_margin_m": 3.1530333899354446e-14,
+        "mesh_rate_mps": 0.0
+      },
+      "budget_s": 0.15,
+      "binding_obstacle": "1:left"
+    },
+    {
+      "case": 19,
+      "vehicle": "Drone2",
+      "errors": {
+        "budget_s": 0.0,
+        "nominal_acceleration": 1.6653345369377348e-16,
+        "per_obstacle_period_s": 0.0,
+        "mesh_margin_m": 3.1530333899354446e-14,
+        "mesh_rate_mps": 0.0
+      },
+      "budget_s": 0.15,
+      "binding_obstacle": "1:left"
+    },
+    {
+      "case": 20,
+      "vehicle": "Drone2",
+      "errors": {
+        "budget_s": 0.0,
+        "nominal_acceleration": 2.6645352591003757e-15,
+        "per_obstacle_period_s": 0.0,
+        "mesh_margin_m": 3.1530333899354446e-14,
+        "mesh_rate_mps": 0.0
+      },
+      "budget_s": 0.15,
+      "binding_obstacle": "1:left"
+    },
+    {
+      "case": 21,
+      "vehicle": "Drone2",
+      "errors": {
+        "budget_s": 0.0,
+        "nominal_acceleration": 8.326672684688674e-17,
+        "per_obstacle_period_s": 0.0,
+        "mesh_margin_m": 0.0,
+        "mesh_rate_mps": 0.0
+      },
+      "budget_s": 0.15,
+      "binding_obstacle": "1:left"
+    },
+    {
+      "case": 22,
+      "vehicle": "Drone2",
+      "errors": {
+        "budget_s": 0.0,
+        "nominal_acceleration": 4.996003610813204e-16,
+        "per_obstacle_period_s": 0.0,
+        "mesh_margin_m": 0.0,
+        "mesh_rate_mps": 0.0
+      },
+      "budget_s": 0.15,
+      "binding_obstacle": "1:left"
+    },
+    {
+      "case": 23,
+      "vehicle": "Drone2",
+      "errors": {
+        "budget_s": 0.0,
+        "nominal_acceleration": 2.6645352591003757e-15,
+        "per_obstacle_period_s": 0.0,
+        "mesh_margin_m": 0.0,
+        "mesh_rate_mps": 0.0
+      },
+      "budget_s": 0.15,
+      "binding_obstacle": "1:left"
+    },
+    {
+      "case": 24,
+      "vehicle": "Drone2",
+      "errors": {
+        "budget_s": 0.0,
+        "nominal_acceleration": 1.7741884350552795e-15,
+        "per_obstacle_period_s": 0.0,
+        "mesh_margin_m": 1.4654943925052066e-14,
+        "mesh_rate_mps": 0.0
+      },
+      "budget_s": 0.15,
+      "binding_obstacle": "1:left"
+    },
+    {
+      "case": 25,
+      "vehicle": "Drone2",
+      "errors": {
+        "budget_s": 0.0,
+        "nominal_acceleration": 3.885780586188048e-15,
+        "per_obstacle_period_s": 0.0,
+        "mesh_margin_m": 1.4654943925052066e-14,
+        "mesh_rate_mps": 0.0
+      },
+      "budget_s": 0.15,
+      "binding_obstacle": "1:left"
+    },
+    {
+      "case": 26,
+      "vehicle": "Drone2",
+      "errors": {
+        "budget_s": 0.0,
+        "nominal_acceleration": 7.105427357601002e-15,
+        "per_obstacle_period_s": 0.0,
+        "mesh_margin_m": 1.4654943925052066e-14,
+        "mesh_rate_mps": 0.0
+      },
+      "budget_s": 0.15,
+      "binding_obstacle": "1:left"
+    },
+    {
+      "case": 27,
+      "vehicle": "Drone2",
+      "errors": {
+        "budget_s": 0.0,
+        "nominal_acceleration": 4.336808689942018e-18,
+        "per_obstacle_period_s": 0.0,
+        "mesh_margin_m": 2.5757174171303632e-14,
+        "mesh_rate_mps": 0.0
+      },
+      "budget_s": 0.15,
+      "binding_obstacle": "1:left"
+    },
+    {
+      "case": 28,
+      "vehicle": "Drone2",
+      "errors": {
+        "budget_s": 0.0,
+        "nominal_acceleration": 1.1102230246251565e-16,
+        "per_obstacle_period_s": 0.0,
+        "mesh_margin_m": 2.5757174171303632e-14,
+        "mesh_rate_mps": 0.0
+      },
+      "budget_s": 0.15,
+      "binding_obstacle": "1:left"
+    },
+    {
+      "case": 29,
+      "vehicle": "Drone2",
+      "errors": {
+        "budget_s": 0.0,
+        "nominal_acceleration": 1.7763568394002505e-15,
+        "per_obstacle_period_s": 0.0,
+        "mesh_margin_m": 2.5757174171303632e-14,
+        "mesh_rate_mps": 0.0
+      },
+      "budget_s": 0.15,
+      "binding_obstacle": "1:left"
+    }
+  ],
+  "reference_sha256": {
+    "state_adapter.py": "45202577b52d01e3173b6becd5b9ae5d2a10d657e4e76c6f3cf03d69b39dc702",
+    "gate_route.py": "788f91c0bc06f324548b027613b66e93250b598af9af4d46b0d4232d8166da10",
+    "gate_visualization.py": "8f936c2249390421fbd5bcd33fe450f9ff1acee5e364f3816285019dc72f90c0",
+    "controller_architecture_study/held_control_safety.py": "7627e9a02881dd60196f6315ce7f93120566269aebdc4d006ca9cf0e9408018a"
+  }
+}

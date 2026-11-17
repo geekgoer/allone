@@ -12,14 +12,15 @@ from .dynamic_probe_common import DATA, PLAIN, describe, read_json, sha256, atom
 
 
 def make_client(bundle, host, port, timeout_ms):
-    files = ('manifest.json', 'windows/pool237_udp.py', 'normalization.json')
+    registry_name = 'manifest.json' if (bundle/'manifest.json').is_file() else 'dpu_model_registry.json'
+    files = (registry_name, 'windows/pool237_udp.py', 'normalization.json')
     hashes = {name.removeprefix('./'): digest for digest, name in
               (line.split(maxsplit=1) for line in (bundle / 'SHA256SUMS.txt').read_text().splitlines()
                if line.strip())}
     for name in files:
         if sha256(bundle / name) != hashes[name]:
             raise ValueError(f'IP37 bundle hash mismatch: {name}')
-    manifest = read_json(bundle / 'manifest.json')
+    manifest = read_json(bundle / registry_name)
     norm = read_json(bundle / 'normalization.json')
     if (norm['input_contract'] != CONTRACT
             or hashes['normalization.json'] != manifest['normalization_sha256']):
