@@ -75,6 +75,6 @@ flowchart LR
 
 - 研究动机、公式、伪代码及待验证假设：[修订 Framework](OBLIGATION_PROTECTED_BUDGET_FRAMEWORK_20261116.md)。这是**研究规格**。
 - 真实 PS 迁移身份与旧单/双机数据：[迁移交付复核](PS_MIGRATION_DELIVERY_REVIEW_20261116.md)。最新管理实现/计时：[control003](PS_MANAGEMENT_REVALIDATION_RESULTS_20261117.md)、[control004](PS_PAIRED_TRIGGER_AND_LIVE_TAIL_RESULTS_20261117.md)。
-- 可维护的修复源码入口：[ps_planner_repair/README.md](../ps_planner_repair/README.md) 和 [`live/`](../ps_planner_repair/live/)；原 PS 迁移交付在本地 `ubuntu_tras/`。试飞时另有独立冻结源码于 `results/ps_capacity_executor_trace_20261117_004/control_source/`。不要直接覆盖旧 v5、模型或已冻结结果。
-- **GitHub 可见性：** `controller_architecture_study/results/` 被 `.gitignore` 排除；本文件里的本地原始分析链接在只克隆 GitHub 的机器上不可用。需要复算数字的协作者应索取同名冻结证据包/原始日志和哈希，不要用本摘要代替数据。部署模型包与 `ubuntu_tras/` 的原始日志应单独交付，不随普通源码提交。Git 提交可仅包含 `ubuntu_tras/` 内的基础 PS C++/RPC/237D 源码和 `ps_planner_repair/`；它们与最新实飞的完整冻结源码不是同一个交付物，后者在被忽略的 `results/` 内，复现对应二进制时还需索取冻结源码、清单及哈希。
+- **可在 GitHub 获取的完整 PS 源码：**[冻结诊断版与依赖说明](../ps_board_source/README.md)，主入口、日历、237D 构造、AirSim RPC、真实 DPU 接口、构建脚本及逐文件哈希均在 `../ps_board_source/20261117_executor_trace/`。这是最新十二机调查时的异常诊断版本；可维护的局部修复脚本另见[ps_planner_repair/README.md](../ps_planner_repair/README.md)。冻结快照只做新版本复制，不覆盖旧版。
+- **GitHub 可见性：** 提交 `ps_board_source/` 后，协作者可直接读到上述完整 PS 源码；`controller_architecture_study/results/` 仍被 `.gitignore` 排除，本文件里的原始分析链接在只克隆 GitHub 的机器上不可用。模型 ELF、SDK、AirSim/rpclib 库及原始日志仍需按[源码交付说明](../ps_board_source/README.md)另行提供。源码可见不等于克隆后可独立构建/复现实测，也不等于已修复间歇 executor 故障。
 - 开始修改时先在 [`docs/COLLABORATION_STATUS.md`](../../docs/COLLABORATION_STATUS.md) 认领并写明文件，结束时补结果、证据和未解决项。同一文件多人同时修改先协调。优先更新本状态文档和索引；历史报告保留原结论。

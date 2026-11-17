@@ -1,0 +1,202 @@
+{
+  "schema": "ps-obligation-config/v1",
+  "names": [
+    "Drone1",
+    "Drone2"
+  ],
+  "origin_ms": 0.0,
+  "model_id": 11,
+  "candidate_ids": [
+    5,
+    10,
+    13,
+    8,
+    11
+  ],
+  "period_ms": 20.0,
+  "periods_ms": [
+    20.0,
+    30.0,
+    40.0,
+    50.0,
+    60.0,
+    80.0
+  ],
+  "fresh_ms": 80.0,
+  "maximum_update_ms": 160.0,
+  "planner_interval_ms": 10.0,
+  "enable_skip": false,
+  "adaptive": true,
+  "command_reserve_ms": 5.265,
+  "modes": [
+    {
+      "numeric_id": 1,
+      "name": "main18_plain_mlp_h1_w1024_seed0",
+      "service_ms": 0.31,
+      "selection_mse": 0.008078617446231319,
+      "check_mse": 0.009370962296231843
+    },
+    {
+      "numeric_id": 2,
+      "name": "main18_plain_mlp_h21_w1024_seed0",
+      "service_ms": 9.32,
+      "selection_mse": 0.0038755496823379212,
+      "check_mse": 0.004335226862680336
+    },
+    {
+      "numeric_id": 3,
+      "name": "main18_plain_mlp_h21_w512_seed0",
+      "service_ms": 3.017,
+      "selection_mse": 0.00447723638790818,
+      "check_mse": 0.0057135770308259
+    },
+    {
+      "numeric_id": 4,
+      "name": "main18_plain_mlp_h2_w1024_seed0",
+      "service_ms": 0.76,
+      "selection_mse": 0.003981259757127576,
+      "check_mse": 0.004470135431304747
+    },
+    {
+      "numeric_id": 5,
+      "name": "main18_plain_mlp_h2_w128_seed0",
+      "service_ms": 0.123,
+      "selection_mse": 0.007157371414078496,
+      "check_mse": 0.00830493585091691
+    },
+    {
+      "numeric_id": 6,
+      "name": "main18_plain_mlp_h33_w1024_seed0",
+      "service_ms": 14.739,
+      "selection_mse": 0.005173350012171541,
+      "check_mse": 0.0068268720807730075
+    },
+    {
+      "numeric_id": 7,
+      "name": "main18_plain_mlp_h33_w512_seed0",
+      "service_ms": 4.767,
+      "selection_mse": 0.0053084241918581535,
+      "check_mse": 0.007054095581293641
+    },
+    {
+      "numeric_id": 8,
+      "name": "main18_plain_mlp_h3_w1024_seed0",
+      "service_ms": 1.213,
+      "selection_mse": 0.0032927299493243703,
+      "check_mse": 0.0034064298706457247
+    },
+    {
+      "numeric_id": 9,
+      "name": "main18_plain_mlp_h3_w128_seed0",
+      "service_ms": 0.155,
+      "selection_mse": 0.010630808529225745,
+      "check_mse": 0.009418896502395913
+    },
+    {
+      "numeric_id": 10,
+      "name": "main18_plain_mlp_h3_w256_seed0",
+      "service_ms": 0.249,
+      "selection_mse": 0.005026832815535265,
+      "check_mse": 0.005467396306406825
+    },
+    {
+      "numeric_id": 11,
+      "name": "main18_plain_mlp_h4_w1024_seed0",
+      "service_ms": 1.654,
+      "selection_mse": 0.003289402720983693,
+      "check_mse": 0.0035748696018996335
+    },
+    {
+      "numeric_id": 12,
+      "name": "main18_plain_mlp_h4_w256_seed0",
+      "service_ms": 0.313,
+      "selection_mse": 0.005302210669799669,
+      "check_mse": 0.005570291815296672
+    },
+    {
+      "numeric_id": 13,
+      "name": "main18_plain_mlp_h4_w512_seed0",
+      "service_ms": 0.61,
+      "selection_mse": 0.004054837647794163,
+      "check_mse": 0.00398697473135061
+    },
+    {
+      "numeric_id": 14,
+      "name": "main18_plain_mlp_h5_w1024_seed0",
+      "service_ms": 2.113,
+      "selection_mse": 0.0035641408245032716,
+      "check_mse": 0.003693310455788111
+    },
+    {
+      "numeric_id": 15,
+      "name": "main18_plain_mlp_h5_w512_seed0",
+      "service_ms": 0.75,
+      "selection_mse": 0.004199232411716581,
+      "check_mse": 0.0046116797687382844
+    },
+    {
+      "numeric_id": 16,
+      "name": "main18_plain_mlp_h6_w1024_seed0",
+      "service_ms": 2.564,
+      "selection_mse": 0.00330291654630719,
+      "check_mse": 0.0038934761474408537
+    },
+    {
+      "numeric_id": 17,
+      "name": "main18_plain_mlp_h9_w1024_seed0",
+      "service_ms": 3.914,
+      "selection_mse": 0.00337844824640874,
+      "check_mse": 0.0035157234485386807
+    },
+    {
+      "numeric_id": 18,
+      "name": "main18_plain_mlp_h9_w512_seed0",
+      "service_ms": 1.317,
+      "selection_mse": 0.003953774014370227,
+      "check_mse": 0.004259421985645435
+    }
+  ],
+  "wire_tag_hex": "9253dd1fc87f8d7f",
+  "freeze_sha256": "9214c4fff3d7d1c2eeeff72e4f5238f80e1ce2f67cddba086282440362a22f8d",
+  "normalization_sha256": "fe9c44ee80aef1cf97138536a66a4ee3a126f459f2ef963370db354ada8f19ac",
+  "empirical_factor": 1.25,
+  "profile_scope": "Local serialized DNNDK wall service + measured PS/AirSim RPC envelopes; NOT certified WCET",
+  "period_scope": "Original exploratory supported periods; NOT a certified period-admissibility map",
+  "selection_scope": "Unchanged frozen TRAIN512 teacher_std_mse ONLY; final480 check_mse descriptive ONLY",
+  "provenance": {
+    "local_profile": "/home/cwc/dpu_work/windows_framework/ps_migration_20261116_run001/local_validation_002",
+    "local_profile_sha256": "e4908bcde1c2f79925fdc9d0a4d6f2ecae886f97d5f46e76955ff32a470dceed",
+    "registry_sha256": "040f029bb9bd160bfd1b055748630e87b76e127fe2315f80f73b516dba5bc2e7",
+    "raw_fixed_runs": [
+      {
+        "run": "/home/cwc/dpu_work/windows_framework/ps_migration_20261116_run001/fixed_single_002",
+        "rows": 400,
+        "requests_sha256": "869af791510812e19beebec100f070349b9934e8fb699858ea090221d2d20aec"
+      },
+      {
+        "run": "/home/cwc/dpu_work/windows_framework/ps_migration_20261116_run001/fixed_single_003",
+        "rows": 400,
+        "requests_sha256": "490f61ed2f3f5bedd621474cc1aaf07282ff9dd8ca6be2666837beecc0d822e6"
+      },
+      {
+        "run": "/home/cwc/dpu_work/windows_framework/ps_migration_20261116_run001/fixed_single_004",
+        "rows": 400,
+        "requests_sha256": "03a49a823c0171012fea162699175f43b1e08fc146a295b44c18b8273b11148f"
+      }
+    ],
+    "planner_benchmark": "/home/cwc/dpu_work/windows_framework/ps_migration_20261116_run001/scheduler_bench_001.csv",
+    "planner_benchmark_sha256": "5bde4e12d460467d760078260f5db2bd2d26779e2b1e056d58df173d79a4a565",
+    "measured_prep_max_ms": 4.411,
+    "measured_post_max_ms": 4.212,
+    "measured_rearm_max_ms": 4.24,
+    "measured_planner_max_ms": 12.345002999994904
+  },
+  "prep_ms": 5.514,
+  "post_ms": 5.265,
+  "rearm_ms": 5.301,
+  "decision_ms": 15.432,
+  "revalidate": true,
+  "revalidation_ms": 2.0,
+  "paired_trigger": true,
+  "capacity_study": "frozen heterogeneous route seed0; no synthetic inference delay"
+}
