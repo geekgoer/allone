@@ -1,5 +1,11 @@
 # 协作进度与任务看板
 
+2026-11-18 完成 [Drone10 保持期限回放与重构小结](../controller_architecture_study/docs/PS_HOLD_EXPIRY_REPLAY_AND_REFACTOR_CHECKPOINT_20261118.md)。按全组发布的实际日志唤醒点，会在期限后 0.511 ms 触发一次单机退出，较历史位置保护早约 3.09 秒。C++ 回归验证退休后不派发该机普通更新、在途 DPU 正常结束、迟返 ACK 不重新开启回路。Windows 共 191 项通过。在线到期触发和备用控制还需接入，未据此主张飞行恢复收益。
+
+2026-11-18 完成 [PS 派发板端验收与入队重复拒绝修复](../controller_architecture_study/docs/PS_READY_QUEUE_DISPATCH_REPAIR_20261117.md)。首个新版实飞捕获重复拒绝导致执行器退出，修订版 183 项 Windows 与 ARM 回归通过。十二机 32 秒复飞中 154 条入队超期均只拒绝一次，执行器全程运行。严格时序和全组飞行未通过，Drone10 连续漏更后旧控制保持期限到期，此后 152 条普通更新都被同一过期期限拒绝，最终因跟踪误差退出。结果和二进制身份在 `results/ps_ready_queue_board_20261118_001/`。下一步针对该日志验证独立超期处置路径。
+
+2026-11-17 完成[PS ready队列派发局部修复](../controller_architecture_study/docs/PS_READY_QUEUE_DISPATCH_REPAIR_20261117.md)，结清本轮认领。十二机4,459/4,466次联合规划缺全组配对，未放松该安全门槛；改在无联合顺序且多个任务已ready时，以后续任务最快候选成本检查队首模型是否还给其他飞机留下DPU时间。三机反例中旧队首大模型使最后一机即使降档也估计超期，新规则选择更快队首模型；若只需尾任务降档，保持队首原模型。MSVC Release编译和179项Windows离线回归通过；独立AArch64程序已在Ubuntu交叉编译，板子SSH拒绝当前免密连接，ARM运行回归及试飞未做。已冻结板端源码与模型未改，十二机零安装及现场规划CPU长尾仍是独立待解决问题。
+
 2026-11-17 完成[可由GitHub协作者获取的PS源码快照](../controller_architecture_study/ps_board_source/README.md)，结清本轮认领。把最新十二机调查的trace-only诊断源码从被忽略的结果目录逐字节复制到 `controller_architecture_study/ps_board_source/20261117_executor_trace/`；29项清单SHA-256全部一致，清单自身SHA-256为 `c04db546d1985cd7fe73709e43ec3eb3851a5b9c47c077226f1c096f43dd3946`，Git dry-run能看到31个源码/说明文件。修复最新协作交接文件名和索引链接，文档明确克隆后仍缺交叉SDK、DNNDK/AirSim库、18档ELF、原始日志；复制不等于编译或修复间歇executor异常。本轮无板端构建或新试飞。
 
 2026-11-17 完成[路线B最新协作交接](../controller_architecture_study/docs/ROUTE_B_CURRENT_STATUS_AND_HANDOFF_20261117.md)，结清本轮认领。按11月16日研究规格逐项区分设计与PS实际实现，核对旧18,004条交付、control004双机事件触发及最新2.4m十二机同条件结果：固定18,964/19,200、自适应19,115/19,200交付，均过144门但严格时序均失败；自适应4,466次规划中0次联合新计划安装，4,459次缺全组配对上下文。记录板端派发换模与研究规格中尚未实现的跳更/补更、可信物理期限、分段/超网，注明结果目录被Git忽略。本轮仅文档和索引更新，无新代码、编译或试飞；下一步先查全组快照与资源计费，再于可恢复容量边界做静态最优/动态重复配对。

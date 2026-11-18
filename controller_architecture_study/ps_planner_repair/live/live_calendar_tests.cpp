@@ -67,6 +67,32 @@ int main(){try{
     check(late.at(2).at("status")=="sampling","latest unexpired release admitted");
     rt.retire("Drone1");check(rt.release_due(100300.,100500.).empty(),"retired loop stops releases");
 
+    auto paired_config=config();
+    paired_config["names"]=Json::array({"Drone1","Drone2"});
+    ps_scheduler::LiveCalendar expired_loop(paired_config,modes());
+    expired_loop.release_due(100025.,100150.);
+    expired_loop.queued("Drone1",0,100025.,100025.1,100100.);
+    expired_loop.queued("Drone2",0,100025.,100025.2,100100.);
+    check(expired_loop.take(100026.).at("vehicle")=="Drone1","expiring loop can already own the DPU");
+    expired_loop.retire("Drone1");
+    check(expired_loop.take(100040.).is_null(),"retirement does not release a running DPU job");
+    expired_loop.dpu_done("Drone1",0,100041.,true);
+    check(!expired_loop.command_begin("Drone1",0,100041.2),"retired loop cannot submit its finished output even within the old job deadline");
+    expired_loop.finish("Drone1",0,100041.3,"dropped_before_command");
+    check(expired_loop.take(100041.4).at("vehicle")=="Drone2","another vehicle keeps its place in the DPU queue");
+    check(expired_loop.release_due(100050.,100150.).empty(),"retired loop stops generating new control jobs");
+
+    ps_scheduler::LiveCalendar late_after_retire(config(),modes());
+    late_after_retire.release_due(100000.,100150.);
+    late_after_retire.queued("Drone1",0,100000.,100001.,100100.);
+    late_after_retire.take(100002.);
+    late_after_retire.dpu_done("Drone1",0,100007.,true);
+    check(late_after_retire.command_begin("Drone1",0,100008.),"an RPC can already be outstanding when expiry is detected");
+    late_after_retire.retire("Drone1");
+    check(late_after_retire.command_return("Drone1",0,100051.)==1,"retirement still records the actual late command ACK");
+    check(!late_after_retire.observe("Drone1",100052.,100100.,1)&&
+          late_after_retire.release_due(100100.,100150.).empty(),"late ACK cannot reopen a retired control loop");
+
     auto fixed=config();fixed["adaptive"]=false;ps_scheduler::LiveCalendar fixed_rt(fixed,modes());
     fixed_rt.release_due(100000.,100500.);fixed_rt.observe("Drone1",100000.,100020.,0);
     fixed_rt.queued("Drone1",0,100000.,100001.,100004.);auto rejected=fixed_rt.take(100002.);
@@ -75,6 +101,49 @@ int main(){try{
     fixed_rt.finish("Drone1",0,100002.1,"dropped_inference");
     auto fixed_snap=fixed_rt.snapshot(100003.);auto fixed_decision=fixed_rt.plan_snapshot(fixed_snap);
     check(fixed_rt.install_at_for_test(fixed_snap,fixed_decision,100003.1).at("status")=="fixed_configuration_no_planning","fixed baseline cannot accidentally install adaptation");
+    ps_scheduler::LiveCalendar abandoned(config(),modes());
+    abandoned.release_due(100000.,100200.);
+    auto expired_input=abandoned.queued("Drone1",0,100000.,100005.,100004.);
+    check(expired_input.at("cancelled").get<bool>(),"executor resolves the expired input during enqueue");
+    check(abandoned.take(100005.1).is_null(),"expiry resolved by enqueue cannot be dispatched before worker finish");
+    abandoned.finish("Drone1",0,100006.,"dropped_inference");
+    abandoned.release_due(100050.,100200.);
+    auto valid_input=abandoned.queued("Drone1",1,100050.,100051.,100054.);
+    check(!valid_input.at("cancelled").get<bool>(),"an input ready before its deadline keeps its payload registered");
+    auto expired_in_queue=abandoned.take(100054.);
+    check(expired_in_queue.at("cycle")==1&&!expired_in_queue.at("dispatch").get<bool>(),
+          "dispatch still notifies the worker when an accepted input expires in the queue");
+    auto queue_cfg=config();queue_cfg["names"]=Json::array({"A","B","C"});queue_cfg["origin_ms"]=1000.;queue_cfg["period_ms"]=30.;
+    queue_cfg["periods_ms"]=Json::array({30.});queue_cfg["prep_ms"]=.1;queue_cfg["post_ms"]=.5;queue_cfg["decision_ms"]=.1;
+    auto queue_modes=modes();queue_modes.at(0)["service_ms"]=4.;queue_modes.at(1)["service_ms"]=8.;
+    ps_scheduler::LiveCalendar queue_rt(queue_cfg,queue_modes);
+    check(queue_rt.release_due(1020.,1100.).size()==3,"three staggered releases enter the same DPU queue");
+    queue_rt.queued("A",0,1000.,1020.5,1040.);
+    queue_rt.queued("B",0,1010.,1020.6,1034.);
+    queue_rt.queued("C",0,1020.,1020.7,1036.);
+    check(1021.+8.+4.+4.+.5>1036.,"old local-only head choice leaves the third job late even after two downgrades");
+    auto first_queue=queue_rt.take(1021.);
+    check(first_queue.at("vehicle")=="A"&&first_queue.at("model_id")==1&&
+          first_queue.at("ready_queue_fast_tail_fits").get<bool>(),
+          "head is shortened only when even the fastest downstream modes cannot save the old head");
+    queue_rt.dpu_done("A",0,1025.,true);
+    auto second_queue=queue_rt.take(1025.);
+    check(second_queue.at("vehicle")=="B"&&second_queue.at("model_id")==1,"second dispatch leaves time for the last queued job");
+    queue_rt.dpu_done("B",0,1029.,true);
+    auto third_queue=queue_rt.take(1029.);
+    check(third_queue.at("vehicle")=="C"&&third_queue.at("model_id")==1&&1029.+4.+.5<1036.,
+          "all three estimated DPU services fit the frozen queue deadlines");
+    auto roomy_cfg=queue_cfg;roomy_cfg["names"]=Json::array({"A","B"});
+    ps_scheduler::LiveCalendar roomy(roomy_cfg,queue_modes);
+    roomy.release_due(1015.,1100.);roomy.queued("A",0,1000.,1015.1,1040.);roomy.queued("B",0,1015.,1015.2,1040.);
+    auto roomy_head=roomy.take(1016.);
+    check(roomy_head.at("model_id")==2&&roomy_head.at("ready_queue_fast_tail_fits").get<bool>(),
+          "when the queued deadlines have room, retain the more accurate committed model");
+    ps_scheduler::LiveCalendar tail_repair(roomy_cfg,queue_modes);
+    tail_repair.release_due(1015.,1100.);tail_repair.queued("A",0,1000.,1015.1,1025.);tail_repair.queued("B",0,1015.,1015.2,1030.);
+    auto tail_head=tail_repair.take(1016.);
+    check(tail_head.at("model_id")==2&&tail_head.at("ready_queue_fast_tail_fits").get<bool>(),
+          "head keeps its model when only a later queued job needs to downshift");
     ps_scheduler::LiveCalendar stale_rt(config(),modes());stale_rt.release_due(100000.,100500.);stale_rt.observe("Drone1",100000.,100200.,0);
     auto stale_snap=stale_rt.snapshot(100001.);auto stale_decision=stale_rt.plan_snapshot(stale_snap);
     stale_rt.observe("Drone1",100001.1,100030.,0);

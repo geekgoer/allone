@@ -6,6 +6,7 @@
 #include <limits>
 #include <set>
 #include <stdexcept>
+#include <utility>
 #include <vector>
 #include <chrono>
 
@@ -95,7 +96,15 @@ Json LiveCalendar::queued(const std::string&v,std::uint64_t cycle,double sample,
     if(l.at("busy")!=name)throw std::invalid_argument("Input ready for a non-owned row");
     double deadline=std::min(n(r,"deadline_ms"),std::min(hold,sample+n(config_,"fresh_ms")));if(r.count("recovery_due_ms"))deadline=std::min(deadline,n(r,"recovery_due_ms"));
     r["sample_start_ms"]=sample;r["queue_ms"]=ready;r["actuation_deadline_ms"]=deadline;r["phase"]="queued";
-    if(deadline<=ready||r.at("cancelled").get<bool>()){r["cancelled"]=true;r["status"]="dropped_preprocess";}++revision_;return r;
+    if(deadline<=ready||r.at("cancelled").get<bool>()){
+        // The enqueue caller resolves this rejection and removes the payload.
+        // take() must not return the same job while its worker is finishing.
+        r["cancelled"]=true;
+        r["dispatch_checked"]=true;
+        r["dispatch"]=false;
+        r["status"]="dropped_preprocess";
+    }
+    ++revision_;return r;
 }
 Json LiveCalendar::take(double now){
     finite_time(now,"take");
@@ -112,9 +121,10 @@ Json LiveCalendar::take(double now){
     if(now>dispatch_expires_ms_)dispatch_order_=Json::array();
     auto earliest=[&](){return *std::min_element(live.begin(),live.end(),[&](const std::string&a,const std::string&b){const auto&x=rows_.at(a);const auto&y=rows_.at(b);return x.value("actuation_deadline_ms",n(x,"deadline_ms"))<y.value("actuation_deadline_ms",n(y,"deadline_ms"));});};
     std::string selected;
+    bool planned_head=false;
     if(config_.at("adaptive").get<bool>()&&!dispatch_order_.empty()){
         const auto head=dispatch_order_.at(0).get<std::string>();
-        if(std::find(live.begin(),live.end(),head)!=live.end())selected=head;
+        if(std::find(live.begin(),live.end(),head)!=live.end()){selected=head;planned_head=true;}
         else{
             auto split=head.rfind(':');std::string v=head.substr(0,split);auto cycle=std::stoull(head.substr(split+1));const auto&l=loops_.at(v);bool exists=!l.at("retired").get<bool>()&&(l.at("cycle").get<std::uint64_t>()<=cycle||(!l.at("busy").is_null()&&rows_.at(l.at("busy").get<std::string>()).at("cycle").get<std::uint64_t>()==cycle));
             bool all_room=true;for(const auto&name:live){const auto&r=rows_.at(name);double service=n(modes_.at(std::to_string(r.at("model_id").get<int>())),"service_ms");if(r.value("actuation_deadline_ms",n(r,"deadline_ms"))<=now+service)all_room=false;}
@@ -128,7 +138,46 @@ Json LiveCalendar::take(double now){
     for(int id:config_.at("candidate_ids").get<std::vector<int>>())if(n(modes_.at(std::to_string(id)),"service_ms")<=budget)affordable.push_back(id);
     int selected_model=r.at("model_id").get<int>();
     if(affordable.empty()||(!config_.at("adaptive").get<bool>()&&std::find(affordable.begin(),affordable.end(),selected_model)==affordable.end())){r["cancelled"]=true;r["dispatch_checked"]=true;r["dispatch"]=false;r["status"]="dropped_inference";r["dispatch_rejection"]="no_model_fits_remaining_delivery_budget";++revision_;return r;}
-    if(config_.at("adaptive").get<bool>()&&n(modes_.at(std::to_string(selected_model)),"service_ms")>budget){selected_model=*std::min_element(affordable.begin(),affordable.end(),[&](int a,int b){return n(modes_.at(std::to_string(a)),"selection_mse")<n(modes_.at(std::to_string(b)),"selection_mse");});r["model_id"]=selected_model;}
+    if(config_.at("adaptive").get<bool>()){
+        auto quality_less=[&](int a,int b){return n(modes_.at(std::to_string(a)),"selection_mse")<n(modes_.at(std::to_string(b)),"selection_mse");};
+        if(!planned_head&&live.size()>1){
+            // Screen the current ready queue, assuming later jobs may use their
+            // fastest candidate. This does not certify future jobs or recovery.
+            std::sort(live.begin(),live.end(),[&](const std::string&a,const std::string&b){
+                const auto&x=rows_.at(a);const auto&y=rows_.at(b);
+                return std::make_pair(x.value("actuation_deadline_ms",n(x,"deadline_ms")),a)<
+                       std::make_pair(y.value("actuation_deadline_ms",n(y,"deadline_ms")),b);
+            });
+            const auto ids=config_.at("candidate_ids").get<std::vector<int>>();
+            const int fastest=*std::min_element(ids.begin(),ids.end(),[&](int a,int b){
+                return n(modes_.at(std::to_string(a)),"service_ms")<
+                       n(modes_.at(std::to_string(b)),"service_ms");
+            });
+            auto fits=[&](int head_mode){
+                double finish=now;
+                for(const auto&name:live){
+                    const auto&job=rows_.at(name);
+                    const int mode=name==selected?head_mode:fastest;
+                    finish+=n(modes_.at(std::to_string(mode)),"service_ms");
+                    if(finish+n(config_,"command_reserve_ms")>=
+                       job.value("actuation_deadline_ms",n(job,"deadline_ms"))-epsilon)return false;
+                }
+                return true;
+            };
+            std::vector<int> protecting;for(int id:affordable)if(fits(id))protecting.push_back(id);
+            r["ready_queue_fast_tail_fits"]=!protecting.empty();
+            r["ready_queue_count"]=live.size();
+            if(!protecting.empty()){
+                if(std::find(protecting.begin(),protecting.end(),selected_model)==protecting.end())
+                    selected_model=*std::min_element(protecting.begin(),protecting.end(),quality_less);
+            }else selected_model=*std::min_element(affordable.begin(),affordable.end(),[&](int a,int b){
+                return std::make_pair(n(modes_.at(std::to_string(a)),"service_ms"),n(modes_.at(std::to_string(a)),"selection_mse"))<
+                       std::make_pair(n(modes_.at(std::to_string(b)),"service_ms"),n(modes_.at(std::to_string(b)),"selection_mse"));
+            });
+        }else if(n(modes_.at(std::to_string(selected_model)),"service_ms")>budget)
+            selected_model=*std::min_element(affordable.begin(),affordable.end(),quality_less);
+        r["model_id"]=selected_model;
+    }
     r["board_start_ms"]=now;r["phase"]="board";r["configuration_id"]=selected_model;r["dispatch_checked"]=true;r["dispatch"]=true;active_=selected;++revision_;return r;
 }
 void LiveCalendar::dpu_done(const std::string&v,std::uint64_t cycle,double now,bool success){
