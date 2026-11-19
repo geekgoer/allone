@@ -58,17 +58,17 @@ def build(output, airsim_source):
               'package_ps_migration.py', 'ps_migration/verify_bundle.py', 'ps_migration/check_fixtures.py')]
     seeds += [Path('tests')/name for name in TESTS]
     files = local_sources(seeds)
-    for name in ('AGENTS.md', 'README.md', 'docs/FRAMEWORK.md', 'docs/COLLABORATION_STATUS.md',
+    for name in ('AGENTS.md', 'README.md', 'docs/工程Framework.md', 'docs/协作进度.md',
                  'configs/thrust_calibration.json',
                  'controller_architecture_study/configs/airsim_safety_12.json',
                  'controller_architecture_study/run_release001_framework.ps1',
-                 'controller_architecture_study/docs/README.md',
-                 'controller_architecture_study/docs/ROUTE_B_CODE_GUIDE_20261109.md',
-                 'controller_architecture_study/docs/ROUTE_B_FRAMEWORK_OVERVIEW_20261115.md',
-                 'controller_architecture_study/docs/ROUTE_B_PAPER_DRAFT_20261115.md',
-                 'controller_architecture_study/docs/ROUTE_B_RELEASE001_IMPLEMENTATION_20261116.md',
-                 'controller_architecture_study/docs/ROUTE_B_LIVE_RELEASE001_20261116.md',
-                 'controller_architecture_study/docs/UBUNTU_PS_MIGRATION_HANDOFF_20261116.md'):
+                 'controller_architecture_study/docs/研究文档索引.md',
+                 'controller_architecture_study/docs/Route-B代码导览_20261109.md',
+                 'controller_architecture_study/docs/Route-B的Framework概览_20261115.md',
+                 'controller_architecture_study/docs/Route-B论文草稿_20261115.md',
+                 'controller_architecture_study/docs/Route-B的Release001实现_20261116.md',
+                 'controller_architecture_study/docs/Route-B的Release001实测_20261116.md',
+                 'controller_architecture_study/docs/Ubuntu-PS移植交接_20261116.md'):
         files.add(Path(name))
     # Copy the deployment untouched, including ELF and every payload-manifest file.
     files.update(p.relative_to(ROOT) for p in (ROOT/DELIVERY/'board_package_requant18_release001').rglob('*') if p.is_file())
@@ -90,7 +90,7 @@ def build(output, airsim_source):
         target = project/path
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(ROOT/path, target)
-    shutil.copyfile(project/'controller_architecture_study/docs/UBUNTU_PS_MIGRATION_HANDOFF_20261116.md',
+    shutil.copyfile(project/'controller_architecture_study/docs/Ubuntu-PS移植交接_20261116.md',
                     package/'UBUNTU_AGENT_TASK.md')
     (package/'README_FIRST.md').write_text(
         '# Ubuntu / Zynq PS handoff\n\nRead UBUNTU_AGENT_TASK.md first. '

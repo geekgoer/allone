@@ -42,3 +42,11 @@ logs/
 /falcon_dnn_fp32_v1/
 /ubuntu_transfer/
 /colleague_transfer/
+
+# Local archives keep the original bytes of unversioned runs and training assets.
+/archive/local/
+
+# Frozen external deliveries. Existing versioned PS sources stay in the index.
+/controller_architecture_study/docs/main18_requant_release001_delivery_20261115/
+/ubuntu_tras/PS_MIGRATION_RESULTS_20261116_run001/
+/controller_architecture_study/ps_board_source/20261117_executor_trace/.idea/

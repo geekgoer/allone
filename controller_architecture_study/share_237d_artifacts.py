@@ -24,7 +24,7 @@ FILES = (
     "decision_convex_96k_v1/routes/env48_route00.json",
 )
 MANIFEST = "237d_handoff_manifest.json"
-GUIDE = Path("controller_architecture_study/docs/SHARE_237D_ARTIFACTS_20261105.md")
+GUIDE = Path("controller_architecture_study/docs/237D模型与数据共享_20261105.md")
 
 
 def stream_digest(stream):

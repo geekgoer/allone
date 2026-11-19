@@ -229,8 +229,8 @@ def main():
     for name in ("plain_mlp.py", "residual_mlp.py", "factory.py"):
         copy(ROOT / "controller_architecture_study/models" / name, "source_snapshot/models/" + name)
     copy(ROOT / "control_adapter.py", "source_snapshot/control_adapter.py")
-    copy(ROOT / "controller_architecture_study/docs/UBUNTU_237D_DPU_MODEL_POOL_EXPERIMENT_HANDOFF_20261016.md", "README_UBUNTU_237D_POOL.md")
-    copy(ROOT / "controller_architecture_study/docs/UBUNTU_INCREMENTAL_SUPERNET_M3_HANDOFF_20261015.md", "background/SUPERNET_M3_HANDOFF_REFERENCE_ONLY.md")
+    copy(ROOT / "controller_architecture_study/docs/Ubuntu-237D-DPU模型池实验交接_20261016.md", "README_UBUNTU_237D_POOL.md")
+    copy(ROOT / "controller_architecture_study/docs/Ubuntu增量超网M3交接_20261015.md", "background/SUPERNET_M3_HANDOFF_REFERENCE_ONLY.md")
     records = {p.relative_to(DEST).as_posix(): {"bytes": p.stat().st_size, "sha256": digest(p)}
                for p in sorted(DEST.rglob("*")) if p.is_file()}
     write(DEST / "bundle_manifest.json", {"bundle_id": DEST.name, "created_utc": datetime.now(timezone.utc).isoformat(),

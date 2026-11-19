@@ -39,6 +39,7 @@ from environment import Gate
 
 
 ROOT = Path(__file__).resolve().parents[1]
+ARCHIVED_EXPERIMENTS = ROOT / "archive" / "early_falcon" / "experiments"
 
 
 class FalconPaperFidelityTests(unittest.TestCase):
@@ -62,8 +63,7 @@ class FalconPaperFidelityTests(unittest.TestCase):
 
     def test_v5_nominal_start_has_a_distinct_policy_identity(self):
         path = (
-            ROOT
-            / "experiments"
+            ARCHIVED_EXPERIMENTS
             / "falcon_paper_fidelity_acado_v5_phase_consistent"
             / "paper_core_config.json"
         )
@@ -254,7 +254,7 @@ class FalconPaperFidelityTests(unittest.TestCase):
             np.testing.assert_allclose(build_gate_input(raw, gate, orientation), x, atol=1e-10)
 
     def test_config_matches_published_count_and_timing(self):
-        path = ROOT / "experiments" / "falcon_paper_fidelity_v1" / "paper_core_config.json"
+        path = ARCHIVED_EXPERIMENTS / "falcon_paper_fidelity_v1" / "paper_core_config.json"
         config = json.loads(path.read_text(encoding="utf-8"))
         self.assertEqual(config["initial_state"]["count"], 10)
         self.assertEqual(config["environment"]["count"], 40)
@@ -265,8 +265,7 @@ class FalconPaperFidelityTests(unittest.TestCase):
 
     def test_acado_config_is_isolated_and_has_distinct_policy(self):
         path = (
-            ROOT
-            / "experiments"
+            ARCHIVED_EXPERIMENTS
             / "falcon_paper_fidelity_acado_v1"
             / "paper_core_config.json"
         )
@@ -278,7 +277,7 @@ class FalconPaperFidelityTests(unittest.TestCase):
         self.assertEqual(config["dataset"]["root"], "paper_core_40k_acado")
 
     def test_smoke_manifest_is_resumable_and_uses_list_artifacts(self):
-        config_path = ROOT / "experiments" / "falcon_paper_fidelity_v1" / "paper_core_config.json"
+        config_path = ARCHIVED_EXPERIMENTS / "falcon_paper_fidelity_v1" / "paper_core_config.json"
         config, resolved = _load_config(config_path)
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary) / "smoke"

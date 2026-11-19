@@ -4,7 +4,7 @@
   "repository_copy": "docs/reference/Framework_latest.original.md",
   "sha256": "c775330c7a8967849cb8c9477deb230fe94c3b74bf61f00cb8bc07d52ece058d",
   "archived_date": "2026-11-02",
-  "current_design": "docs/FRAMEWORK.md",
-  "current_status": "docs/COLLABORATION_STATUS.md",
+  "current_design": "docs/工程Framework.md",
+  "current_status": "docs/协作进度.md",
   "notes": "Later user discussion permits a small proposal/ranking model with explicit checks; the original text is retained byte-for-byte."
 }

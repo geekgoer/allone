@@ -106,9 +106,9 @@ def build(output):
          'third_party/AirSim/PythonClient/airsim/client.py', 'api_sign_audit_reference')
     for name in ('wire_command_cases.json', 'API_SOURCE_IDENTITY.json'):
         copy(CPP/name, 'contracts/'+name, 'python_rpc_cpp_sign_contract')
-    for name in ('PS_UNIFIED_HANDOFF_20261116.md', 'UBUNTU_READING_CORRECTION_20261116.md',
-                 'CPP_REUSE_AND_API_CONTRACT_20261116.md', 'ROUTE_B_LIVE_RELEASE001_20261116.md'):
-        copy(STUDY/'docs'/name, ('README_FIRST.md' if name.startswith('PS_UNIFIED') else 'docs/'+name),
+    for name in ('PS统一交付_20261116.md', 'Ubuntu交接资料修正_20261116.md',
+                 'C++代码复用与API契约_20261116.md', 'Route-B的Release001实测_20261116.md'):
+        copy(STUDY/'docs'/name, ('README_FIRST.md' if name == 'PS统一交付_20261116.md' else 'docs/'+name),
              'current_migration_instructions')
     mapping = dict(python_core='source/ps_core',
         unchanged_since_verified002=sorted(p.relative_to(BASE).as_posix() for p in (BASE/'source').rglob('*') if p.is_file()),

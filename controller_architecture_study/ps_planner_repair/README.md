@@ -1,8 +1,10 @@
 # PS Planner Profiling Study
 
-**2026-11-17最新：[配对状态事件触发与现场CPU长尾定位](../docs/PS_PAIRED_TRIGGER_AND_LIVE_TAIL_RESULTS_20261117.md)。** 最终可复核版本为 `results/ps_management_trigger_20261117_004/control_source/`；真板双机开/关各1334条交付，事件组23次提前规划，172项ARM回归通过。实际模型/周期/跳更仍未改变。现场异常已定位到`diagnose_impl`单次9.150ms线程CPU，相同输入40次ARM离线重放约0.169ms；尚未找到具体并发根因。旧下文按历史阶段阅读。
+维护当前调度器从 [live/live_calendar.cpp](live/live_calendar.cpp) 和 [对应测试](live/live_calendar_tests.cpp) 开始。完整板端主程序在[冻结源码快照](../ps_board_source/README.md)。最新的就绪派发和旧控制保持期限问题见[十二机复飞](../docs/PS就绪队列派发修复_20261117.md)和[Drone10 回放](../docs/PS命令保持期限回放与重构记录_20261118.md)。下面按日期保留各次剖析、构建和复跑说明。
 
-**2026-11-17最新：[完整管理计时和有界重验证实测](../docs/PS_MANAGEMENT_REVALIDATION_RESULTS_20261117.md)。** 下文描述早期核心离线剖析；现在新增`live/`和独立真实控制版本，未覆盖原v5。七次真实双机7736条均交付，但没有实际模型/周期/skip修改；新增58ms管理CPU长尾仍待定位。
+**2026-11-17最新：[配对状态事件触发与现场CPU长尾定位](../docs/PS配对触发与实测长尾结果_20261117.md)。** 最终可复核版本为 `results/ps_management_trigger_20261117_004/control_source/`；真板双机开/关各1334条交付，事件组23次提前规划，172项ARM回归通过。实际模型/周期/跳更仍未改变。现场异常已定位到`diagnose_impl`单次9.150ms线程CPU，相同输入40次ARM离线重放约0.169ms；尚未找到具体并发根因。旧下文按历史阶段阅读。
+
+**2026-11-17最新：[完整管理计时和有界重验证实测](../docs/PS管理与重验证结果_20261117.md)。** 下文描述早期核心离线剖析；现在新增`live/`和独立真实控制版本，未覆盖原v5。七次真实双机7736条均交付，但没有实际模型/周期/skip修改；新增58ms管理CPU长尾仍待定位。
 
 ## 新增源码和证据入口
 
@@ -34,9 +36,9 @@ Ubuntu构建根`/home/cwc/dpu_work/windows_framework/ps_management_repair_202611
 
 ## 早期核心剖析记录
 
-2026-11-16。执行[PS修复计划](../docs/PS_PLANNER_REPAIR_PLAN_20261116.md)第一步的独立离线研究代码；不包含DNNDK、RPC或飞行控制入口。
+2026-11-16。执行[PS修复计划](../../archive/controller_architecture_study/docs/PS规划器修复计划_20261116.md)第一步的独立离线研究代码；不包含DNNDK、RPC或飞行控制入口。
 
-**最新：[ARM实测结果与边界](../docs/PS_PLANNER_ARM_PROFILE_RESULTS_20261116.md)。** Ubuntu恢复后已完成两轮共14560条ARM核心回放，最终优化平均8.533→4.473 ms、P99 9.135→4.785 ms；原43/77项ARM回归通过。优化仍为独立核心版本，没有替换实时控制程序。
+**最新：[ARM实测结果与边界](../../archive/controller_architecture_study/docs/PS规划器ARM性能测量结果_20261116.md)。** Ubuntu恢复后已完成两轮共14560条ARM核心回放，最终优化平均8.533→4.473 ms、P99 9.135→4.785 ms；原43/77项ARM回归通过。优化仍为独立核心版本，没有替换实时控制程序。
 
 `prepare_profile.py`读取冻结Ubuntu交付，生成原始、阶段计时、报告移动优化、优化后计时四份源码副本，以及91份实际规划输入。原始交付文件保持不变。89份来自真实skip候选，另外两份为最长keep和普通keep。
 

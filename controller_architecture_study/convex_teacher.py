@@ -46,7 +46,7 @@ def osqp_module():
     try:
         import osqp
     except ImportError as exc:
-        raise ImportError("Install osqp==1.0.5 using the command in CONVEX_TEACHER_V1.md") from exc
+        raise ImportError("Install osqp==1.0.5 using the command in archive/controller_architecture_study/docs/凸优化教师V1.md") from exc
     return osqp
 
 

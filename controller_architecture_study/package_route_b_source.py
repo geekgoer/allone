@@ -41,8 +41,8 @@ def build(output):
                for p in ('manifest.json', 'routes/env48_route00.json',
                          'routes/env49_route02.json', 'routes/env50_route04.json')]
     docs = [Path('controller_architecture_study/docs')/name for name in
-            ('ROUTE_B_SOURCE_GUIDE_20261116.md', 'ROUTE_B_LIVE_RELEASE001_20261116.md',
-             'ROUTE_B_FRAMEWORK_OVERVIEW_20261115.md', 'UBUNTU_PS_MIGRATION_HANDOFF_20261116.md')]
+            ('Route-B源码指南_20261116.md', 'Route-B的Release001实测_20261116.md',
+             'Route-B的Framework概览_20261115.md', 'Ubuntu-PS移植交接_20261116.md')]
     files = sources | set(assets) | set(docs)
     for path in sorted(files):
         target = project/path
@@ -93,8 +93,8 @@ def build(output):
                   'historical flight requests', 'AirSim C++ SDK', 'training datasets and weights'],
          acquisition='reuse the verified Ubuntu release001 delivery or the previous complete PS handoff'))
     readme = (ROOT/docs[0]).read_text(encoding='utf-8')
-    readme = readme.replace('](UBUNTU_PS_MIGRATION_HANDOFF_20261116.md)',
-                            '](project/controller_architecture_study/docs/UBUNTU_PS_MIGRATION_HANDOFF_20261116.md)')
+    readme = readme.replace('](Ubuntu-PS移植交接_20261116.md)',
+                            '](project/controller_architecture_study/docs/Ubuntu-PS移植交接_20261116.md)')
     (package/'README.md').write_text(readme, encoding='utf-8')
     (package/'DEPENDENCIES.md').write_text(
         '# Dependency layers\n\n'

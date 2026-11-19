@@ -56,10 +56,10 @@ def build(output):
          'verification_inputs/range_rejections.json', 'failure_reproduction_not_validation')
     for name in ('FINAL_REPORT_AND_WINDOWS_HANDOFF_20261115.md',):
         copy(DELIVERY/name, 'docs/'+name, 'historical_measurement_report')
-    for name in ('PS_VERIFIED_HANDOFF_20261116.md', 'PS_SCOPE_SOURCE_AUDIT_20261116.md', 'UBUNTU_PS_MIGRATION_HANDOFF_20261116.md',
-                 'ROUTE_B_LIVE_RELEASE001_20261116.md'):
+    for name in ('PS已验证交付_20261116.md', 'PS移植范围与源码审计_20261116.md', 'Ubuntu-PS移植交接_20261116.md',
+                 'Route-B的Release001实测_20261116.md'):
         copy(ROOT/'controller_architecture_study/docs'/name, 'docs/'+name, 'migration_documentation')
-    copy(ROOT/'controller_architecture_study/docs/PS_VERIFIED_HANDOFF_20261116.md', 'README_FIRST.md', 'authoritative_entry')
+    copy(ROOT/'controller_architecture_study/docs/PS已验证交付_20261116.md', 'README_FIRST.md', 'authoritative_entry')
     copy(ROOT/'controller_architecture_study/ps_migration/audit_handoff_evidence.py',
          'tools/audit_evidence.py', 'offline_audit_tool_not_runtime')
     copy(ROOT/'controller_architecture_study/ps_migration/verify_bundle.py',

@@ -1,421 +1,135 @@
-# FALCON reproduction and dynamic control research
-
-## 协作入口（更新：2026-11-05）
-
-本工程已从AirSim/MPC与FALCON模型复现，扩展到**状态相关控制期限、低开销配置决策与多回路共享加速器调度**。当前主要研究源码在`controller_architecture_study/`；下面的早期MPC命令继续保留，但不能据此判断整个工程的最新状态。
-
-- [整体Framework](docs/FRAMEWORK.md)：研究目标、时间语义、超网/FPGA定位及当前实现差距。
-- [协作进度与任务认领](docs/COLLABORATION_STATUS.md)：已经做了什么、当前问题、后续工作、产物和协作更新方式。
-- [Agent入口](AGENTS.md)：阅读顺序与协作约定。
-- [研究分支文档索引](controller_architecture_study/docs/README.md)：实现、实验、量化与Ubuntu交接的导航。
-- [路线B最新PS迁移接收与复现](controller_architecture_study/docs/PS_MIGRATION_DELIVERY_REVIEW_20261116.md)：原生C++主控制链已在PS接真实DPU实测，6000正式＋12004压力请求按期；真实跳更补更未验收。原始交接材料保留在[统一迁移包说明](controller_architecture_study/docs/PS_UNIFIED_HANDOFF_20261116.md)，不替代最新执行状态。
-- [同事克隆后补齐237D产物](controller_architecture_study/docs/SHARE_237D_ARTIFACTS_20261105.md)：模型和验证数据另行交接，包含路径迁移、zip校验和单模型运行命令。
-
-最新完成原生采样/命令分核、后台快照通知修复及16轮六机试飞，均零碰撞。动态周期有实际安装，1.75m两轮平均J约提高0.98%，但丢任务增加；1.60m新配置未采用。尚无静态碰撞、动态救回的证据，全程硬期限和新超网上板效果待验证。具体看[最新阶段结果](controller_architecture_study/docs/RT_SPLIT_IO_RESULTS_20261105.md)。
-
-25D、12D、237D独立模型和237D超网是不同轨道；不要混用数据、归一化或部署包。大文件不随文档自动提供，协作时按看板中的产物位置核对。
-
-## Historical AirSim MPC teacher pipeline
-
-This project implements the AirSim + UE4 part of the FALCON reproduction
-scope: state acquisition, a 12-D controller state, an MPC-compatible teacher,
-the `[F, wx, wy, wz]` control interface, visible gates, and teacher-data CSV
-logging. It also prepares leakage-safe dataset splits and trains the paper's
-fully-connected DNN controller family. FPGA/DPU deployment, quantization, SVM
-performance modelling, and FALCON scheduling are outside this historical
-teacher pipeline; later research and deployment work are indexed above.
-
-## Run the single-drone checks
-
-Start Blocks in UE4.27, click **Play**, then use the AirSim Python virtual
-environment:
-
-```powershell
-$py = 'F:\Airsim\AirSim\PythonClient\.venv\Scripts\python.exe'
-Set-Location 'F:\FalconReproduction\airsim_control'
-& $py -m unittest discover -s tests -v
-& $py run_single_drone_mpc.py --duration 15 --dx 3
-& $py run_single_drone_gates.py --epsilon 0.8 --seed 0 --per-gate-timeout 30
-```
-
-`run_single_drone_gates.py` creates four static cube bars for each gate. The
-bars use the Blocks asset `1M_Cube`, with width 4 m, height 4 m, and thickness
-0.15 m. Use `--keep-gates` when the objects should remain after landing;
-otherwise the script removes only its own `FalconGate_` objects.
-`--gate-width`, `--gate-height`, `--gate-thickness`, `--gate-asset`,
-`--gate-count`, `--x-start`, and `--x-spacing` are available for adjustments.
-
-The gate generator guarantees x coordinates 10, 20, 30, 40, and 50 m and the
-requested y/z Manhattan displacement for epsilon 0.0, 0.8, or 1.6. The paper
-does not publish a unique procedure for reconstructing the original y/z
-coordinates, so this is a deterministic **paper-compatible environment
-generator**, not a claim of exact original gate coordinates.
-
-## Three-drone run
-
-`configs/settings_three_drones.json` is a ready-to-copy AirSim settings file.
-Back up the current file, copy this file to
-`C:\Users\chen\Documents\AirSim\settings.json`, stop and start UE4, and
-click **Play** again. Then run:
-
-```powershell
-& $py run_three_drones_mpc.py --duration 15 --dx 3 --keep-gates
-```
-
-The three vehicles are independently controlled at 20 Hz. The script also
-creates three independent gate groups by default: 15 gates and 60 cube bars.
-Use `--no-gates` for a pure three-drone point-tracking test. Their generated
-teacher files are `data\Drone1.csv`, `data\Drone2.csv`, and `data\Drone3.csv`.
-The default corresponding gate centers have at least 6 m separation in y,
-including the worst-case y excursion caused by epsilon. Adjust this with
-`--group-spacing`; gate count and x placement use `--gate-count`, `--x-start`,
-and `--x-spacing`. The implementation rejects a gate width that would overlap
-the requested group spacing.
-
-To make all three vehicles traverse the five gates simultaneously, run:
-
-```powershell
-& $py run_three_drones_gates.py --epsilon 0.8 --seed 0 --keep-gates
-```
-
-Each drone follows its own five gate centers. The gate width in this script
-defaults to 4 m and can be changed with `--gate-width`. The previous 8 m
-width with 6 m group spacing was unsafe because neighboring gate frames
-overlapped; that combination is now rejected.
-
-The reference trajectory is generated from the gate coordinates at runtime.
-Each gate contributes a point 2 m before its plane and a point 1 m after it;
-all points are joined into one constant-speed polyline. Intermediate points
-retain non-zero reference velocity, so vehicles no longer stop before every
-gate. A gate is counted only when the measured vehicle segment crosses the
-gate plane in the forward direction and the interpolated crossing point is
-inside the clear width/height after frame thickness and `--gate-clearance` are
-applied. Multi-vehicle controller targets remain in each vehicle's local NED
-frame, while visible gate actors are translated into UE world NED with a
-runtime-measured per-vehicle offset.
-
-## Teacher Dataset Collection
-
-The automated collector uses one vehicle (`Drone1` by default), one UE4/AirSim
-process, and the Cartesian product of 10 initial states and 40 deterministic
-environments. Each episode records exactly 100 samples at `dt=0.05 s`; the
-target output is therefore 400 episodes and 40,000 pairs with
-`X.shape=(40000, 12)` and `U.shape=(40000, 4)`.
-
-The collector launches `FalconEmpty` directly in UE4 game mode, polls the
-AirSim RPC, resets the vehicle, removes and recreates the five current gates,
-and saves each episode atomically before continuing. It does not require
-opening the editor or clicking Play. The current standalone `FalconEmpty`
-asset registry contains `EditorCube` rather than `1M_Cube`, so the dataset
-config uses `EditorCube`; change `configs/teacher_collection.json` if the
-registered asset changes.
-
-First run the live smoke test:
-
-```powershell
-$py = 'F:\Airsim\AirSim\PythonClient\.venv\Scripts\python.exe'
-Set-Location 'F:\FalconReproduction\airsim_control'
-& $py collect_teacher_dataset.py --config configs\teacher_collection.json --auto-launch --smoke-test
-& $py validate_teacher_dataset.py --dataset-root teacher_dataset_continuous_v2_smoke
-```
-
-For the complete collection, use the same command without `--smoke-test`:
-
-```powershell
-& $py collect_teacher_dataset.py --config configs\teacher_collection.json --auto-launch --resume
-```
-
-The five-second configuration above is the paper-compatible short-window
-baseline. It normally reaches only the first gate when the gates are spaced
-10 m apart. For a complete five-gate route, use the separate extended-route
-configuration; it keeps the baseline dataset intact, records 700 samples at
-20 Hz per episode, and rejects an episode unless all five target gates were
-observed. The extended teacher collection uses the generated gate positions
-as virtual geometry by default, so physical gate bars cannot corrupt the MPC
-teacher trajectory through an incidental collision; visible bars remain
-available in the interactive gate scripts. It also uses UE4 `-nullrhi` mode
-because teacher collection does not require rendering and this avoids runtime
-shader-worker failures on the current machine:
-
-```powershell
-& $py collect_teacher_dataset.py --config configs\teacher_collection_full_route.json --auto-launch --resume
-& $py validate_teacher_dataset.py --dataset-root teacher_dataset_full_route_continuous_v2 --json
-```
-
-The extended collection uses a 35-second, 700-sample route window and writes
-to `teacher_dataset_full_route_continuous_v2\`; it contains 400 episodes and
-280,000 samples when complete. The 35-second window leaves roughly nine seconds
-after a nominal five-gate traversal while avoiding the hover-heavy tail observed
-in the 60-second pilot. The old `teacher_dataset_full_route\` remains a
-stop-and-go baseline and is never resumed into the v2 policy. Manifests carry
-a teacher-policy version so episodes from different controllers cannot be
-mixed. The collector still saves each episode atomically and can be resumed.
-
-## Robust teacher-data pipeline
-
-The separate paper-interface 12-D state-query pipeline is documented in
-[`TRACK_P_12D_TRAINING.md`](TRACK_P_12D_TRAINING.md). It keeps the validated
-25-D Track-E model intact and generates independent
-`[p_gate-p, r_gate-r, velocity, acceleration] -> MPC control` queries with a
-fixed, deterministic reference rule.
-
-### Independent path-aware MPC queries (recommended)
-
-The current recommended dataset no longer treats a complete five-gate flight
-as one training example sequence.  Every row is an independent MPC query:
-a deterministic environment and random route progress define the future
-reference window, while bounded nominal/moderate/recovery deviations define
-the vehicle position error, attitude error, velocity and acceleration.  MPC
-is recomputed for every sampled row; labels are never copied from another
-state.
-
-Independent does not mean physically arbitrary. The sampler keeps position,
-attitude and velocity deviations inside three configurable envelopes and
-constructs every reference window from a valid five-gate polyline. This avoids
-impossible/extreme combinations while covering recovery states that nominal
-closed-loop demonstrations rarely visit. Acceleration is randomized as an
-input-invariance test; the current engineering MPC teacher does not directly
-use measured acceleration when computing its label.
-
-The learned input is 25-D: the legacy 12-D controller state, four future
-reference positions relative to the vehicle (offsets 1/5/10/19), and one
-reference-speed scalar.  The output remains `[F, wx, wy, wz]`.  The default
-configuration creates 60 environment shards with 12,000 independent samples
-each (720,000 total).  Shards are atomic and resumable, and this offline stage
-does not start AirSim.
-
-```powershell
-$proj = 'F:\FalconReproduction\airsim_control'
-$trainPy = 'D:\files\PYTHON\cv_lab\Yolov8_Beginner_Demo-main\.venv\Scripts\python.exe'
-Set-Location -LiteralPath $proj
-
-# Small end-to-end dataset check.
-& $trainPy .\generate_iid_mpc_dataset.py --config .\configs\teacher_iid_mpc_v1.json --smoke-test
-& $trainPy .\validate_iid_mpc_dataset.py --dataset-root .\teacher_dataset_iid_path_v1_smoke_v2 --label-checks 128
-
-# Full independent dataset. If interrupted, repeat with --resume.
-& $trainPy .\generate_iid_mpc_dataset.py --config .\configs\teacher_iid_mpc_v1.json
-& $trainPy .\generate_iid_mpc_dataset.py --config .\configs\teacher_iid_mpc_v1.json --resume
-& $trainPy .\validate_iid_mpc_dataset.py --dataset-root .\teacher_dataset_iid_path_v1 --label-checks 1000
-
-# Leakage-safe environment split and path-aware training.
-& $trainPy .\prepare_dnn_dataset.py --dataset .\teacher_dataset_iid_path_v1\final\teacher_dataset_iid_path_v1.npz --output-dir .\dnn_dataset_iid_path_v1
-& $trainPy .\train_dnn_controller.py --data-dir .\dnn_dataset_iid_path_v1 --output-dir .\dnn_runs\iid_path_v1_depth10_width512 --depth 10 --width 512 --epochs 20000 --batch-size 1024 --learning-rate 0.0001 --patience 200 --device auto
-```
-
-The original trajectory collections below remain available as baselines, but
-they are not the recommended source for the next path-aware model.
-
-After the path-aware model passes single-vehicle closed-loop evaluation, run
-three independent copies of it against three independent five-gate lanes:
-
-```powershell
-& $trainPy .\run_three_drones_dnn_gates.py --model .\dnn_runs\iid_path_v1_depth10_width512\controller_scripted.pt --normalization .\dnn_runs\iid_path_v1_depth10_width512\normalization.json --epsilon 0.8 --seed 0 --speed 2.0 --group-spacing 6 --gate-count 5 --gate-width 4 --gate-clearance 0.25 --keep-gates
-```
-
-The runner loads three DNN instances, constructs a separate 25-D state/path
-input for every vehicle at 20 Hz, validates every physical gate-plane
-crossing, checks collisions, and writes a JSON timing/result report.
-
-The original `teacher_dataset_full_route_continuous_v2\` is preserved. The
-new robust collection is a separate 12-D/4-D teacher dataset: eight wider
-initial pose conditions crossed with 60 deterministic environments, five
-reference speeds (1.5--3.5 m/s), and three gate spacings (8/10/12 m). Each
-episode also records four future reference positions as `path_context`; this
-does not change `X.shape=(N,12)` and `U.shape=(N,4)`.
-
-Run the following from PowerShell. The first command starts a new collection;
-if it is interrupted, repeat it with `--resume`. `--render` is optional and
-makes UE4 visible; omit it for the faster headless collection.
-
-```powershell
-$proj = 'F:\FalconReproduction\airsim_control'
-$trainPy = 'D:\files\PYTHON\cv_lab\Yolov8_Beginner_Demo-main\.venv\Scripts\python.exe'
-Set-Location $proj
-
-# New robust nominal MPC data: 480 episodes x 700 samples.
-& $trainPy .\collect_teacher_dataset.py --config .\configs\teacher_collection_robust_v1.json --auto-launch
-
-# Continue after Ctrl+C, terminal closure, or an interrupted episode.
-& $trainPy .\collect_teacher_dataset.py --config .\configs\teacher_collection_robust_v1.json --auto-launch --resume
-
-# After completion, verify the collection.
-& $trainPy .\validate_teacher_dataset.py --dataset-root .\teacher_dataset_robust_v1 --json
-```
-
-After the nominal collection is complete, generate MPC-relabelled state
-perturbations offline. This stage does not connect to AirSim and leaves the
-nominal directory unchanged. It can also be resumed; it creates a combined
-nominal-plus-perturbation directory with `data_source=0` for nominal rows and
-`data_source=1` for perturbation rows.
-
-```powershell
-& $trainPy .\generate_perturbed_teacher_dataset.py --source-root .\teacher_dataset_robust_v1 --output-root .\teacher_dataset_robust_v1_augmented
-
-# If the terminal is interrupted, continue the same output.
-& $trainPy .\generate_perturbed_teacher_dataset.py --source-root .\teacher_dataset_robust_v1 --output-root .\teacher_dataset_robust_v1_augmented --resume
-
-& $trainPy .\validate_teacher_dataset.py --dataset-root .\teacher_dataset_robust_v1_augmented --json
-```
-
-The DAgger collector is intentionally a later stage: it requires a first DNN
-checkpoint. It applies the DNN inside a safety envelope, evaluates MPC on the
-same measured state, and writes the MPC value as the label (`data_source=2`),
-with both the applied student action and shield flag retained for analysis.
-The model is pinned in the manifest, so a resumed run cannot silently mix two
-different checkpoints. The command is provided here for the next stage; it
-must not be run before the first robust DNN checkpoint exists:
-
-```powershell
-$env:PYTHONPATH = 'F:\Airsim\AirSim\PythonClient;F:\Airsim\AirSim\PythonClient\.venv\Lib\site-packages'
-& $trainPy .\collect_dagger_teacher_dataset.py --model .\dnn_runs\robust_v1\controller_scripted.pt --source-root .\teacher_dataset_robust_v1_augmented --output-root .\teacher_dataset_dagger_v1 --render
-
-# Continue a stopped DAgger collection.
-& $trainPy .\collect_dagger_teacher_dataset.py --model .\dnn_runs\robust_v1\controller_scripted.pt --source-root .\teacher_dataset_robust_v1_augmented --output-root .\teacher_dataset_dagger_v1 --render --resume
-Remove-Item Env:PYTHONPATH
-```
-
-The preparation script now supports both the old 40-environment dataset and
-the new 60-environment dataset without random row-level splitting. It holds
-out complete environment IDs (48/6/6 for 60 environments) and preserves the
-optional robust metadata in the split files:
-
-```powershell
-& $trainPy .\prepare_dnn_dataset.py --dataset .\teacher_dataset_robust_v1_augmented\final\teacher_dataset_robust_v1_augmented.npz --output-dir .\dnn_dataset_robust_v1
-```
-
-## Prepare and train the DNN controller
-
-Do not randomly split individual 20 Hz rows: adjacent samples from one flight
-would leak into both training and test data. The preparation script holds out
-entire gate environments while preserving the paper's 80/10/10 ratio:
-environment IDs 0--31 train, 32--35 validation, and 36--39 test. With the full
-35-second collection this produces 224,000 / 28,000 / 28,000 samples.
-
-```powershell
-& $py .\prepare_dnn_dataset.py
-
-# The validated Windows training environment for this project.
-$trainPy = 'D:\files\PYTHON\cv_lab\Yolov8_Beginner_Demo-main\.venv\Scripts\python.exe'
-
-# Short pipeline check before a long run.
-& $trainPy .\train_dnn_controller.py --depth 10 --width 512 --epochs 3 --batch-size 1024 --device cuda --output-dir .\dnn_runs\smoke_depth10_width512
-
-# Resumable depth=10, width=512 baseline; --epochs is the total target epoch.
-& $trainPy .\train_dnn_controller.py --depth 10 --width 512 --epochs 20000 --batch-size 1024 --learning-rate 0.0001 --patience 200 --device cuda --output-dir .\dnn_runs\depth10_width512
-
-# If interrupted, continue from the latest atomic checkpoint.
-& $trainPy .\train_dnn_controller.py --depth 10 --width 512 --epochs 20000 --batch-size 1024 --learning-rate 0.0001 --patience 200 --device cuda --resume --output-dir .\dnn_runs\depth10_width512
-```
-
-The trainer standardizes inputs and outputs using training-only statistics,
-selects the checkpoint with the lowest validation MSE, evaluates physical-unit
-metrics on the untouched test set only after training, and writes
-`best_model.pt`, `latest_checkpoint.pt`, `controller_scripted.pt`,
-`history.csv`, `per_output_metrics.csv`, `per_gate_metrics.csv`,
-`test_predictions.npz`, `model_spec.json`, `normalization.json`, and
-`metrics.json`. A CUDA-capable PyTorch installation is strongly recommended
-for the paper-scale network.
-
-The framework-neutral export and fixed golden-vector check are run with:
-
-```powershell
-& $trainPy .\export_dnn_artifacts.py --model .\dnn_runs\depth10_width512\best_model.pt --output-dir .\dnn_runs\depth10_width512\export --golden-count 1000
-& $trainPy .\evaluate_dnn_controller.py --model .\dnn_runs\depth10_width512\best_model.pt --split validation --device cuda
-& $trainPy .\evaluate_dnn_controller.py --model .\dnn_runs\depth10_width512\best_model.pt --split test --device cpu
-```
-
-The DNN closed-loop runner uses the same gate layout, continuous polyline
-reference and physical gate-plane validation as the MPC runner; it replaces
-only the MPC solve call:
-
-```powershell
-& $trainPy .\run_single_drone_dnn_gates.py --model .\dnn_runs\depth10_width512\controller_scripted.pt --device cpu --epsilon 0.8 --seed 0 --per-gate-timeout 30 --keep-gates
-```
-
-For automated held-out layouts (environment IDs 36--39, all ten initial
-states) and the MPC/DNN comparison report:
-
-```powershell
-& $trainPy .\evaluate_dnn_closed_loop.py --model .\dnn_runs\depth10_width512\controller_scripted.pt --max-episodes 1 --auto-launch --render
-& $trainPy .\evaluate_dnn_closed_loop.py --model .\dnn_runs\depth10_width512\controller_scripted.pt --auto-launch
-& $trainPy .\compare_mpc_dnn.py --model .\dnn_runs\depth10_width512\best_model.pt --offline-only
-& $trainPy .\compare_mpc_dnn.py --model .\dnn_runs\depth10_width512\controller_scripted.pt --auto-launch
-```
-
-The current Windows phase intentionally stops before Vitis AI quantization or
-DPU compilation. The resulting FP32 checkpoint, model description,
-normalization and NPZ weights are the bridge for the later Vitis AI 1.2.1
-Ubuntu/Docker phase.
-
-For a live AirSim run, the AirSim Python source and its RPC dependency path
-must be added while retaining the training venv's PyTorch:
-
-```powershell
-$env:PYTHONPATH = 'F:\Airsim\AirSim\PythonClient;F:\Airsim\AirSim\PythonClient\.venv\Lib\site-packages'
-& $trainPy .\run_single_drone_dnn_gates.py --model .\dnn_runs\depth10_width512\controller_scripted.pt --device cpu --epsilon 0.8 --seed 0 --gate-asset EditorCube --auto-launch
-Remove-Item Env:PYTHONPATH
-```
-
-The first completed baseline run achieved the offline metrics above, but the
-pure DNN closed-loop test passed 0/40 held-out combinations while the same
-scene MPC comparison passed 5/5 gates. This is recorded in
-`dnn_runs\depth10_width512\BASELINE_REPORT.md`; do not proceed to DPU
-deployment until an off-trajectory robustness phase improves that result.
-
-The output is stored under `teacher_dataset\`: `manifest.json`, the generated
-`initial_states.json` and `environments.json`, one atomic NPZ per episode, the
-merged `final\teacher_dataset.npz`, `final\teacher_metadata.csv`, and
-`summary.txt`. If the process is interrupted, run the same command with
-`--resume`; valid completed episodes are skipped and only missing/corrupt or
-unfinished episodes are collected again. RPC failures trigger a bounded
-retry and a restart of the UE4 process that the collector owns.
-
-The paper specifies the counts, five-second window, 20 Hz period, 12-D input,
-and 4-D output. The random ranges, seeds, gate coordinates, difficulty
-generator, asset choice, retry policy, and timeout are engineering
-assumptions because the paper does not publish those details. The generated
-layouts are deterministic and paper-compatible, not claimed to be the exact
-FALCON layouts. Use `validate_teacher_dataset.py` to verify shapes, finite
-values, episode lengths, state/environment coverage, and summary statistics.
-
-## Data contract and assumptions
-
-Each CSV row contains the paper-compatible 12-D input `x0 ... x11`, the
-four-value teacher output `F, wx, wy, wz`, raw AirSim state, reference,
-solver time, actual loop period, and deadline-miss flag. `dt=0.05 s` and
-`horizon=20` are the paper-specified interface values.
-
-The paper does not provide enough information to reproduce its exact MPC:
-complete dynamics parameters, constraints, actuator mapping, and solver
-configuration are absent. `mpc_controller.py` is therefore explicitly an
-engineering **FALCON-compatible MPC teacher**, not the exact FALCON/PAMPC
-implementation. The current thrust mapping is anchored at the measured
-hover throttle in `configs\thrust_calibration.json`; its local throttle slope
-remains a configurable engineering assumption.
-
-The linear prediction model now tracks all 20 future position/velocity samples
-rather than discarding samples 2-20. AirSim controller state is expressed in
-each vehicle's local NED frame; visible scene actors use UE world NED and are
-translated explicitly. The attitude error is `q_target * inverse(q_current)`,
-converted to a rotation vector; quaternions are never subtracted directly.
-
-## M1-M12 acceptance status
-
-The implementation covers all requested M1-M12 interfaces and workflows. The
-local unit/integration checks currently pass 49/49, including legacy 12-D and
-path-aware 25-D inputs, the 4-D control, epsilon generation, 15 independent
-visible gates, three named vehicles, and CSV schema.
-
-The evidence boundary for live AirSim acceptance is:
-
-- M1-M6: previously validated for state acquisition, hover calibration,
-  single-drone MPC hover/point tracking, and the 20 Hz loop.
-- M9-M11: previously validated for three named vehicles, simultaneous
-  lifecycle, and three independent point-tracking MPC loops.
-- M12: CSV files and the required fields have been generated and checked.
-- M7-M8: the gate generator and the revised alignment/approach/crossing logic
-  are implemented and unit-tested, but the revised 3-drone gate run still
-  needs one fresh AirSim validation for all five gates and the selected
-  epsilon. The earlier log used the old center-distance behavior and is not
-  sufficient evidence of physical gate passage.
+# 路线 B · 多无人机共享 DPU 实时控制
+
+这个项目研究多架无人机共用一块推理加速器时，怎样让紧急的控制命令及时生效，同时为其他飞机留下完成下一次控制的时间。当前实验在 Windows 上运行 AirSim，Zynq 的 PS 运行 C++ 控制与调度，板载 DPU 执行独立的 237 维输入模型。
+
+刚打开工程目录时，可以先看[根目录说明](#根目录说明)。下面按整理后的实际目录解释每个一级文件和文件夹。
+
+## 第一次读代码
+
+以“一条控制命令如何到达飞机”为线索，按下面三个步骤读即可。
+
+| 顺序 | 打开 | 关注什么 |
+| --- | --- | --- |
+| 1 | [板端主程序](controller_architecture_study/ps_board_source/20261117_executor_trace/adaptive_runtime.cpp) | 从 `main` 找周期发布、每机工作线程和后台规划线程。采样及命令都经过 [AirSim RPC](controller_architecture_study/ps_board_source/20261117_executor_trace/rpc/airsim_rpc.cpp)。 |
+| 2 | [正在维护的调度日历](controller_architecture_study/ps_planner_repair/live/live_calendar.cpp) | 跟随 `queued()`、`take()`，看一个任务何时能排队、交给 DPU、因超期被拒。旁边的 [C++ 测试](controller_architecture_study/ps_planner_repair/live/live_calendar_tests.cpp) 有最小例子。改调度从这里开始。 |
+| 3 | [板端执行器](controller_architecture_study/ps_board_source/20261117_executor_trace/adaptive_live.hpp) | 跟随 `Executor` 找 DPU 返回、命令下发和 ACK。结合 [Drone10 的一次实际故障](controller_architecture_study/docs/PS命令保持期限回放与重构记录_20261118.md) 看哪些事件会使一条命令失效。 |
+
+主程序链接指向已冻结的完整源码快照。调度日历链接指向快照之后的维护版本。本地编译回归、上板版本和外部模型包的关系见[板端源码说明](controller_architecture_study/ps_board_source/README.md)。
+
+## 根据任务找材料
+
+| 要做的事 | 入口 |
+| --- | --- |
+| 理解为什么这样调度 | [框架导读](docs/工程Framework.md) |
+| 接续当前任务、了解已验证到哪里 | [协作看板](docs/协作进度.md) |
+| 找到实测、模型交付与复现要求 | [研究文档索引](controller_architecture_study/docs/研究文档索引.md) |
+| 找早期 FALCON 复现、训练、路线 A、旧交接或原始数据 | [历史归档与还原方法](archive/README.md) |
+| 作为 agent 参与修改 | [协作约定](AGENTS.md) |
+
+Git 提供源码和阅读材料。复现实飞还需要匹配的 AirSim 工程、板端 SDK 和库、release001 的 18 个模型以及对应实验输入。Windows 根目录留有少量 Python 模块，供场景生成、标定与历史对照使用。
+
+## 根目录说明
+
+目录清单以 2026-11-19 的本机为准。根目录里的源码和说明大多由 Git 管理。数据、权重、日志和不少交付包是本机资产，单独克隆代码时需要另取。看当前控制调度用 `controller_architecture_study/`，查旧训练和运行链路用 `archive/`，回看某轮试验才需要进入对应的 `results/`。
+
+### 日常会打开的目录
+
+| 根目录条目 | 用途 |
+| --- | --- |
+| [`controller_architecture_study/`](controller_architecture_study/) | 路线 B 研究区。这里找当前 C++ 调度、冻结板端源码、场景生成和实验结果。常用子目录见[研究区内部](#研究区内部)。 |
+| [`docs/`](docs/) | 工程级说明。[`工程Framework.md`](docs/工程Framework.md) 讲设计，[`协作进度.md`](docs/协作进度.md) 讲实现进度，[`实验结果存储与复原.md`](docs/实验结果存储与复原.md) 记录实验结果清理和复原。`reference/` 留存旧框架原文和来源清单。 |
+| [`configs/`](configs/) | 早期单机、三机 AirSim 设置，以及教师采集、推力与油门标定配置。现在十二机的 AirSim 设置在[研究区的配置文件](controller_architecture_study/configs/airsim_safety_12.json)。 |
+| [`tests/`](tests/) | 当前保留的 Python 回归和输入夹具。包含调度、物理模型、接口、数据契约的测试。板端 C++ 调度回归与实现同放在 [`ps_planner_repair/live/`](controller_architecture_study/ps_planner_repair/live/)。 |
+| [`archive/`](archive/) | 整理后移到历史区的研究代码、交接文档、训练入口、测试和本机原始产物。按 [`MOVED_PATHS.tsv`](archive/MOVED_PATHS.tsv) 搜旧文件或目录名。常用分区见[归档区内部](#归档区内部)。 |
+
+### 根目录的 Python 文件
+
+这些是场景、接口、教师和数据处理的共享模块。研究区的 Python 分析和兼容性测试可直接引入它们。查板端每周期的运行过程，从上面的 C++ 阅读入口开始。
+
+| 根目录条目 | 用途 |
+| --- | --- |
+| [`airsim_interface.py`](airsim_interface.py) | 包装 AirSim Python API，连接指定飞机、读取原始状态、处理车辆局部位置与世界位置的偏移。 |
+| [`airsim_process.py`](airsim_process.py) | 为批量采集或试验启动、监控和关闭 UE4/AirSim 进程，核对场景地图。 |
+| [`config.py`](config.py) | 定义项目的数据、日志、标定路径，读写悬停油门与推力标定。 |
+| [`control_adapter.py`](control_adapter.py) | 检查控制器的四值输出，把推力换算为油门，把角速度和油门转换成 AirSim 可下发的命令。 |
+| [`dataset_store.py`](dataset_store.py) | 保存、读取和检查单轮采集数据，记录断点恢复清单，把多轮数据合并并导出元数据。 |
+| [`dnn_model_utils.py`](dnn_model_utils.py) | 旧模型及 Python 基线共用的模型构造、特征/归一化、模型说明和导出核对函数。输入维度以模型自己的 `model_spec.json` 为准。 |
+| [`environment.py`](environment.py) | 定义门的坐标、姿态和路线难度，根据参数生成多组门。 |
+| [`gate_route.py`](gate_route.py) | 把一串门变成连续参考路径，用飞机的移动线段检查是否经过门平面及有效通行区域。 |
+| [`gate_visualization.py`](gate_visualization.py) | 在 AirSim 场景中创建和清理可见门框，处理门框的摆放与姿态。 |
+| [`initial_state_generator.py`](initial_state_generator.py) | 按种子生成、保存和读取教师采集所需的初始位置、姿态、速度和角速度。 |
+| [`mpc_controller.py`](mpc_controller.py) | Python 版模型预测控制教师，根据飞机状态与未来参考计算推力和角速度，为数据采集或对照实验提供控制。 |
+| [`prepare_dnn_dataset.py`](prepare_dnn_dataset.py) | 按环境划分训练、验证、测试集，用训练集计算归一化参数，写出 `.npz` 和来源清单。 |
+| [`reference_generator.py`](reference_generator.py) | 从固定点、直线或过门路径生成未来目标的位置、速度和参考窗口。 |
+| [`state_adapter.py`](state_adapter.py) | 转换 AirSim 和控制器坐标，处理四元数并构建旧 Python 控制器使用的 12 维状态接口。 |
+| [`training_environment_generator.py`](training_environment_generator.py) | 按固定种子批量构造不同难度的训练场景，保存和加载环境清单。 |
+
+### 历史实现、外部依赖与交接
+
+| 根目录条目 | 用途 |
+| --- | --- |
+| [`experiments/`](experiments/) | 根目录保留的早期实验只剩 `falcon_paper_fidelity_acado_v3_continuous/`。里面的连续航线、教师配置和过门辅助函数仍被部分场景准备和对照脚本引用。其他早期实验见[归档实验](archive/early_falcon/experiments/)。 |
+| [`falcon_paper_fidelity/`](falcon_paper_fidelity/) | 早期 FALCON 论文复现的 Python 库，含 ACADO/MPC 接入、轨迹生成、教师采集、数据契约和恢复工况。部分参考轨迹组件仍被研究区复用。 |
+| [`native/`](native/) | `acado_rpg_mpc/` 里的 C/C++ 教师桥接和基准测试，把 RPG MPC 生成的 ACADO 求解器接到本工程。 |
+| [`third_party/`](third_party/) | 外部代码入口。当前 Git 子模块是 `rpg_mpc/`，供 ACADO 教师侧构建。AirSim 工程和板端依赖需要按各自交付准备。 |
+| `colleague_transfer/` | 同事交接包的本地输出目录。本次盘点为空，已归档内容从迁移清单查找。 |
+| `ubuntu_transfer/` | 历史上发往 Ubuntu 的模型部署资料，含旧 12D、超网 M3、237D 独立 DNN 池及相应运行说明。 |
+| [`ubuntu_tras/`](ubuntu_tras/) | 11 月 16 日 Ubuntu → Windows 的 PS 移植交付和验收回传。包含 `PS_MIGRATION_RESULTS_20261116_run001/`、`RESULTS.md`、`RUNBOOK.md`，可查迁移版本的源码、运行命令和证据。 |
+
+### 本机数据、模型与日志
+
+一组数据通常从 `teacher_dataset_*/` 的采集或采样产物生成，再写到对应的 `dnn_dataset_*/`。教师目录优先查 `manifest.json`，训练目录优先查 `split_manifest.json` 和 `normalization.json`。同为 12 维的数据也可能使用不同特征定义和坐标，复用时按各自清单核对。
+
+| 根目录条目 | 用途 |
+| --- | --- |
+| `teacher_dataset_full_route_continuous_v2/` | 早期连续过门航线的教师控制数据，含初始状态、采集轮次和合并文件。 |
+| `dnn_dataset_full_route_v2/` | 由连续航线教师数据生成的 12 输入、4 输出训练、验证和测试划分。 |
+| `teacher_dataset_iid_path_v1/` | 从航线环境中采样的 IID 路径教师数据，按环境保留分片和汇总。 |
+| `dnn_dataset_iid_path_v1/` | 对应的 25 输入、4 输出训练划分，给早期带路径信息的模型使用。 |
+| `teacher_dataset_robust_v1/` | 早期鲁棒场景中的教师采集轮次、环境与合并文件。 |
+| `dnn_dataset_robust_v1/` | 基于该批鲁棒教师数据的旧 12 输入、4 输出训练划分。 |
+| `teacher_dataset_track_p_12d_robust_v1/` | Track-P 教师数据，12 维特征为门的相对位置、相对姿态、速度和加速度，采用 AirSim NED 坐标。 |
+| `dnn_dataset_track_p_12d_robust_v1/` | 按 Track-P 契约拆出的训练、验证、测试数据及归一化。 |
+| `dnn_runs/` | 历史基线与冒烟训练产物，例如 `depth10_width512/` 及 IID、鲁棒、Track-P 不同输入契约对应的版本。目录里可核查权重、模型说明和导出样本。 |
+| `falcon_dnn_fp32_v1/` | 旧 25 维 FP32 单模型交付，含原始权重、TorchScript、黄金输入向量、归一化和 SHA-256。用于历史模型导出及核对。 |
+| `data/` | 早期 AirSim 采集的飞行 CSV，常见文件名按飞机、场景和时间区分，可用于检查原始状态轨迹。 |
+| `logs/` | 早期教师采集、UE4 和 AirSim 运行日志。查启动、RPC、采集失败可从这里找。 |
+| `tmp/` | 历次手工和脚本试验的临时工作区，含小规模训练、交接 QA、解包等工作副本。 |
+| `.tmp/` | 本机自动化工作区，含整理清单、磁盘清理校验、离线回放、编译和检查日志。其中一些记录可用于核对本轮整理。 |
+
+### 工程管理文件与缓存
+
+| 根目录条目 | 用途 |
+| --- | --- |
+| [`README.md`](README.md) | 项目首页，含读代码的顺序和本目录导览。 |
+| [`AGENTS.md`](AGENTS.md) | Agent 的阅读顺序、修改约定、实验与证据规则。 |
+| [`pytest.ini`](pytest.ini) | Python 测试发现配置，默认查找 `tests/`，跳过归档测试。 |
+| `.git/` | Git 的本地提交、分支、索引及仓库配置。 |
+| [`.gitignore`](.gitignore) | Git 默认忽略的生成物、日志、权重、本机交接包和本机归档等路径。 |
+| [`.gitattributes`](.gitattributes) | Python 源文件使用 LF，保证跨系统核对冻结特征和教师源码时字节一致。 |
+| [`.gitmodules`](.gitmodules) | 记录 `third_party/rpg_mpc` 子模块的仓库地址和本地路径。 |
+| `__pycache__/` | Python 导入模块时自动生成的字节码缓存，可再生。 |
+| `.pytest_cache/` | pytest 自动生成的测试发现和上次结果缓存，可再生。 |
+
+### 研究区内部
+
+| `controller_architecture_study/` 中的入口 | 用途 |
+| --- | --- |
+| [`ps_planner_repair/`](controller_architecture_study/ps_planner_repair/) | 当前调度维护目录。其下 `live/` 放日历、调度器、计划复核及对应 C++ 测试，上一级放场景准备、诊断和离线回放脚本。 |
+| [`ps_board_source/`](controller_architecture_study/ps_board_source/) | 冻结板端主程序、任务执行器、AirSim RPC、237D 特征构造、DPU 接口和配置。用来读完整运行链、确认历史部署版本。 |
+| [`ps_migration/`](controller_architecture_study/ps_migration/) | PS 移植的数据与接口契约、冻结轨迹、交付内容检查和数值一致性工具。 |
+| [`native_runtime/`](controller_architecture_study/native_runtime/) | Windows 原生采样与接口 DLL 的 C++ 实现及构建文件，供旧 Windows 路线和接口对照使用。 |
+| [`models/`](controller_architecture_study/models/) 与 [`vendor/`](controller_architecture_study/vendor/) | Python 模型结构实现和随工程保存的凸二次规划代码。实际训练得到的权重另存在实验产物中。 |
+| [`configs/`](controller_architecture_study/configs/) 与 [`docs/`](controller_architecture_study/docs/) | 十二机设置、实验候选参数、框架规格、板端复飞报告与模型交接索引。 |
+| `results/` | 本地实验产物。近期板端实测、回放、模型数据和还被工具读取的交付包都在这里。原始输入和恢复方式见[实验结果存储说明](docs/实验结果存储与复原.md)。 |
+| 根部的 Python 与 PowerShell 脚本 | `package_*`、`share_*` 用于打包或交接，`audit_*`、`probe_*`、`replay_*` 用于诊断或回放，`run_*`、`fly_*` 用于相应试验。查某次试验时从研究区文档找到对应脚本、配置和版本。 |
+
+### 归档区内部
+
+| `archive/` 中的入口 | 用途 |
+| --- | --- |
+| [`early_falcon/`](archive/early_falcon/) | 早期飞控实验源码、训练脚本、12D 交接以及旧实验目录。 |
+| [`controller_architecture_study/`](archive/controller_architecture_study/) | 旧研究脚本、路线 A、超网训练和历史报告。归档前的相对路径可用迁移清单还原。 |
+| [`history/`](archive/history/) 与 [`tests/`](archive/tests/) | 前者存旧版首页、看板和框架，后者存随历史实现一起移动的回归。 |
+| `local/` | 仅本机保存的旧实验、交付包、数据、权重及清理记录。恢复某个已清理产物时先看原位置的 `RESTORE.md`。 |
+| [`README.md`](archive/README.md) 与 [`MOVED_PATHS.tsv`](archive/MOVED_PATHS.tsv) | 按主题查归档材料，以及按原路径精确定位搬迁后的文件。 |

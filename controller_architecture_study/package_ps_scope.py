@@ -166,7 +166,7 @@ def chain(job, platform):
          integrate_symbols=['Pool::find(uint32_t)', 'Pool::infer(index, raw237, normalized=false)'],
          execution='actual local DNNDK DPU; whole inference is non-preemptive',
          missing=['local DPU adapter', 'remote AirSim RPC', 'real-time release/IO integration', 'ARM build and flight validation']))
-    guide = ROOT/'controller_architecture_study/docs/PS_SCOPE_SOURCE_AUDIT_20261116.md'
+    guide = ROOT/'controller_architecture_study/docs/PS移植范围与源码审计_20261116.md'
     shutil.copyfile(guide, package/'README.md')
     hashes = {p.relative_to(package).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
               for p in sorted(package.rglob('*')) if p.is_file()}

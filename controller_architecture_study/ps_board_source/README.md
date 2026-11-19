@@ -5,8 +5,8 @@
 ## 这是什么版本
 
 - PS 原生 C++ 负责绝对任务发布、AirSim 状态/碰撞 RPC、237D 特征、义务日历和管理决策，调用板端 DNNDK/DPU 执行整条 DNN，再通过 RPC 下发控制。Windows 只运行 AirSim。主入口是 [`adaptive_runtime.cpp`](20261117_executor_trace/adaptive_runtime.cpp)，日历/调度在 [`scheduler/`](20261117_executor_trace/scheduler/)，237D 与 RPC 分别在 `features/`、`rpc/`。
-- 这是十二机容量边界调查期间的**诊断源码版本**：相对之前实测版本，仅增强 DPU executor 异常原因的记录，不能称异常已修好。它不是 `OBLIGATION_PROTECTED_BUDGET_FRAMEWORK_20261116.md` 全部研究规格的实现；真实 skip/补更、板端 DNN 分段和超网仍未验收。
-- 精确实验结果与实际二进制身份应回到同批原始日志/构建清单核对；源码快照本身不证明运行收益。当前状态见[协作交接](../docs/ROUTE_B_CURRENT_STATUS_AND_HANDOFF_20261117.md)。
+- 这是十二机容量边界调查期间的**诊断源码版本**：相对之前实测版本，仅增强 DPU executor 异常原因的记录，不能称异常已修好。它不是 `义务保护预算分配Framework_20261116.md` 全部研究规格的实现；真实 skip/补更、板端 DNN 分段和超网仍未验收。
+- 精确实验结果与实际二进制身份应回到同批原始日志/构建清单核对；源码快照本身不证明运行收益。当前状态见[协作交接](../docs/Route-B实现现状与交接_20261117.md)。
 
 ## 克隆后还缺什么
 

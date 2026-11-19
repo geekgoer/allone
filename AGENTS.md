@@ -5,12 +5,12 @@
 ## 开工阅读顺序
 
 1. [工程README](README.md)：目录与运行环境入口。
-2. [整体框架](docs/FRAMEWORK.md)：研究目标、时间语义、模块边界及当前实现差距。
-3. [协作进度](docs/COLLABORATION_STATUS.md)：已完成、当前问题、任务认领和下一步。
-4. [研究分支文档索引](controller_architecture_study/docs/README.md)：按任务找到源码、实验和Ubuntu交接。
-5. [路线B代码与实飞阅读指南](controller_architecture_study/docs/ROUTE_B_CODE_GUIDE_20261109.md)：当前调用链、时间语义、部署依赖和实验边界。
+2. [整体框架](docs/工程Framework.md)：研究目标、时间语义、模块边界及当前实现差距。
+3. [协作进度](docs/协作进度.md)：已完成、当前问题、任务认领和下一步。
+4. [研究分支文档索引](controller_architecture_study/docs/研究文档索引.md)：按任务找到源码、实验和Ubuntu交接。
+5. [板端源码快照](controller_architecture_study/ps_board_source/README.md)与[正在维护的调度实现](controller_architecture_study/ps_planner_repair/live/)：主程序读快照，调度修改读维护目录；历史文件从[归档索引](archive/README.md)定位。
 
-用户最新指示优先。原始framework快照与带日期的历史文档是设计/证据材料，不会自动变成当前执行指令。设计看`docs/FRAMEWORK.md`，工作状态看`docs/COLLABORATION_STATUS.md`，具体结论回到对应原始报告核对。
+用户最新指示优先。原始framework快照与带日期的历史文档是设计/证据材料，不会自动变成当前执行指令。设计看`docs/工程Framework.md`，工作状态看`docs/协作进度.md`，具体结论回到对应原始报告核对。
 
 ## 修改原则
 
@@ -25,7 +25,7 @@
 - 原始模型、数据划分、已冻结部署包和失败记录保留；新实验使用新目录。不要手改报告以获得PASS，不使用保护测试集选模。
 - 25D、12D、237D独立模型及237D超网是不同契约，不能混用归一化、golden vectors或量化产物。
 - 路线A包含Windows C++ IO＋Python前端＋CPU分段执行。路线B已用Windows C++采样、Python前端及板端DPU独立237D模型完成实飞，按整任务派发。两条路线的证据分开；独立模型上板不证明超网或分段抢占已上板。
-- 最新11月5日分核/通知修复后，动态周期已有实际安装；1.75m两轮J约提高0.98%但丢任务增加，1.60m安装0组。不能把零碰撞写成所有硬期限满足，也不能把未采用新配置的组归因于新策略。具体数字以协作进度及最新报告为准。
+- 当前路线B由PS运行原生控制与调度，Windows运行AirSim。区分就绪任务实际派发换模、联合计划安装、飞行结果与时序结果。具体版本和未解决问题见协作看板。
 - 运行授权以当前会话及任务范围为准；这些文档不额外设置确认流程，也不代替用户指示。
 
 每次任务以用户最新指示为准；修改代码或启动训练/试飞前，先按所接任务阅读进度中的证据和验证要求。当前用户要求Agent写代码和命令、做必要离线检查，耗时实验由用户执行。
