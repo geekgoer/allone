@@ -36,11 +36,51 @@ def add_critical_update_probe(code):
                 // Registry publication, queued(), selected-model take(), real''')
 
 
+def add_command_retime_probe(code):
+    code = replace_one(code, '        const int initial_model=config.at("model_id").get<int>();',
+        '''        const auto& probe=config.at("command_retime_probe");
+        const std::string probe_vehicle=probe.at("vehicle");
+        const auto probe_cycle=probe.at("cycle").get<std::int64_t>();
+        const double probe_delay_ms=probe.at("ack_delay_ms");
+        const bool probe_retime=probe.at("retime");
+        if(policy!="fixed"||enable_skip||!isolate_command_costs||!single_command_check||
+           !config.value("retire_on_hold_expiry",false)||config.count("initial_periods")||
+           !probe.at("cycle").is_number_integer()||probe_cycle<=0||!std::isfinite(probe_delay_ms)||
+           probe_delay_ms<=config.at("period_ms").get<double>()||probe_delay_ms>=maximum_update_ms)
+            throw std::runtime_error("Command-retime probe requires fixed policy with isolated guarded commands and a bounded test delay");
+        const int initial_model=config.at("model_id").get<int>();''')
+    code = replace_one(code, '        config["names"]=names;',
+        '''        if(!by_name.count(probe_vehicle)||(double(probe_cycle)+1.)*config.at("period_ms").get<double>()+maximum_update_ms>=duration*1000.)
+            throw std::runtime_error("Command-retime probe lies outside the prepared flight");
+        config["names"]=names;''')
+    code = replace_one(code, 'v->worker=std::thread([&,v]{for(;;)',
+        'v->worker=std::thread([&,v]{std::uint64_t probe_version=0;for(;;)')
+    code = replace_one(code, '                row["command_sent"]=true;row["command_return_proxy"]=true;',
+        '''                if(ack.ping_ok&&v->name==probe_vehicle&&slot->cycle==std::uint64_t(probe_cycle)){
+                    row["probe_real_ping_return_us"]=ack_us;
+                    std::this_thread::sleep_for(std::chrono::microseconds(std::uint64_t(probe_delay_ms*1000.)));
+                    row["command_return_us"]=ack_us=a::now_us();
+                }
+                row["command_sent"]=true;row["command_return_proxy"]=true;''')
+    code = replace_one(code, '                const double post_sample=double(ack_us-output_ready)/1000.;',
+        '''                if(row.count("probe_real_ping_return_us")&&row["status"]=="command_return_late")probe_version=v->version;
+                const double post_sample=double(ack_us-output_ready)/1000.;''')
+    return replace_one(code, '            raw_journal.submit(std::shared_ptr<const Json>(slot,&slot->log));executor.notify();',
+        '''            if(probe_retime&&probe_version&&v->version==probe_version&&row["status"]=="dropped_inference"){
+                const auto update=calendar.try_command_retime(v->name,slot->cycle,a::now_ms);
+                if(!update.is_null()){row["command_retime"]=update;probe_version=0;}
+            }
+            raw_journal.submit(std::shared_ptr<const Json>(slot,&slot->log));executor.notify();''')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--critical-update-probe", action="store_true",
-                        help="Generate an experiment-only fixed-policy binary that requires an explicit probe config")
+    probes = parser.add_mutually_exclusive_group()
+    probes.add_argument("--critical-update-probe", action="store_true",
+                        help="Generate an experiment-only fixed-policy binary that requires an explicit omission config")
+    probes.add_argument("--command-retime-probe", action="store_true",
+                        help="Generate an experiment-only fixed-policy binary with one controlled ACK observation delay")
     args = parser.parse_args()
     here = Path(__file__).resolve().parent
     source = here.parent / "ps_board_source/20261117_executor_trace"
@@ -169,6 +209,8 @@ def main():
         raw_journal.close();plan_journal.close();""")
     if args.critical_update_probe:
         code = add_critical_update_probe(code)
+    if args.command_retime_probe:
+        code = add_command_retime_probe(code)
     runtime.write_text(code, encoding="utf-8", newline="\n")
     manifest = {p.relative_to(args.output).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
                 for p in sorted(args.output.rglob("*")) if p.is_file()}

@@ -15,10 +15,11 @@ void check(bool pass,const std::string&msg){++count;if(!pass)throw std::runtime_
 template<typename F>void throws(F fn,const std::string&msg){bool caught=false;try{fn();}catch(const std::exception&){caught=true;}check(caught,msg);}
 Json config(){return Json{{"names",Json::array({"Drone1"})},{"origin_ms",100000.},{"period_ms",50.},{"periods_ms",Json::array({20.,50.,80.})},{"model_id",2},{"candidate_ids",Json::array({1,2})},{"prep_ms",.5},{"post_ms",.5},{"decision_ms",3.},{"snapshot_build_off_lock",off_lock}};}
 Json modes(){return Json::array({Json{{"numeric_id",1},{"service_ms",1.},{"selection_mse",.02}},Json{{"numeric_id",2},{"service_ms",5.},{"selection_mse",.01}}});}
-void check_command_tail_isolation(double spike,bool isolate){
+void check_command_tail_isolation(double spike,bool isolate,bool retime=false){
     auto cfg=config();
     cfg["names"]=Json::array({"A","B"});cfg["period_ms"]=20.;cfg["model_id"]=1;
     cfg["isolate_command_costs"]=isolate;cfg["retire_on_hold_expiry"]=true;cfg["maximum_update_ms"]=160.;
+    if(retime){cfg["adaptive"]=false;cfg["periods_ms"]=Json::array({20.,60.,80.,120.});}
     ps_scheduler::LiveCalendar calendar(cfg,modes());
     calendar.release_due(100000.,100500.);
     calendar.observe("A",100000.,100160.,0);
@@ -47,6 +48,15 @@ void check_command_tail_isolation(double spike,bool isolate){
           denied.at("dispatch_rejection_evidence").at("command_reserve_ms")==spike,
           "A's over-period reserve is preserved and A's next command cannot be dispatched");
     calendar.finish("A",3,100070.4,"dropped_inference");
+    if(retime){
+        fake_dispatch_ms=100080.;fake_dispatch_step_ms=0.;
+        check(calendar.try_command_retime("A",3,dispatch_clock).is_null(),"retime cannot edit a release whose original time has arrived");
+        fake_dispatch_ms=100070.45;
+        const auto update=calendar.try_command_retime("A",3,dispatch_clock);
+        check(update.at("cycle")==4&&update.at("period_ms")==60.&&update.at("next_release_ms")==100120.,"only unpublished A receives the minimum wider period");
+        check(update.at("reserve_ms")==spike&&calendar.command_reserve("A")==spike,"retime preserves the full measured command reserve");
+        check(calendar.state().at("loops").at("B").at("next_ms")==100090.,"retime never edits a peer's release");
+    }
     const auto next=calendar.take(100070.5);
     check(next.at("vehicle")=="B"&&next.at("dispatch").get<bool>()==isolate,
           "only isolation keeps B admissible after A's long ACK");
@@ -59,6 +69,18 @@ void check_command_tail_isolation(double spike,bool isolate){
           "B reaches its unchanged atomic reserve and absolute deadline guard");
     check(calendar.command_return("B",3,100074.)==2,"B can deliver another command after A's long ACK");
     calendar.observe("B",100075.,100234.,2);calendar.finish("B",3,100075.5,"delivered");
+    if(retime){
+        const auto released=calendar.release_due(100120.,100500.);
+        check(std::any_of(released.begin(),released.end(),[](const Json& row){return row.at("vehicle")=="A"&&row.at("period_ms")==60.;}),"the replacement job follows its revised release and deadline");
+        calendar.queued("A",4,100120.,100121.,late_ack+160.);
+        check(calendar.take(100121.).at("dispatch")==true,"the replacement can dispatch with its preserved reserve");
+        calendar.dpu_done("A",4,100122.,true);
+        check(calendar.command_begin("A",4,100123.),"the replacement still passes the ordinary command guard");
+        calendar.command_return("A",4,100124.);
+        calendar.finish("A",4,100124.1,"delivered");
+        check(calendar.expire_holds(late_ack+160.1).empty(),"a new acknowledgement replaces the expiring held version");
+        return;
+    }
     const auto snapshot=calendar.snapshot(100076.);
     const auto& jobs=snapshot.at("calendar").at("jobs");
     check(jobs.size()==4,"planner still represents both loops before hold expiry");
@@ -93,6 +115,7 @@ int main(int argc,char** argv){try{
         check_command_tail_isolation(spike,false);
         check_command_tail_isolation(spike,true);
     }
+    check_command_tail_isolation(43.327,true,true);
     ps_scheduler::LiveCalendar rt(config(),modes());
     check(rt.snapshot(99999.).is_null(),"before origin has no planner snapshot");
     auto released=rt.release_due(100000.,100500.);

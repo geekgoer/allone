@@ -67,6 +67,10 @@ public:
                       double command_reserve_ms);
     void update_command_costs(const std::string& vehicle,double post_ms,double reserve_ms);
     double command_reserve(const std::string& vehicle) const;
+    // Isolated fixed-EDF experiment. Edit only the first unpublished release
+    // after a long-ACK budget rejection. A null result leaves the calendar intact.
+    Json try_command_retime(const std::string& vehicle, std::uint64_t rejected_cycle,
+                            double (*clock_ms)()=nullptr);
     Json snapshot(double now_ms, double* lock_held_us=nullptr) const;
     // Production snapshot clock is sampled AFTER acquiring the calendar lock.
     // Explicit-time snapshot above remains for deterministic reference tests.

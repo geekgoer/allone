@@ -373,6 +373,41 @@ void LiveCalendar::update_command_costs(const std::string&v,double post,double r
     dispatch_order_=Json::array();++revision_;
 }
 
+Json LiveCalendar::try_command_retime(const std::string&v,std::uint64_t cycle,double (*clock_ms)()){
+    std::lock_guard<std::mutex> lock(mutex_);
+    const double now=clock_ms?clock_ms():monotonic_ms();
+    if(config_.at("adaptive").get<bool>()||!isolate_command_costs_||!config_.value("retire_on_hold_expiry",false))return nullptr;
+    auto& loop=loops_.at(v);
+    const auto& row=rows_.at(key(v,cycle));
+    if(!row.count("dispatch_rejection_evidence")||s(row,"status")!="dropped_inference"||
+       loop.at("retired").get<bool>()||loop.at("command_pending").get<bool>()||!loop.at("busy").is_null()||
+       loop.at("cycle").get<std::uint64_t>()!=cycle+1||row.at("control_version")!=loop.at("control_version"))return nullptr;
+    const auto& obs=loop.at("observation");
+    if(!observation_usable(loop,now)||obs.at("control_version")!=loop.at("control_version")||
+       n(obs,"sample_ms")+n(config_,"fresh_ms")<=now)return nullptr;
+    const double next=n(loop,"next_ms"),old=n(loop,"period_ms"),reserve=command_reserve_unlocked(row);
+    if(next<=now||reserve<=old)return nullptr;
+    const double hold=std::min(n(obs,"deadline_ms"),n(loop,"watch_hold_ms"));
+    const double service=n(modes_.at(std::to_string(config_.at("model_id").get<int>())),"service_ms");
+    const double post=std::max({reserve,loop.value("post_ms",0.),n(config_,"post_ms")});
+    const double infinity=std::numeric_limits<double>::infinity();
+    double chosen=infinity;
+    double completion=0.;
+    for(double period:config_.at("periods_ms").get<std::vector<double>>()){
+        if(period<=old||period>=chosen)continue;
+        const double release=n(loop,"previous_ms")+period;
+        const double finish=release+n(config_,"prep_ms")+service+post;
+        const double due=std::min({release+period,hold,release+n(config_,"fresh_ms"),config_.value("measurement_stop_ms",infinity)});
+        if(finish<due){chosen=period;completion=finish;}
+    }
+    if(!finite(chosen))return nullptr;
+    const double release=n(loop,"previous_ms")+chosen;
+    loop["period_ms"]=chosen;loop["next_ms"]=release;++revision_;
+    return Json{{"cycle",cycle+1},{"old_period_ms",old},{"period_ms",chosen},{"old_release_ms",next},
+        {"next_release_ms",release},{"commit_ms",now},{"hold_deadline_ms",hold},{"reserve_ms",reserve},
+        {"earliest_budgeted_ack_ms",completion}};
+}
+
 Json LiveCalendar::snapshot(double now,double* lock_held_us)const{
     finite_time(now,"snapshot");std::unique_lock<std::mutex>lock(mutex_);
     if(!lock_held_us)return capture_snapshot(lock,now);
