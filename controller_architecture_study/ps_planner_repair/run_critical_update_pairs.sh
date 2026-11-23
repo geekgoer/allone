@@ -1,5 +1,5 @@
 #!/bin/sh
-# Pilot only. Intentionally omit one update in the experimental arm.
+# Pilot only. Intentionally omit the frozen updates in the experimental arm.
 set -eu
 KIT=${1:?directory with experiment binary and frozen inputs}
 OUT=${2:?new result directory}
@@ -9,6 +9,7 @@ INPUT="$KIT/inputs"
 N=Drone1,Drone2,Drone3,Drone4,Drone5,Drone6,Drone7,Drone8,Drone9,Drone10,Drone11,Drone12
 test -x "$BIN"
 (cd "$INPUT" && sha256sum -c inputs.sha256)
+if [ -f "$INPUT/vehicles.txt" ]; then N=$(cat "$INPUT/vehicles.txt"); fi
 mkdir "$OUT"
 sha256sum "$BIN" > "$OUT/binary.sha256"
 cp "$INPUT/inputs.sha256" "$OUT/"

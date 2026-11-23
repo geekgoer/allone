@@ -14,17 +14,19 @@ def add_critical_update_probe(code):
         '''        const auto probe=config.at("critical_update_probe");
         const auto probe_vehicle=probe.at("vehicle").get<std::string>();
         const auto probe_cycle=probe.at("cycle").get<std::uint64_t>();
+        const auto probe_count=probe.value("count",1);
         const bool omit_update=probe.at("omit_update").get<bool>();
         if(policy!="fixed"||enable_skip||config.count("initial_periods")||probe_vehicle.empty()||
-           !probe.at("cycle").is_number_integer()||probe.at("cycle").get<std::int64_t>()<=0)
-            throw std::runtime_error("Critical update probe requires fixed policy, uniform period and a positive cycle");
+           !probe.at("cycle").is_number_integer()||probe.at("cycle").get<std::int64_t>()<=0||
+           (probe.count("count")&&!probe.at("count").is_number_integer())||probe_count<1||probe_count>3)
+            throw std::runtime_error("Critical update probe requires fixed policy, uniform period, positive cycle and 1 to 3 updates");
         const int initial_model=config.at("model_id").get<int>();''')
     code = replace_one(code, '        config["names"]=names;',
-        '''        if(!by_name.count(probe_vehicle)||double(probe_cycle+1)*config.at("period_ms").get<double>()>=duration*1000.)
+        '''        if(!by_name.count(probe_vehicle)||(double(probe_cycle)+probe_count+1.)*config.at("period_ms").get<double>()>=duration*1000.)
             throw std::runtime_error("Critical update probe lies outside the prepared flight");
         config["names"]=names;''')
     return replace_one(code, '                // Registry publication, queued(), selected-model take(), real',
-        '''                if(v->name==probe_vehicle&&slot->cycle==probe_cycle){
+        '''                if(v->name==probe_vehicle&&slot->cycle>=probe_cycle&&slot->cycle<probe_cycle+probe_count){
                     row["critical_update_probe"]=true;
                     if(omit_update){
                         row["status"]="probe_omitted_update";
