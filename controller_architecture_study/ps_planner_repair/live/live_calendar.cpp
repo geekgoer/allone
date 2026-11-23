@@ -35,6 +35,9 @@ LiveCalendar::LiveCalendar(Json c,Json modes):config_(std::move(c)),modes_(Json:
     else modes_=std::move(modes);
     if(!config_.count("adaptive"))config_["adaptive"]=true;
     if(!config_.count("enable_skip"))config_["enable_skip"]=false;
+    if(config_.value("retire_on_hold_expiry",false)&&
+       (!config_.count("maximum_update_ms")||!finite(n(config_,"maximum_update_ms"))||
+        n(config_,"maximum_update_ms")<=0.))throw std::invalid_argument("Positive finite maximum update required for hold expiry");
     if(!config_.count("fresh_ms"))config_["fresh_ms"]=80.;
     if(!config_.count("command_reserve_ms"))config_["command_reserve_ms"]=config_.at("post_ms");
     if(!config_.count("rearm_ms"))config_["rearm_ms"]=config_.at("post_ms");
@@ -55,14 +58,20 @@ LiveCalendar::LiveCalendar(Json c,Json modes):config_(std::move(c)),modes_(Json:
 }
 Json LiveCalendar::state()const{std::lock_guard<std::mutex>lock(mutex_);return Json{{"revision",revision_},{"loops",loops_},{"future_modes",future_modes_},{"pending_recovery",pending_},{"planned_skip",planned_skip_},{"active",active_.empty()?Json(nullptr):Json(active_)},{"dispatch_order",dispatch_order_},{"dispatch_expires_ms",dispatch_expires_ms_},{"config",config_},{"modes",modes_}};}
 double LiveCalendar::next_wakeup_ms()const{std::lock_guard<std::mutex>lock(mutex_);double next=std::numeric_limits<double>::infinity();for(const auto&l:loops_)if(!l.at("retired").get<bool>())next=std::min(next,n(l,"next_ms"));return next;}
-Json LiveCalendar::row(const std::string&v,std::uint64_t cycle)const{std::lock_guard<std::mutex>lock(mutex_);return rows_.at(key(v,cycle));}
+Json LiveCalendar::row(const std::string&v,std::uint64_t cycle,double* lock_wait_us)const{
+    using Clock=std::chrono::steady_clock;
+    const auto start=lock_wait_us?Clock::now():Clock::time_point{};
+    std::lock_guard<std::mutex>lock(mutex_);
+    if(lock_wait_us)*lock_wait_us=std::chrono::duration<double,std::micro>(Clock::now()-start).count();
+    return rows_.at(key(v,cycle));
+}
 std::uint64_t LiveCalendar::control_version(const std::string&v)const{std::lock_guard<std::mutex>lock(mutex_);return loops_.at(v).at("control_version").get<std::uint64_t>();}
-Json LiveCalendar::release_due(double now,double stop){
+Json LiveCalendar::release_due(double now,double stop,Json* expiries){
     finite_time(now,"release_due");
     if(std::isnan(stop)||stop==-std::numeric_limits<double>::infinity())throw std::invalid_argument("Invalid release cutoff");
     std::lock_guard<std::mutex>lock(mutex_);Json out=Json::array();
     for(const auto&v:config_.at("names").get<std::vector<std::string>>()){
-        auto&l=loops_.at(v);if(l.at("retired").get<bool>())continue;
+        auto&l=loops_.at(v);expire_hold_unlocked(v,l,now);if(l.at("retired").get<bool>())continue;
         while(n(l,"next_ms")<=now&&n(l,"next_ms")<stop-1e-6){
             const double r=n(l,"next_ms"),period=n(l,"period_ms");const auto cycle=l.at("cycle").get<std::uint64_t>();const auto name=key(v,cycle);
             int model=config_.at("model_id").get<int>();if(future_modes_.count(name)){model=future_modes_.at(name).get<int>();future_modes_.erase(name);}
@@ -80,12 +89,21 @@ Json LiveCalendar::release_due(double now,double stop){
             rows_[name]=item;out.push_back(item);++revision_;
         }
     }
+    if(expiries){*expiries=Json::array();expiries->swap(hold_expiries_);}
     return out;
 }
-bool LiveCalendar::observe(const std::string&v,double sample,double hold,std::uint64_t version,bool stable,const std::string&evidence){
-    if(!finite(sample)||!finite(hold))throw std::invalid_argument("Finite observed times required");
+bool LiveCalendar::observe(const std::string&v,double sample,double hold,std::uint64_t version,bool stable,const std::string&evidence,double available){
+    if(!finite(sample)||!finite(hold)||!finite(available))throw std::invalid_argument("Finite observed times required");
     std::lock_guard<std::mutex>lock(mutex_);auto&l=loops_.at(v);
+    const double now=std::max(sample,available);
+    expire_hold_unlocked(v,l,now);
     if(l.at("retired").get<bool>()||l.at("command_pending").get<bool>()||version!=l.at("control_version").get<std::uint64_t>()||(!l.at("observation").is_null()&&sample<=n(l.at("observation"),"sample_ms")))return false;
+    if(config_.value("retire_on_hold_expiry",false)){
+        if(l.count("hold_cap_ms"))hold=std::min(hold,n(l,"hold_cap_ms"));
+        l["watch_hold_ms"]=hold;
+        expire_hold_unlocked(v,l,now);
+        if(l.at("retired").get<bool>())return false;
+    }
     if(!l.at("observation").is_null()&&hold<n(l.at("observation"),"deadline_ms"))dispatch_order_=Json::array();
     l["observation"]=Json{{"sample_ms",sample},{"deadline_ms",hold},{"control_version",version},{"stable",stable},{"evidence",evidence}};++revision_;proof_ready_.notify_all();return true;
 }
@@ -106,9 +124,18 @@ Json LiveCalendar::queued(const std::string&v,std::uint64_t cycle,double sample,
     }
     ++revision_;return r;
 }
-Json LiveCalendar::take(double now){
+Json LiveCalendar::take(double now,double* lock_wait_us,double (*refresh_ms)()){
     finite_time(now,"take");
-    std::lock_guard<std::mutex>lock(mutex_);if(!active_.empty())return nullptr;
+    using Clock=std::chrono::steady_clock;
+    const auto wait_start=lock_wait_us?Clock::now():Clock::time_point{};
+    std::lock_guard<std::mutex>lock(mutex_);
+    if(lock_wait_us)*lock_wait_us=std::chrono::duration<double,std::micro>(Clock::now()-wait_start).count();
+    if(!active_.empty())return nullptr;
+    const bool separated=config_.value("separate_dispatch_service",false);
+    if(separated){
+        if(!refresh_ms)throw std::invalid_argument("Separated service requires a monotonic dispatch clock");
+        now=std::max(now,refresh_ms());
+    }
     std::vector<std::string> live;
     // Historical rows remain for audit, but never scan them on every 250us
     // executor wake. queued() requires busy ownership, so these are exactly
@@ -137,7 +164,21 @@ Json LiveCalendar::take(double now){
     double budget=r.value("actuation_deadline_ms",n(r,"deadline_ms"))-now-n(config_,"command_reserve_ms");std::vector<int>affordable;
     for(int id:config_.at("candidate_ids").get<std::vector<int>>())if(n(modes_.at(std::to_string(id)),"service_ms")<=budget)affordable.push_back(id);
     int selected_model=r.at("model_id").get<int>();
-    if(affordable.empty()||(!config_.at("adaptive").get<bool>()&&std::find(affordable.begin(),affordable.end(),selected_model)==affordable.end())){r["cancelled"]=true;r["dispatch_checked"]=true;r["dispatch"]=false;r["status"]="dropped_inference";r["dispatch_rejection"]="no_model_fits_remaining_delivery_budget";++revision_;return r;}
+    const auto mode_cost=[&](int id){return n(modes_.at(std::to_string(id)),"service_ms");};
+    auto reject_budget=[&](int required_model,const char* reason){
+        r["dispatch_rejection_evidence"]={{"checked_ms",now},{"budget_ms",budget},
+            {"command_reserve_ms",n(config_,"command_reserve_ms")},
+            {"required_model_id",required_model},{"required_service_ms",mode_cost(required_model)}};
+        r["cancelled"]=true;r["dispatch_checked"]=true;r["dispatch"]=false;r["status"]="dropped_inference";
+        r["dispatch_rejection"]=reason;++revision_;return r;
+    };
+    if(affordable.empty()||(!config_.at("adaptive").get<bool>()&&std::find(affordable.begin(),affordable.end(),selected_model)==affordable.end())){
+        int required_model=selected_model;
+        if(config_.at("adaptive").get<bool>()){
+            for(int id:config_.at("candidate_ids"))if(mode_cost(id)<mode_cost(required_model))required_model=id;
+        }
+        return reject_budget(required_model,"no_model_fits_remaining_delivery_budget");
+    }
     if(config_.at("adaptive").get<bool>()){
         auto quality_less=[&](int a,int b){return n(modes_.at(std::to_string(a)),"selection_mse")<n(modes_.at(std::to_string(b)),"selection_mse");};
         if(!planned_head&&live.size()>1){
@@ -178,6 +219,34 @@ Json LiveCalendar::take(double now){
             selected_model=*std::min_element(affordable.begin(),affordable.end(),quality_less);
         r["model_id"]=selected_model;
     }
+    if(separated){
+        const double refreshed=std::max(now,refresh_ms());
+        budget-=refreshed-now;
+        now=refreshed;
+        if(mode_cost(selected_model)>budget){
+            if(!config_.at("adaptive").get<bool>())
+                return reject_budget(selected_model,"selected_model_no_longer_fits_at_dispatch");
+            const int fastest=*std::min_element(affordable.begin(),affordable.end(),
+                [&](int a,int b){return mode_cost(a)<mode_cost(b);});
+            const double handoff=std::max(now,refresh_ms());
+            budget-=handoff-now;
+            now=handoff;
+            if(mode_cost(fastest)>budget)return reject_budget(fastest,"no_model_fits_at_dispatch_handoff");
+            r["dispatch_handoff_downgraded_from"]=selected_model;
+            selected_model=fastest;
+            r["model_id"]=selected_model;
+            if(r.count("ready_queue_fast_tail_fits")){
+                double end=now+n(config_,"command_reserve_ms");
+                bool tail_fits=true;
+                for(const auto& name:live){
+                    const auto& job=rows_.at(name);
+                    end+=mode_cost(fastest);
+                    if(end>=job.value("actuation_deadline_ms",n(job,"deadline_ms"))-epsilon){tail_fits=false;break;}
+                }
+                r["ready_queue_fast_tail_fits"]=tail_fits;
+            }
+        }
+    }
     r["board_start_ms"]=now;r["phase"]="board";r["configuration_id"]=selected_model;r["dispatch_checked"]=true;r["dispatch"]=true;active_=selected;++revision_;return r;
 }
 void LiveCalendar::dpu_done(const std::string&v,std::uint64_t cycle,double now,bool success){
@@ -190,7 +259,8 @@ bool LiveCalendar::command_begin(const std::string&v,std::uint64_t cycle,double 
     if(l.at("busy")!=key(v,cycle))throw std::invalid_argument("Command attempt no longer owns worker");
     if(s(r,"phase")!="post"||!r.value("board_success",false)||!r.count("board_done_ms")||now<n(r,"board_done_ms"))throw std::invalid_argument("Command attempt requires a completed successful DPU job");
     if(l.at("command_pending").get<bool>()||r.count("command_begin_ms")||r.count("command_return_ms"))throw std::invalid_argument("Command attempt already recorded");
-    const double due=r.value("actuation_deadline_ms",n(r,"deadline_ms"));
+    expire_hold_unlocked(v,l,now);
+    const double due=std::min(r.value("actuation_deadline_ms",n(r,"deadline_ms")),l.value("watch_hold_ms",std::numeric_limits<double>::infinity()));
     if(l.at("retired").get<bool>()||r.at("cancelled").get<bool>()||now+n(config_,"command_reserve_ms")>=due){
         r["cancelled"]=true;r["status"]="dropped_before_command";r["command_begin_rejected_ms"]=now;++revision_;return false;
     }
@@ -199,7 +269,14 @@ bool LiveCalendar::command_begin(const std::string&v,std::uint64_t cycle,double 
 }
 std::uint64_t LiveCalendar::command_return(const std::string&v,std::uint64_t cycle,double now){
     finite_time(now,"command_return");
-    std::lock_guard<std::mutex>lock(mutex_);auto&r=rows_.at(key(v,cycle));auto&l=loops_.at(v);if(l.at("busy")!=key(v,cycle))throw std::invalid_argument("Command return no longer owns worker");if(s(r,"phase")!="post"||!r.value("board_success",false)||!r.count("board_done_ms")||now<n(r,"board_done_ms"))throw std::invalid_argument("Command return requires a completed successful DPU job");if(r.count("command_return_ms"))throw std::invalid_argument("Command return already recorded");if(!l.at("command_pending").get<bool>()||!r.value("command_pending",false)||!r.count("command_begin_ms")||now<n(r,"command_begin_ms"))throw std::invalid_argument("Command return requires an actual pending command attempt");r["command_return_ms"]=now;r["command_pending"]=false;l["command_pending"]=false;auto version=l.at("control_version").get<std::uint64_t>()+1;l["control_version"]=version;l["observation"]=nullptr;dispatch_order_=Json::array();++revision_;return version;
+    std::lock_guard<std::mutex>lock(mutex_);auto&r=rows_.at(key(v,cycle));auto&l=loops_.at(v);if(l.at("busy")!=key(v,cycle))throw std::invalid_argument("Command return no longer owns worker");if(s(r,"phase")!="post"||!r.value("board_success",false)||!r.count("board_done_ms")||now<n(r,"board_done_ms"))throw std::invalid_argument("Command return requires a completed successful DPU job");if(r.count("command_return_ms"))throw std::invalid_argument("Command return already recorded");if(!l.at("command_pending").get<bool>()||!r.value("command_pending",false)||!r.count("command_begin_ms")||now<n(r,"command_begin_ms"))throw std::invalid_argument("Command return requires an actual pending command attempt");
+    expire_hold_unlocked(v,l,now);
+    r["command_return_ms"]=now;r["command_pending"]=false;l["command_pending"]=false;auto version=l.at("control_version").get<std::uint64_t>()+1;l["control_version"]=version;l["observation"]=nullptr;dispatch_order_=Json::array();++revision_;
+    if(config_.value("retire_on_hold_expiry",false)&&!l.at("retired").get<bool>()){
+        const double cap=now+n(config_,"maximum_update_ms");
+        l["hold_cap_ms"]=cap;l["watch_hold_ms"]=cap;
+    }
+    return version;
 }
 Json LiveCalendar::finish(const std::string&v,std::uint64_t cycle,double when,const std::string&status){
     finite_time(when,"finish");
@@ -215,7 +292,26 @@ Json LiveCalendar::finish(const std::string&v,std::uint64_t cycle,double when,co
     proof_ready_.notify_all();
     return r;
 }
-void LiveCalendar::retire(const std::string&v){std::lock_guard<std::mutex>lock(mutex_);auto&l=loops_.at(v);l["retired"]=true;if(!l.at("busy").is_null())rows_.at(l.at("busy").get<std::string>())["cancelled"]=true;++revision_;}
+void LiveCalendar::retire_unlocked(const std::string&v,Json&l){
+    if(l.at("retired").get<bool>())return;
+    l["retired"]=true;
+    if(!l.at("busy").is_null())rows_.at(l.at("busy").get<std::string>())["cancelled"]=true;
+    pending_.erase(v);planned_skip_.erase(v);dispatch_order_=Json::array();++revision_;
+}
+void LiveCalendar::retire(const std::string&v){std::lock_guard<std::mutex>lock(mutex_);retire_unlocked(v,loops_.at(v));}
+void LiveCalendar::expire_hold_unlocked(const std::string&v,Json&l,double now){
+    if(l.at("retired").get<bool>()||!l.count("watch_hold_ms")||now<n(l,"watch_hold_ms"))return;
+    hold_expiries_.push_back({{"vehicle",v},{"control_version",l.at("control_version")},
+        {"hold_deadline_ms",l.at("watch_hold_ms")},{"detected_ms",now},
+        {"command_in_flight",l.at("command_pending")},{"reason","hold_expired"}});
+    retire_unlocked(v,l);
+}
+Json LiveCalendar::expire_holds(double now){
+    finite_time(now,"expire_holds");
+    std::lock_guard<std::mutex>lock(mutex_);
+    for(auto it=loops_.begin();it!=loops_.end();++it)expire_hold_unlocked(it.key(),it.value(),now);
+    Json events=Json::array();events.swap(hold_expiries_);return events;
+}
 void LiveCalendar::update_costs(double prep,double post,double rearm,double reserve){const std::vector<std::pair<std::string,double>> observations{{"prep_ms",prep},{"post_ms",post},{"rearm_ms",rearm},{"command_reserve_ms",reserve}};for(const auto&p:observations)if(!finite(p.second)||p.second<0)throw std::invalid_argument("Invalid cost observation");std::lock_guard<std::mutex>lock(mutex_);for(const auto&p:observations)if(p.second>config_.at(p.first).get<double>()){config_[p.first]=p.second;++revision_;}}
 
 Json LiveCalendar::snapshot(double now)const{finite_time(now,"snapshot");std::lock_guard<std::mutex>lock(mutex_);return snapshot_unlocked(now);}
@@ -271,9 +367,20 @@ Json LiveCalendar::snapshot_unlocked(double now)const{
     // An installed skip is already a committed pending calendar operation;
     // wait for that absolute release to be consumed, not plan to skip it twice.
     if(!planned_skip_.empty())return nullptr;
+    const auto observation_usable=[&](const Json& loop){
+        const auto& ob=loop.at("observation");
+        return !loop.at("command_pending").get<bool>()&&!ob.is_null()&&
+            n(ob,"sample_ms")<=now&&n(ob,"deadline_ms")>now&&n(loop,"next_ms")>now;
+    };
+    const bool precheck=config_.value("snapshot_precheck",false);
+    if(precheck){
+        // Reject invalid all-loop context before allocating any job JSON.
+        for(const auto& loop:loops_)
+            if(!loop.at("retired").get<bool>()&&!observation_usable(loop))return nullptr;
+    }
     Json jobs=Json::array(),permissions=Json::array(),versions=Json::object(),pending_keys=Json::array(),delivering=Json::array();double blocked=0.;
     for(const auto&v:config_.at("names").get<std::vector<std::string>>()){
-        const auto&l=loops_.at(v);if(l.at("retired").get<bool>())continue;const auto&ob=l.at("observation");if(l.at("command_pending").get<bool>()||ob.is_null()||n(ob,"sample_ms")>now||n(ob,"deadline_ms")<=now||n(l,"next_ms")<=now)return nullptr;const double hold=n(ob,"deadline_ms"),next=n(l,"next_ms");versions[v]=l.at("control_version");
+        const auto&l=loops_.at(v);if(l.at("retired").get<bool>())continue;if(!precheck&&!observation_usable(l))return nullptr;const auto&ob=l.at("observation");const double hold=n(ob,"deadline_ms"),next=n(l,"next_ms");versions[v]=l.at("control_version");
         if(!l.at("busy").is_null()){
             const auto&r=rows_.at(l.at("busy").get<std::string>());const auto stage=s(r,"phase");
             if(n(r,"release_ms")>now)return nullptr; // Reject stale explicit snapshot time; never invent negative preparation.

@@ -16,14 +16,17 @@ public:
     LiveCalendar(Json config, Json modes);
     // All returns include drop/planned_skip rows, not just admitted rows. Only
     // status==sampling rows may be handed to a per-vehicle worker.
-    Json release_due(double now_ms, double stop_before_ms);
+    Json release_due(double now_ms, double stop_before_ms, Json* expiries=nullptr);
     double next_wakeup_ms() const;
     Json state() const;
-    Json row(const std::string& vehicle, std::uint64_t cycle) const;
+    Json row(const std::string& vehicle, std::uint64_t cycle, double* lock_wait_us=nullptr) const;
     std::uint64_t control_version(const std::string& vehicle) const;
     bool observe(const std::string& vehicle, double sample_ms, double hold_deadline_ms,
                  std::uint64_t held_version, bool stable=false,
-                 const std::string& evidence="unknown phase");
+                 const std::string& evidence="unknown phase", double available_ms=-1.);
+    // The optional policy retires ordinary control, with no fallback RPC.
+    // Returns each new expiry once, including expiries latched by worker calls.
+    Json expire_holds(double now_ms);
     // Mark sampled RAW237 ready, freezing min(slot, hold, sample+F,recovery).
     // Returns the current row, cancelled=true when already expired/not owned.
     Json queued(const std::string& vehicle, std::uint64_t cycle,
@@ -31,7 +34,8 @@ public:
     // Atomic single-DPU acquisition. Returns null if idle/no work or waiting for
     // a promised head; returns dispatch=false on a rejected queue row so its
     // waiting worker can finish/record it. Successful row has dispatch=true.
-    Json take(double now_ms);
+    // With separate_dispatch_service, refresh_ms shares the caller's timebase.
+    Json take(double now_ms, double* lock_wait_us=nullptr, double (*refresh_ms)()=nullptr);
     void dpu_done(const std::string& vehicle, std::uint64_t cycle,
                   double result_ready_ms, bool success);
     // Native-I/O command_pending equivalent. Immediately before any command
@@ -73,6 +77,8 @@ public:
     Json install_at_for_test(const Json& snapshot,const Json& decision,double now_ms);
 private:
     std::string key(const std::string&v,std::uint64_t cycle) const;
+    void expire_hold_unlocked(const std::string& vehicle, Json& loop, double now);
+    void retire_unlocked(const std::string& vehicle, Json& loop);
     Json snapshot_unlocked(double now_ms) const;
     Json install_unlocked(const Json& snapshot,const Json& decision,double now_ms);
     mutable std::mutex mutex_;
@@ -80,6 +86,7 @@ private:
     Json config_, modes_, loops_=Json::object(), rows_=Json::object();
     Json future_modes_=Json::object(),pending_=Json::object(),planned_skip_=Json::object();
     Json dispatch_order_=Json::array();
+    Json hold_expiries_=Json::array();
     std::string active_;
     double dispatch_expires_ms_=0.;
     std::uint64_t revision_=0;

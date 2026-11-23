@@ -7,6 +7,8 @@
 using ps_scheduler::Json;
 namespace{
 int count=0;
+double fake_dispatch_ms=0.,fake_dispatch_step_ms=0.;
+double dispatch_clock(){const auto current=fake_dispatch_ms;fake_dispatch_ms+=fake_dispatch_step_ms;return current;}
 void check(bool pass,const std::string&msg){++count;if(!pass)throw std::runtime_error(msg);}
 template<typename F>void throws(F fn,const std::string&msg){bool caught=false;try{fn();}catch(const std::exception&){caught=true;}check(caught,msg);}
 Json config(){return Json{{"names",Json::array({"Drone1"})},{"origin_ms",100000.},{"period_ms",50.},{"periods_ms",Json::array({20.,50.,80.})},{"model_id",2},{"candidate_ids",Json::array({1,2})},{"prep_ms",.5},{"post_ms",.5},{"decision_ms",3.}};}
@@ -30,7 +32,9 @@ int main(){try{
     auto q=rt.queued("Drone1",0,100000.,100002.,100200.);
     check(q.at("actuation_deadline_ms")==100050.,"period deadline frozen at release");
     throws([&]{rt.command_return("Drone1",0,100002.5);},"cannot acknowledge a command before inference returns");
-    auto take=rt.take(100003.);check(take.at("dispatch").get<bool>()&&take.at("model_id")==2,"DPU selects current fitting configuration");
+    double take_lock_wait=-1.;
+    auto take=rt.take(100003.,&take_lock_wait);check(take.at("dispatch").get<bool>()&&take.at("model_id")==2,"DPU selects current fitting configuration");
+    check(std::isfinite(take_lock_wait)&&take_lock_wait>=0.,"calendar lock wait is reported for an instrumented take");
     check(rt.take(100003.1).is_null(),"active nonpreemptive job owns DPU");
     throws([&]{rt.finish("Drone1",0,100004.,"dropped");},"cannot software-release active hardware job");
     check(rt.snapshot(100009.).is_null(),"exceeded empirical active envelope invalidates prediction");
@@ -69,6 +73,55 @@ int main(){try{
 
     auto paired_config=config();
     paired_config["names"]=Json::array({"Drone1","Drone2"});
+    auto watchdog=paired_config;
+    watchdog["retire_on_hold_expiry"]=true;watchdog["maximum_update_ms"]=160.;
+    ps_scheduler::LiveCalendar automatic(watchdog,modes());
+    automatic.release_due(100025.,100500.);
+    automatic.observe("Drone1",100025.,100035.,0);
+    automatic.observe("Drone2",100025.,100300.,0);
+    automatic.queued("Drone1",0,100025.,100025.1,100035.);
+    automatic.queued("Drone2",0,100025.,100025.2,100300.);
+    check(automatic.take(100026.).at("vehicle")=="Drone1","watchdog target owns active DPU");
+    Json expiries;
+    automatic.release_due(100035.,100500.,&expiries);
+    check(expiries.size()==1&&expiries[0]["vehicle"]=="Drone1"&&expiries[0]["control_version"]==0,
+          "publisher emits expiry atomically before releasing ordinary work");
+    check(automatic.take(100035.1).is_null(),"expiry does not release active hardware");
+    automatic.dpu_done("Drone1",0,100035.2,true);
+    check(!automatic.command_begin("Drone1",0,100035.3),"expired completion cannot issue a command");
+    automatic.finish("Drone1",0,100035.4,"dropped_before_command");
+    check(automatic.take(100035.5).at("vehicle")=="Drone2","other vehicle still dispatches");
+    check(automatic.expire_holds(100036.).empty(),"expiry and its event are one-shot");
+    check(automatic.release_due(100075.,100500.).size()==1,"only survivor continues releasing");
+
+    auto one_watchdog=config();
+    one_watchdog["retire_on_hold_expiry"]=true;one_watchdog["maximum_update_ms"]=160.;
+    ps_scheduler::LiveCalendar pending_watch(one_watchdog,modes());
+    pending_watch.release_due(100000.,100500.);
+    pending_watch.observe("Drone1",100000.,100020.,0);
+    pending_watch.queued("Drone1",0,100000.,100001.,100020.);
+    pending_watch.take(100002.);
+    pending_watch.dpu_done("Drone1",0,100007.,true);
+    pending_watch.command_begin("Drone1",0,100008.);
+    check(pending_watch.command_return("Drone1",0,100020.)==1,"ACK at expiry is still recorded");
+    const auto pending_events=pending_watch.expire_holds(100021.);
+    check(pending_events.size()==1&&pending_events[0]["command_in_flight"]==true&&
+          pending_events[0]["control_version"]==0,"late ACK cannot hide the original generation expiry");
+
+    ps_scheduler::LiveCalendar cap_watch(one_watchdog,modes());
+    cap_watch.release_due(100000.,100500.);
+    cap_watch.queued("Drone1",0,100000.,100001.,100040.);
+    cap_watch.take(100002.);
+    cap_watch.dpu_done("Drone1",0,100007.,true);
+    cap_watch.command_begin("Drone1",0,100008.);
+    cap_watch.command_return("Drone1",0,100009.);
+    check(cap_watch.observe("Drone1",100100.,100500.,1),"fresh observation is compatible with the ACK cap");
+    check(cap_watch.expire_holds(100168.9).empty(),"ACK cap is an absolute frontier");
+    check(!cap_watch.observe("Drone1",100168.,100500.,1,false,"late analysis",100169.1),
+          "sample processed after expiry cannot refresh the old version");
+    const auto cap_events=cap_watch.expire_holds(100170.);
+    check(cap_events.size()==1&&cap_events[0]["hold_deadline_ms"]==100169.,"observation cannot extend the ACK cap");
+
     ps_scheduler::LiveCalendar expired_loop(paired_config,modes());
     expired_loop.release_due(100025.,100150.);
     expired_loop.queued("Drone1",0,100025.,100025.1,100100.);
@@ -98,9 +151,49 @@ int main(){try{
     fixed_rt.queued("Drone1",0,100000.,100001.,100004.);auto rejected=fixed_rt.take(100002.);
     check(!rejected.at("dispatch").get<bool>(),"fixed accurate model refused if only another model fits");
     check(rejected.at("dispatch_rejection")=="no_model_fits_remaining_delivery_budget","guard reason retained");
+    const auto fixed_evidence=rejected.at("dispatch_rejection_evidence");
+    check(fixed_evidence.at("required_model_id")==2&&fixed_evidence.at("required_service_ms")==5.&&
+          fixed_evidence.at("budget_ms")==1.5&&fixed_evidence.at("command_reserve_ms")==.5&&
+          fixed_evidence.at("checked_ms")==100002.,"fixed rejection records the actual checked model and budget");
     fixed_rt.finish("Drone1",0,100002.1,"dropped_inference");
     auto fixed_snap=fixed_rt.snapshot(100003.);auto fixed_decision=fixed_rt.plan_snapshot(fixed_snap);
     check(fixed_rt.install_at_for_test(fixed_snap,fixed_decision,100003.1).at("status")=="fixed_configuration_no_planning","fixed baseline cannot accidentally install adaptation");
+    auto spike_config=config();spike_config["candidate_ids"]=Json::array({2});
+    ps_scheduler::LiveCalendar spike(spike_config,modes());
+    spike.release_due(100000.,100150.);
+    spike.queued("Drone1",0,100000.,100001.,100100.);
+    spike.take(100002.);spike.dpu_done("Drone1",0,100014.,true);
+    spike.finish("Drone1",0,100015.,"dropped_before_command");
+    spike.release_due(100050.,100150.);
+    spike.queued("Drone1",1,100050.,100051.,100062.);
+    auto spike_rejected=spike.take(100052.).at("dispatch_rejection_evidence");
+    check(spike_rejected.at("required_service_ms")==12.&&spike_rejected.at("budget_ms")==9.5,
+          "adaptive rejection freezes the raised service estimate and remaining delivery budget");
+    auto separated_config=config();separated_config["separate_dispatch_service"]=true;
+    ps_scheduler::LiveCalendar separated(separated_config,modes());
+    separated.release_due(100000.,100150.);
+    separated.queued("Drone1",0,100000.,100001.,100100.);
+    fake_dispatch_ms=100009.;fake_dispatch_step_ms=1.;
+    auto selected=separated.take(100002.,nullptr,dispatch_clock);
+    separated.dpu_done("Drone1",0,100014.,true);
+    check(selected.at("board_start_ms")==100010.&&separated.state().at("modes").at("2").at("service_ms")==5.,
+          "wait and selection are excluded from the learned model cost");
+    separated.finish("Drone1",0,100015.,"dropped_before_command");
+    separated.release_due(100050.,100150.);
+    separated.queued("Drone1",1,100050.,100051.,100064.);
+    fake_dispatch_ms=100058.;fake_dispatch_step_ms=2.;
+    auto late_dispatch=separated.take(100052.,nullptr,dispatch_clock);
+    check(late_dispatch.at("model_id")==1&&late_dispatch.at("dispatch_handoff_downgraded_from")==2&&
+          late_dispatch.at("board_start_ms")==100062.,"stale mode falls back once to a cheaper model that still fits");
+    separated.dpu_done("Drone1",1,100063.,true);
+    separated.finish("Drone1",1,100064.,"dropped_before_command");
+    separated.release_due(100100.,100150.);
+    separated.queued("Drone1",2,100100.,100101.,100113.);
+    fake_dispatch_ms=100107.;fake_dispatch_step_ms=3.;
+    auto no_room=separated.take(100102.,nullptr,dispatch_clock);
+    check(no_room.at("dispatch_rejection")=="no_model_fits_at_dispatch_handoff"&&
+          no_room.at("dispatch_rejection_evidence").at("budget_ms")==-.5&&separated.state().at("active").is_null(),
+          "without time for even the cheapest alternative the DPU remains free");
     ps_scheduler::LiveCalendar abandoned(config(),modes());
     abandoned.release_due(100000.,100200.);
     auto expired_input=abandoned.queued("Drone1",0,100000.,100005.,100004.);
