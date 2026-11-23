@@ -60,7 +60,18 @@ LiveCalendar::LiveCalendar(Json c,Json modes):config_(std::move(c)),modes_(Json:
     if(ids.empty()||std::set<int>(ids.begin(),ids.end()).size()!=ids.size())throw std::invalid_argument("Unique candidate IDs required");
     for(int id:ids){auto idkey=std::to_string(id);if(!modes_.count(idkey)||!finite(n(modes_[idkey],"service_ms"))||n(modes_[idkey],"service_ms")<=0||!finite(n(modes_[idkey],"selection_mse"))||n(modes_[idkey],"selection_mse")<0)throw std::invalid_argument("Invalid local model profile");}
     const int default_model=config_.at("model_id").get<int>();if(std::find(ids.begin(),ids.end(),default_model)==ids.end())throw std::invalid_argument("Default outside candidate models");
-    for(std::size_t i=0;i<names.size();++i){double period=n(config_,"period_ms");if(config_.count("initial_periods"))period=config_.at("initial_periods").at(names[i]).get<double>();if(std::find(periods.begin(),periods.end(),period)==periods.end())throw std::invalid_argument("Unsupported initial period");double release=n(config_,"origin_ms")+double(i)*period/double(names.size());loops_[names[i]]=Json{{"period_ms",period},{"previous_ms",release-period},{"next_ms",release},{"cycle",0},{"busy",nullptr},{"observation",nullptr},{"control_version",0},{"command_pending",false},{"retired",false}};}
+    const auto phases=config_.find("initial_phase_ms");
+    if(phases!=config_.end()&&(!phases->is_object()||phases->size()!=names.size()))
+        throw std::invalid_argument("Initial phases must name every active vehicle exactly once");
+    for(std::size_t i=0;i<names.size();++i){
+        double period=n(config_,"period_ms");
+        if(config_.count("initial_periods"))period=config_.at("initial_periods").at(names[i]).get<double>();
+        if(std::find(periods.begin(),periods.end(),period)==periods.end())throw std::invalid_argument("Unsupported initial period");
+        const double phase=phases==config_.end()?double(i)*period/double(names.size()):phases->at(names[i]).get<double>();
+        if(!finite(phase)||phase<0.||phase>=period)throw std::invalid_argument("Initial phase must be within the vehicle's first period");
+        const double release=n(config_,"origin_ms")+phase;
+        loops_[names[i]]=Json{{"period_ms",period},{"previous_ms",release-period},{"next_ms",release},{"cycle",0},{"busy",nullptr},{"observation",nullptr},{"control_version",0},{"command_pending",false},{"retired",false}};
+    }
 }
 Json LiveCalendar::state()const{std::lock_guard<std::mutex>lock(mutex_);return Json{{"revision",revision_},{"loops",loops_},{"future_modes",future_modes_},{"pending_recovery",pending_},{"planned_skip",planned_skip_},{"active",active_.empty()?Json(nullptr):Json(active_)},{"dispatch_order",dispatch_order_},{"dispatch_expires_ms",dispatch_expires_ms_},{"config",config_},{"modes",modes_}};}
 double LiveCalendar::next_wakeup_ms()const{std::lock_guard<std::mutex>lock(mutex_);double next=std::numeric_limits<double>::infinity();for(const auto&l:loops_)if(!l.at("retired").get<bool>())next=std::min(next,n(l,"next_ms"));return next;}

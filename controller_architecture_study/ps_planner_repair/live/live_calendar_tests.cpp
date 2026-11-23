@@ -75,6 +75,20 @@ void check_command_tail_isolation(double spike,bool isolate){
 int main(int argc,char** argv){try{
     if(argc>2||(argc==2&&std::string(argv[1])!="--off-lock"))throw std::invalid_argument("Expected optional --off-lock");
     off_lock=argc==2;
+    auto phased=config();phased["names"]=Json::array({"A","B"});phased["period_ms"]=20.;
+    phased["initial_phase_ms"]={{"A",16.},{"B",1.25}};
+    ps_scheduler::LiveCalendar phased_rt(phased,modes());
+    check(phased_rt.release_due(100001.,100100.).empty(),"explicit static phase never releases early");
+    auto first_phase=phased_rt.release_due(100001.25,100100.);
+    check(first_phase.size()==1&&first_phase.at(0).at("vehicle")=="B"&&first_phase.at(0).at("release_ms")==100001.25,
+          "explicit static phases are keyed by vehicle");
+    auto second_phase=phased_rt.release_due(100016.,100100.);
+    check(second_phase.size()==1&&second_phase.at(0).at("vehicle")=="A"&&phased_rt.next_wakeup_ms()==100021.25,
+          "a static phase preserves subsequent periodic release spacing");
+    auto bad_phase=phased;bad_phase["initial_phase_ms"]["A"]=20.;
+    throws([&]{ps_scheduler::LiveCalendar bad(bad_phase,modes());},"phase cannot equal a vehicle period");
+    bad_phase=phased;bad_phase["initial_phase_ms"].erase("B");
+    throws([&]{ps_scheduler::LiveCalendar bad(bad_phase,modes());},"a missing vehicle phase is rejected");
     for(double spike:{42.606,35.104,41.969}){
         check_command_tail_isolation(spike,false);
         check_command_tail_isolation(spike,true);
