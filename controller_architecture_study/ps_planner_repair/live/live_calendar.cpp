@@ -28,8 +28,13 @@ Json make_job(const std::string&name,const std::string&vehicle,double release,do
         {"mode_locked",false},{"periodic_edit",false}};
 }
 Json rejected(const char*reason){return Json{{"installed",false},{"status",reason}};}
+bool observation_usable(const Json& loop,double now){
+    const auto& ob=loop.at("observation");
+    return !loop.at("command_pending").get<bool>()&&!ob.is_null()&&
+        n(ob,"sample_ms")<=now&&n(ob,"deadline_ms")>now&&n(loop,"next_ms")>now;
 }
-std::string LiveCalendar::key(const std::string&v,std::uint64_t cycle)const{return v+":"+std::to_string(cycle);}
+}
+std::string LiveCalendar::key(const std::string&v,std::uint64_t cycle){return v+":"+std::to_string(cycle);}
 LiveCalendar::LiveCalendar(Json c,Json modes):config_(std::move(c)),modes_(Json::object()),
     isolate_command_costs_(config_.value("isolate_command_costs",false)){
     if(modes.is_array())for(const auto&m:modes)modes_[std::to_string(m.at("numeric_id").get<int>())]=m;
@@ -357,14 +362,22 @@ void LiveCalendar::update_command_costs(const std::string&v,double post,double r
     dispatch_order_=Json::array();++revision_;
 }
 
-Json LiveCalendar::snapshot(double now)const{finite_time(now,"snapshot");std::lock_guard<std::mutex>lock(mutex_);return snapshot_unlocked(now);}
-Json LiveCalendar::snapshot_current()const{std::lock_guard<std::mutex>lock(mutex_);return snapshot_unlocked(monotonic_ms());}
+Json LiveCalendar::snapshot(double now,double* lock_held_us)const{
+    finite_time(now,"snapshot");std::unique_lock<std::mutex>lock(mutex_);
+    if(!lock_held_us)return capture_snapshot(lock,now);
+    const auto acquired=management_stamp();ManagementStamp released;
+    auto snap=capture_snapshot(lock,now,&released);
+    *lock_held_us=(released.wall_ms-acquired.wall_ms)*1000.;return snap;
+}
+Json LiveCalendar::snapshot_current()const{std::unique_lock<std::mutex>lock(mutex_);return capture_snapshot(lock,monotonic_ms());}
 Json LiveCalendar::snapshot_profiled()const{
     const auto begin=management_stamp();std::unique_lock<std::mutex>lock(mutex_);
-    const auto acquired=management_stamp();Json snap=snapshot_unlocked(monotonic_ms());
-    const auto generation=paired_generation_;
-    const auto built=management_stamp();lock.unlock();
+    const auto acquired=management_stamp();const auto generation=paired_generation_;
+    ManagementStamp released;
+    Json snap=capture_snapshot(lock,monotonic_ms(),&released);
+    const auto built=management_stamp();
     Json result{{"timing",Json{{"lock_wait",management_interval(begin,acquired)},
+                               {"lock_held",management_interval(acquired,released)},
                                {"build",management_interval(acquired,built)}}},
                 {"paired_generation",generation}};
     result["snapshot"]=std::move(snap);return result;
@@ -387,10 +400,12 @@ Json LiveCalendar::snapshot_wait_profiled(double wait_ms)const{
     const bool was_ready=ready();
     if(!was_ready&&wait_ms>0)proof_ready_.wait_for(lock,std::chrono::duration<double,std::milli>(wait_ms),ready);
     const auto waited=management_stamp();const bool proof_available=ready();
-    Json snap=snapshot_unlocked(monotonic_ms());const auto built=management_stamp();lock.unlock();
+    ManagementStamp released;
+    Json snap=capture_snapshot(lock,monotonic_ms(),&released);const auto built=management_stamp();
     Json result{{"proof_available",proof_available},{"wait_requested_ms",wait_ms},{"was_ready",was_ready},
         {"timing",Json{{"lock_wait",management_interval(begin,acquired)},
-            {"proof_wait",management_interval(acquired,waited)},{"build",management_interval(waited,built)}}}};
+            {"proof_wait",management_interval(acquired,waited)},{"lock_held",management_interval(waited,released)},
+            {"build",management_interval(waited,built)}}}};
     result["snapshot"]=std::move(snap);return result;
 }
 std::uint64_t LiveCalendar::paired_generation()const{
@@ -404,55 +419,80 @@ bool LiveCalendar::wait_for_paired(std::uint64_t generation,double wait_ms)const
                                         [&]{return paired_generation_!=generation;});
     return paired_generation_!=generation;
 }
-Json LiveCalendar::snapshot_unlocked(double now)const{
-    if(now<n(config_,"origin_ms"))return nullptr;
-    if(!active_.empty()){const auto&r=rows_.at(active_);if(now-n(r,"board_start_ms")>n(modes_.at(std::to_string(r.at("model_id").get<int>())),"service_ms"))return nullptr;}
+bool LiveCalendar::can_capture_snapshot_unlocked(double now)const{
+    if(now<n(config_,"origin_ms"))return false;
+    if(!active_.empty()){const auto&r=rows_.at(active_);if(now-n(r,"board_start_ms")>n(modes_.at(std::to_string(r.at("model_id").get<int>())),"service_ms"))return false;}
     // An installed skip is already a committed pending calendar operation;
     // wait for that absolute release to be consumed, not plan to skip it twice.
-    if(!planned_skip_.empty())return nullptr;
-    const auto observation_usable=[&](const Json& loop){
-        const auto& ob=loop.at("observation");
-        return !loop.at("command_pending").get<bool>()&&!ob.is_null()&&
-            n(ob,"sample_ms")<=now&&n(ob,"deadline_ms")>now&&n(loop,"next_ms")>now;
-    };
-    const bool precheck=config_.value("snapshot_precheck",false);
-    if(precheck){
+    if(!planned_skip_.empty())return false;
+    if(config_.value("snapshot_precheck",false)){
         // Reject invalid all-loop context before allocating any job JSON.
         for(const auto& loop:loops_)
-            if(!loop.at("retired").get<bool>()&&!observation_usable(loop))return nullptr;
+            if(!loop.at("retired").get<bool>()&&!observation_usable(loop,now))return false;
     }
+    return true;
+}
+Json LiveCalendar::capture_snapshot(std::unique_lock<std::mutex>& lock,double now,ManagementStamp* released)const{
+    const auto unlock=[&](){if(released)*released=management_stamp();lock.unlock();};
+    if(!can_capture_snapshot_unlocked(now)){unlock();return nullptr;}
+    if(!config_.value("snapshot_build_off_lock",false)){
+        auto snapshot=build_snapshot(now,config_,modes_,loops_,rows_,future_modes_,pending_,revision_);
+        unlock();return snapshot;
+    }
+    // Capture exactly the data the builder reads. Historical completed rows
+    // are kept by the calendar but are never copied into planning input.
+    const Json config=config_,modes=modes_,loops=loops_,pending=pending_;
+    const auto revision=revision_;
+    Json rows=Json::object(),future=Json::object();
+    for(auto it=loops.begin();it!=loops.end();++it){
+        const auto& loop=it.value();if(loop.at("retired").get<bool>())continue;
+        if(!loop.at("busy").is_null()){
+            const auto& name=loop.at("busy").get_ref<const std::string&>();rows[name]=rows_.at(name);
+        }
+        const auto next=key(it.key(),loop.at("cycle").get<std::uint64_t>());
+        if(future_modes_.count(next))future[next]=future_modes_.at(next);
+    }
+    unlock();
+    // The stamped time and revision still identify the captured state. The
+    // normal install guard checks current revision, versions and elapsed time.
+    return build_snapshot(now,config,modes,loops,rows,future,pending,revision);
+}
+Json LiveCalendar::build_snapshot(double now,const Json& config,const Json& modes,const Json& loops,
+                                  const Json& rows,const Json& future_modes,const Json& pending,
+                                  std::uint64_t revision){
+    const bool precheck=config.value("snapshot_precheck",false),isolate_command_costs=config.value("isolate_command_costs",false);
     Json jobs=Json::array(),permissions=Json::array(),versions=Json::object(),pending_keys=Json::array(),delivering=Json::array();double blocked=0.;
-    for(const auto&v:config_.at("names").get<std::vector<std::string>>()){
-        const auto&l=loops_.at(v);if(l.at("retired").get<bool>())continue;if(!precheck&&!observation_usable(l))return nullptr;const auto&ob=l.at("observation");const double hold=n(ob,"deadline_ms"),next=n(l,"next_ms");
-        double post=n(config_,"post_ms");
-        if(isolate_command_costs_)post=std::max({post,l.value("post_ms",0.),l.value("command_reserve_ms",0.),n(config_,"command_reserve_ms")});
+    for(const auto&v:config.at("names").get<std::vector<std::string>>()){
+        const auto&l=loops.at(v);if(l.at("retired").get<bool>())continue;if(!precheck&&!observation_usable(l,now))return nullptr;const auto&ob=l.at("observation");const double hold=n(ob,"deadline_ms"),next=n(l,"next_ms");
+        double post=n(config,"post_ms");
+        if(isolate_command_costs)post=std::max({post,l.value("post_ms",0.),l.value("command_reserve_ms",0.),n(config,"command_reserve_ms")});
         versions[v]=l.at("control_version");
         if(!l.at("busy").is_null()){
-            const auto&r=rows_.at(l.at("busy").get<std::string>());const auto stage=s(r,"phase");
+            const auto&r=rows.at(l.at("busy").get<std::string>());const auto stage=s(r,"phase");
             if(n(r,"release_ms")>now)return nullptr; // Reject stale explicit snapshot time; never invent negative preparation.
             if(stage=="board"||stage=="post"){
                 delivering.push_back(key(v,r.at("cycle").get<std::uint64_t>()));
-                double remaining=stage=="board"?std::max(0.,n(modes_.at(std::to_string(r.at("model_id").get<int>())),"service_ms")-(now-n(r,"board_start_ms"))):0.;
+                double remaining=stage=="board"?std::max(0.,n(modes.at(std::to_string(r.at("model_id").get<int>())),"service_ms")-(now-n(r,"board_start_ms"))):0.;
                 if(!r.count("command_return_ms")&&now+remaining+post>std::min(next,std::min(hold,n(r,"deadline_ms"))))return nullptr;
-                if(r.count("command_return_ms")&&now+n(config_,"rearm_ms")>next)return nullptr;
+                if(r.count("command_return_ms")&&now+n(config,"rearm_ms")>next)return nullptr;
                 blocked=std::max(blocked,remaining);
             }else if(!r.count("command_return_ms")&&stage!="finished"){
-                double prep=stage=="queued"?0.:n(config_,"prep_ms");double fresh=r.value("sample_start_ms",n(r,"release_ms"))+n(config_,"fresh_ms");bool recovery=pending_.count(v)&&pending_.at(v).at("cycle")==r.at("cycle");
-                jobs.push_back(make_job(key(v,r.at("cycle").get<std::uint64_t>()),v,n(r,"release_ms")-now,0.,prep,post,n(r,"deadline_ms")-now,std::min(hold,r.value("recovery_due_ms",hold))-now,fresh-now,config_.at("candidate_ids"),r.at("model_id").get<int>(),recovery));
+                double prep=stage=="queued"?0.:n(config,"prep_ms");double fresh=r.value("sample_start_ms",n(r,"release_ms"))+n(config,"fresh_ms");bool recovery=pending.count(v)&&pending.at(v).at("cycle")==r.at("cycle");
+                jobs.push_back(make_job(key(v,r.at("cycle").get<std::uint64_t>()),v,n(r,"release_ms")-now,0.,prep,post,n(r,"deadline_ms")-now,std::min(hold,r.value("recovery_due_ms",hold))-now,fresh-now,config.at("candidate_ids"),r.at("model_id").get<int>(),recovery));
             }
         }
-        auto cycle=l.at("cycle").get<std::uint64_t>();auto name=key(v,cycle);bool recovery=pending_.count(v)&&pending_.at(v).at("cycle").get<std::uint64_t>()==cycle;double period=n(l,"period_ms");int model=future_modes_.count(name)?future_modes_.at(name).get<int>():config_.at("model_id").get<int>();
-        Json first=make_job(name,v,next-now,next-now,n(config_,"prep_ms"),post,next+period-now,std::min(hold,recovery?n(pending_.at(v),"deadline_ms"):hold)-now,next-now+n(config_,"fresh_ms"),config_.at("candidate_ids"),model,recovery);
-        if(!recovery){first["periodic_edit"]=true;for(double t:config_.at("periods_ms").get<std::vector<double>>())if(t!=period&&n(l,"previous_ms")+t>now+n(config_,"decision_ms"))first["release_options"].push_back(Json::array({n(l,"previous_ms")+t-now,n(l,"previous_ms")+2*t-now}));}
+        auto cycle=l.at("cycle").get<std::uint64_t>();auto name=key(v,cycle);bool recovery=pending.count(v)&&pending.at(v).at("cycle").get<std::uint64_t>()==cycle;double period=n(l,"period_ms");int model=future_modes.count(name)?future_modes.at(name).get<int>():config.at("model_id").get<int>();
+        Json first=make_job(name,v,next-now,next-now,n(config,"prep_ms"),post,next+period-now,std::min(hold,recovery?n(pending.at(v),"deadline_ms"):hold)-now,next-now+n(config,"fresh_ms"),config.at("candidate_ids"),model,recovery);
+        if(!recovery){first["periodic_edit"]=true;for(double t:config.at("periods_ms").get<std::vector<double>>())if(t!=period&&n(l,"previous_ms")+t>now+n(config,"decision_ms"))first["release_options"].push_back(Json::array({n(l,"previous_ms")+t-now,n(l,"previous_ms")+2*t-now}));}
         jobs.push_back(first);Json successor=first;successor["name"]=key(v,cycle+1);successor["release"]=n(first,"release")+period;successor["prep_ready"]=n(first,"release")+period;successor["slot_deadline"]=n(first,"slot_deadline")+period;successor["hold_deadline"]=n(first,"slot_deadline")+period;successor["fresh_deadline"]=n(first,"fresh_deadline")+period;successor["release_options"]=Json::array();successor["recovery"]=false;successor["periodic_edit"]=false;jobs.push_back(successor);
         // A finite flight must not approve a skip whose mandatory EXISTING
         // successor lies outside its release window. Do not clear debt at exit.
-        const bool successor_in_window=!config_.count("measurement_stop_ms")||next+period<n(config_,"measurement_stop_ms")-epsilon;
-        bool eligible=config_.at("enable_skip").get<bool>()&&successor_in_window&&!pending_.count(v)&&l.at("busy").is_null()&&ob.value("stable",false)&&now-n(ob,"sample_ms")<=n(config_,"fresh_ms")&&ob.at("control_version")==l.at("control_version");permissions.push_back(Json{{"job",name},{"successor",key(v,cycle+1)},{"hold_until",hold-now},{"valid_until",n(first,"release")},{"eligible",eligible},{"evidence",ob.value("evidence",std::string("unknown phase"))}});
+        const bool successor_in_window=!config.count("measurement_stop_ms")||next+period<n(config,"measurement_stop_ms")-epsilon;
+        bool eligible=config.at("enable_skip").get<bool>()&&successor_in_window&&!pending.count(v)&&l.at("busy").is_null()&&ob.value("stable",false)&&now-n(ob,"sample_ms")<=n(config,"fresh_ms")&&ob.at("control_version")==l.at("control_version");permissions.push_back(Json{{"job",name},{"successor",key(v,cycle+1)},{"hold_until",hold-now},{"valid_until",n(first,"release")},{"eligible",eligible},{"evidence",ob.value("evidence",std::string("unknown phase"))}});
     }
     if(jobs.empty())return nullptr;
-    for(auto p=pending_.begin();p!=pending_.end();++p){auto name=key(p.key(),p.value().at("cycle").get<std::uint64_t>());for(const auto&j:jobs)if(j.at("name")==name)pending_keys.push_back(Json::array({p.key(),name}));}
-    return Json{{"snapshot_ms",now},{"calendar",Json{{"jobs",jobs},{"revision",revision_},{"pending",pending_keys}}},{"modes",modes_},{"permissions",permissions},{"blocked_until_ms",blocked},{"control_versions",versions},{"config",config_},{"delivering",delivering}};
+    for(auto p=pending.begin();p!=pending.end();++p){auto name=key(p.key(),p.value().at("cycle").get<std::uint64_t>());for(const auto&j:jobs)if(j.at("name")==name)pending_keys.push_back(Json::array({p.key(),name}));}
+    return Json{{"snapshot_ms",now},{"calendar",Json{{"jobs",jobs},{"revision",revision},{"pending",pending_keys}}},{"modes",modes},{"permissions",permissions},{"blocked_until_ms",blocked},{"control_versions",versions},{"config",config},{"delivering",delivering}};
 }
 Json LiveCalendar::plan_snapshot(const Json&snap)const{
     if(snap.is_null())return Json{{"accepted",false},{"action","obligation_context_not_ready"}};

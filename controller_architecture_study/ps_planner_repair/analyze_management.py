@@ -29,6 +29,7 @@ def analyze(folder):
         revalidated+=bool(inst.get('revalidated',False))
         trace=row.get('management_timing',{})
         timed={'snapshot_lock_wait':trace.get('snapshot',{}).get('lock_wait'),
+               'snapshot_lock_held':trace.get('snapshot',{}).get('lock_held'),
                'snapshot_build':trace.get('snapshot',{}).get('build'),
                'initial_planning':trace.get('planning'), 'log_object':trace.get('log_object'),
                'revalidation':inst.get('revalidation_timing')}
@@ -37,6 +38,7 @@ def analyze(folder):
         timed['validate_install']=install_timing.get('validate_install')
         refresh=inst.get('refreshed_context',{}).get('timing',{})
         timed['refresh_lock_wait']=refresh.get('lock_wait')
+        timed['refresh_lock_held']=refresh.get('lock_held')
         timed['refresh_proof_wait']=refresh.get('proof_wait')
         timed['refresh_snapshot_build']=refresh.get('build')
         previous=row.get('previous_log_enqueue')

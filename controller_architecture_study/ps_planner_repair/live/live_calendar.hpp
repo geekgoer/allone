@@ -4,6 +4,7 @@
 #include <condition_variable>
 
 namespace ps_scheduler {
+struct ManagementStamp;
 struct CommandAdmission {
     bool accepted=false;
     double checked_ms=0., deadline_ms=0., reserve_ms=0., lock_wait_us=0.;
@@ -66,7 +67,7 @@ public:
                       double command_reserve_ms);
     void update_command_costs(const std::string& vehicle,double post_ms,double reserve_ms);
     double command_reserve(const std::string& vehicle) const;
-    Json snapshot(double now_ms) const;
+    Json snapshot(double now_ms, double* lock_held_us=nullptr) const;
     // Production snapshot clock is sampled AFTER acquiring the calendar lock.
     // Explicit-time snapshot above remains for deterministic reference tests.
     Json snapshot_current() const;
@@ -89,13 +90,18 @@ public:
     // Explicit test seam; no real-time production call should use fake time.
     Json install_at_for_test(const Json& snapshot,const Json& decision,double now_ms);
 private:
-    std::string key(const std::string&v,std::uint64_t cycle) const;
+    static std::string key(const std::string&v,std::uint64_t cycle);
     double command_reserve_unlocked(const Json& job) const;
     CommandAdmission command_begin_unlocked(const std::string& vehicle, std::uint64_t cycle,
                                             double now_ms);
     void expire_hold_unlocked(const std::string& vehicle, Json& loop, double now);
     void retire_unlocked(const std::string& vehicle, Json& loop);
-    Json snapshot_unlocked(double now_ms) const;
+    bool can_capture_snapshot_unlocked(double now_ms) const;
+    Json capture_snapshot(std::unique_lock<std::mutex>& lock, double now_ms,
+                          ManagementStamp* lock_release=nullptr) const;
+    static Json build_snapshot(double now_ms, const Json& config, const Json& modes,
+                               const Json& loops, const Json& rows, const Json& future_modes,
+                               const Json& pending, std::uint64_t revision);
     Json install_unlocked(const Json& snapshot,const Json& decision,double now_ms);
     mutable std::mutex mutex_;
     mutable std::condition_variable proof_ready_;

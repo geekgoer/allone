@@ -8,11 +8,12 @@
 using ps_scheduler::Json;
 namespace{
 int count=0;
+bool off_lock=false;
 double fake_dispatch_ms=0.,fake_dispatch_step_ms=0.;
 double dispatch_clock(){const auto current=fake_dispatch_ms;fake_dispatch_ms+=fake_dispatch_step_ms;return current;}
 void check(bool pass,const std::string&msg){++count;if(!pass)throw std::runtime_error(msg);}
 template<typename F>void throws(F fn,const std::string&msg){bool caught=false;try{fn();}catch(const std::exception&){caught=true;}check(caught,msg);}
-Json config(){return Json{{"names",Json::array({"Drone1"})},{"origin_ms",100000.},{"period_ms",50.},{"periods_ms",Json::array({20.,50.,80.})},{"model_id",2},{"candidate_ids",Json::array({1,2})},{"prep_ms",.5},{"post_ms",.5},{"decision_ms",3.}};}
+Json config(){return Json{{"names",Json::array({"Drone1"})},{"origin_ms",100000.},{"period_ms",50.},{"periods_ms",Json::array({20.,50.,80.})},{"model_id",2},{"candidate_ids",Json::array({1,2})},{"prep_ms",.5},{"post_ms",.5},{"decision_ms",3.},{"snapshot_build_off_lock",off_lock}};}
 Json modes(){return Json::array({Json{{"numeric_id",1},{"service_ms",1.},{"selection_mse",.02}},Json{{"numeric_id",2},{"service_ms",5.},{"selection_mse",.01}}});}
 void check_command_tail_isolation(double spike,bool isolate){
     auto cfg=config();
@@ -71,8 +72,10 @@ void check_command_tail_isolation(double spike,bool isolate){
           "B continues releasing after A retires");
 }
 }
-int main(){try{
-    for(double spike:{42.606,35.104}){
+int main(int argc,char** argv){try{
+    if(argc>2||(argc==2&&std::string(argv[1])!="--off-lock"))throw std::invalid_argument("Expected optional --off-lock");
+    off_lock=argc==2;
+    for(double spike:{42.606,35.104,41.969}){
         check_command_tail_isolation(spike,false);
         check_command_tail_isolation(spike,true);
     }
