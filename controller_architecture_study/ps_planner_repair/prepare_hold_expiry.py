@@ -9,9 +9,36 @@ from .instrument_live_scheduler import instrument
 from .prepare_capacity_executor_trace import replace_one
 
 
+def add_critical_update_probe(code):
+    code = replace_one(code, '        const int initial_model=config.at("model_id").get<int>();',
+        '''        const auto probe=config.at("critical_update_probe");
+        const auto probe_vehicle=probe.at("vehicle").get<std::string>();
+        const auto probe_cycle=probe.at("cycle").get<std::uint64_t>();
+        const bool omit_update=probe.at("omit_update").get<bool>();
+        if(policy!="fixed"||enable_skip||config.count("initial_periods")||probe_vehicle.empty()||
+           !probe.at("cycle").is_number_integer()||probe.at("cycle").get<std::int64_t>()<=0)
+            throw std::runtime_error("Critical update probe requires fixed policy, uniform period and a positive cycle");
+        const int initial_model=config.at("model_id").get<int>();''')
+    code = replace_one(code, '        config["names"]=names;',
+        '''        if(!by_name.count(probe_vehicle)||double(probe_cycle+1)*config.at("period_ms").get<double>()>=duration*1000.)
+            throw std::runtime_error("Critical update probe lies outside the prepared flight");
+        config["names"]=names;''')
+    return replace_one(code, '                // Registry publication, queued(), selected-model take(), real',
+        '''                if(v->name==probe_vehicle&&slot->cycle==probe_cycle){
+                    row["critical_update_probe"]=true;
+                    if(omit_update){
+                        row["status"]="probe_omitted_update";
+                        throw std::runtime_error("__drop__");
+                    }
+                }
+                // Registry publication, queued(), selected-model take(), real''')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--critical-update-probe", action="store_true",
+                        help="Generate an experiment-only fixed-policy binary that requires an explicit probe config")
     args = parser.parse_args()
     here = Path(__file__).resolve().parent
     source = here.parent / "ps_board_source/20261117_executor_trace"
@@ -138,6 +165,8 @@ def main():
         record_expiries(calendar.expire_holds(std::min(a::now_ms(),double(end)/1000.)));
         writej(out+"/hold_expiries.json",hold_expiries);
         raw_journal.close();plan_journal.close();""")
+    if args.critical_update_probe:
+        code = add_critical_update_probe(code)
     runtime.write_text(code, encoding="utf-8", newline="\n")
     manifest = {p.relative_to(args.output).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
                 for p in sorted(args.output.rglob("*")) if p.is_file()}
