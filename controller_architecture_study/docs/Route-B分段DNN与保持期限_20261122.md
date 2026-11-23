@@ -320,6 +320,50 @@ Drone4 后来单独出现 11.706 ms 的本机预留峰值，其中 10.187 ms 在
 
 AXU3EGB 上同样通过 43＋164＋47 项回归。板端程序位于 `/home/root/ps_command_isolation_20261123_001`，正式候选 `ps_obligation_control_repair` SHA-256 为 `87af55df2394ab387dc3775ec032e2dc22bb9086320c4b826afe2e0b116d1cb7`。正式候选默认关闭该实验选项，`config_on.json` 显式打开。复现材料包含 `make_ack_probe.py`、`run_board_probe_v2.sh`、`summarize_probe.py`、两份配置和原始日志。下轮优先拆开共享模型耗时和 DNNDK 调用内等待，用自然压力复核隔离行为。[本轮原始归档](../results/ps_command_isolation_20261123_001/isolation_pair.tar.gz)
 
+## 实验十一 · 自然长尾与 DNNDK 调用计时（2026-11-23）
+
+### 正式候选的自然负载对照
+
+同一 ARM 二进制，冻结路线、十二机、20 ms，先开启隔离、再关闭，各运行 32 s。两轮均关闭主动跳更，保留单次下发检查。使用正常命令、真实 DPU 和自然系统负载，未加载计时探针，也未注入延迟。
+
+| 命令成本隔离 | 按时交付 / 已发布 | 下发前丢弃 | 推理阶段丢弃 | 有效过门 | 保持期限退役 | 最终共用命令预留 |
+| --- | ---: | ---: | ---: | ---: | --- | ---: |
+| 开启 | 18,288 / 18,524 | 108 | 95 | 142 / 144 | Drone8、Drone9 | 5.265 ms |
+| 关闭 | 19,143 / 19,200 | 21 | 31 | 144 / 144 | 0 架 | 7.243 ms |
+
+开启轮约 25.08 s，Drone8、Drone9 相继出现 17.709 ms 和 18.067 ms 的转换到 ACK 样本，其中 ping 墙钟等待分别为 17.618 ms 和 17.940 ms。两个本机预留分别增大，各自在约 25.24 s 保持期限到期退出。从第二个异常 ACK 后才发布的任务中，其余十架合计按时交付 3,439 条，十架均持续到测量末尾。固定原时间戳回算时，若将 18.067 ms 作为共用预留，20 ms 周期即使没有准备和排队也只剩 1.933 ms，距离当时最快模型的观测成本 1.624 ms 仅余 0.309 ms。这个反事实只说明预算会明显变紧。
+
+两轮退役前的共同窗口有 15,146 条完全匹配的发布，开启按时交付 14,925 条、关闭 15,104 条。关闭轮的命令长尾更轻，因此该对照适合验证自然长尾下的局部影响，隔离的净收益仍需更多交错重复。两轮生命周期审计通过，严格时序均未通过，联合方案安装均为 0。正式版 DPU 调用墙钟最大值分别为 11.701 和 20.250 ms。[自然负载配对](../results/ps_natural_dnndk_20261123_001/natural_summary.json) · [自然尖峰逐周期诊断](../results/ps_natural_dnndk_20261123_001/natural_spike_diagnosis.json)
+
+### DNNDK 调用诊断方法
+
+第三轮使用相同正式控制程序、开启命令成本隔离，额外用 `LD_PRELOAD` 载入独立探针。探针包住实际 `dpuRunTask`，采集 API 墙钟、`dpuGetTaskProfile`、执行线程 CPU 时间、上下文切换和可读的调度队列增量，正常退出后才一次性写 CSV。解析器用板端单调时钟将每个调用匹配到一条闭环任务。启动校验与暖机调用不纳入控制任务统计。[探针](../ps_planner_repair/dnndk_call_trace.cpp) · [匹配与统计](../ps_planner_repair/analyze_dnndk_trace.py)
+
+已对照构建 SDK 的 `n2cube/src/dpu.cpp` 和 `driver/dpucore.c`。任务 profile 使用驱动返回的 `time_end − time_start`。该区间从取得核锁后、写寄存器前开始，到等待完成中断的调用线程恢复并读取时钟时结束。它包括寄存器配置、设备运行及完成通知和线程恢复，线程 CPU 时间与该区间可以重叠。板端未暴露可读的 `sched_switch` 事件或 `sched_schedstats` 开关。
+
+### 诊断结果
+
+板端 `/proc/thread-self/schedstat` 仍提供有效的线程累计运行队列等待。成功匹配 18,131 次控制推理，执行线程一致。总调用墙钟中位数为 1.295 ms、P99 为 1.641 ms。记录的外围时段包含探针读取开销和外围调度等待，中位数为 31.7 μs、P99 为 380 μs。诊断轮单独分析，未参与两轮正式对照。诊断轮生命周期审计也通过，严格时序未通过。
+
+| 任务（均用模型 ID 11） | `dpuRunTask` 墙钟 | 驱动时钟区间 | 执行线程实际占用 CPU | 线程就绪等 CPU 的保守下限 |
+| --- | ---: | ---: | ---: | ---: |
+| Drone1，周期 1348 | 9.319 ms | 9.284 ms | 0.049 ms | 7.920 ms |
+| Drone5，周期 3 | 4.408 ms | 4.386 ms | 0.035 ms | 3.041 ms |
+| Drone1，周期 1496 | 4.284 ms | 4.258 ms | 0.039 ms | 2.910 ms |
+| Drone12，周期 0 | 3.281 ms | 3.259 ms | 0.035 ms | 1.909 ms |
+
+以上为诊断轮全部超过 3 ms 的调用。运行队列计数在 API 外侧读取，计算下限时从增量中扣除整个外围时段及 1 μs 的时间戳截断余量。65 次任务的采样区间或计数不适合计入这一比较。最慢一次原始队列增量为 7.977 ms，扣完后仍约占 85% 的调用墙钟。“驱动区间”和“就绪等 CPU”有重叠，表中两列不相加。证据定位到了 Linux 推理线程的调度等待，原先 11.701 与 20.250 ms 的正式轮尖峰没有线程计数，无法逐条回溯其构成。
+
+下一步优先同条件对照执行线程的 CPU 亲和性与优先级，观察就绪等待及真实按时交付是否改善。在等待还会延长执行器占用的情况下，调度器需要继续计入这段时间。板端目录为 `/home/root/ps_natural_dnndk_20261123_001`，档案 `natural_pair.tar.gz` 和 `profile.tar.gz` 已完成两端哈希核对。诊断分析命令如下。
+
+```powershell
+$p = 'controller_architecture_study/results/ps_natural_dnndk_20261123_001/profile'
+python -m controller_architecture_study.ps_planner_repair.analyze_dnndk_trace `
+    --trial "$p/trial" --api-trace "$p/api.csv" --output .\dnndk_trace_recheck.json
+```
+
+[诊断逐调用统计](../results/ps_natural_dnndk_20261123_001/profile/dnndk_analysis_confirmed.json) · [闭环审计](../results/ps_natural_dnndk_20261123_001/natural_audit/REPORT.md)
+
 ## Drone10 到期处置
 
 C++ 日历已接入独立的到期处置候选版本。发布循环在分配新任务前检查各机旧命令，匹配观测不能跨过旧期限刷新旧版本，也不能把 hold 延长到 ACK 的绝对保持上限之外。在 DPU 里执行的整任务正常结束，结果无法再下发。命令 RPC 若已发出，实际 ACK 即使迟到也继续记录，退休状态不会重开。生成后的板端主循环会把到期原因写入 hold_expiries.json。该版只实施逻辑退役。悬停、制动及其物理效果仍需单独验证。
