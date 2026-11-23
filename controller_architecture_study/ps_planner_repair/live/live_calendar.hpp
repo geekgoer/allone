@@ -13,7 +13,8 @@ struct CommandAdmission {
 // Live lifecycle adapter. EVERY absolute time is CLOCK_MONOTONIC milliseconds.
 // config: names[], origin_ms, period_ms, periods_ms[], model_id, candidate_ids[],
 // prep_ms, post_ms, decision_ms, fresh_ms=80, command_reserve_ms=post_ms,
-// rearm_ms=post_ms, adaptive=true, enable_skip=false, initial_periods={}.
+// rearm_ms=post_ms, adaptive=true, enable_skip=false, initial_periods={},
+// isolate_command_costs=false (per-vehicle post and command reserve learning).
 // Costs supplied by the caller must include a documented conservative envelope
 // for observation/network/PS preparation and command-return work; no implicit
 // historical Windows 3ms network addition is made here.
@@ -63,6 +64,8 @@ public:
     void retire(const std::string& vehicle);
     void update_costs(double prep_ms,double post_ms,double rearm_ms,
                       double command_reserve_ms);
+    void update_command_costs(const std::string& vehicle,double post_ms,double reserve_ms);
+    double command_reserve(const std::string& vehicle) const;
     Json snapshot(double now_ms) const;
     // Production snapshot clock is sampled AFTER acquiring the calendar lock.
     // Explicit-time snapshot above remains for deterministic reference tests.
@@ -87,6 +90,7 @@ public:
     Json install_at_for_test(const Json& snapshot,const Json& decision,double now_ms);
 private:
     std::string key(const std::string&v,std::uint64_t cycle) const;
+    double command_reserve_unlocked(const Json& job) const;
     CommandAdmission command_begin_unlocked(const std::string& vehicle, std::uint64_t cycle,
                                             double now_ms);
     void expire_hold_unlocked(const std::string& vehicle, Json& loop, double now);
@@ -99,6 +103,7 @@ private:
     Json future_modes_=Json::object(),pending_=Json::object(),planned_skip_=Json::object();
     Json dispatch_order_=Json::array();
     Json hold_expiries_=Json::array();
+    const bool isolate_command_costs_;
     std::string active_;
     double dispatch_expires_ms_=0.;
     std::uint64_t revision_=0;

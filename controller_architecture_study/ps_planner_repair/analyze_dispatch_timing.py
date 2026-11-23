@@ -202,6 +202,12 @@ def analyze(trial):
             "rejection_budget_ms": stats([r["budget_ms"] for r in rejection_evidence]),
             "offline_separate_budget_screen": shadow, "final_local_service_costs_us": model_cost,
             "initial_command_reserve_ms": reserve, "final_command_reserve_ms": final["config"]["command_reserve_ms"],
+            **({"final_command_reserve_ms_by_vehicle": {
+                name: loop.get("command_reserve_ms", final["config"]["command_reserve_ms"])
+                for name, loop in final["loops"].items()},
+                "final_post_ms_by_vehicle": {name: loop.get("post_ms", final["config"]["post_ms"])
+                                              for name, loop in final["loops"].items()}}
+               if identity["live_config"].get("isolate_command_costs") else {}),
             "final_model_costs_ms": {m: v["service_ms"] for m, v in final["modes"].items()}}
 
 

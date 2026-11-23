@@ -30,7 +30,8 @@ Json make_job(const std::string&name,const std::string&vehicle,double release,do
 Json rejected(const char*reason){return Json{{"installed",false},{"status",reason}};}
 }
 std::string LiveCalendar::key(const std::string&v,std::uint64_t cycle)const{return v+":"+std::to_string(cycle);}
-LiveCalendar::LiveCalendar(Json c,Json modes):config_(std::move(c)),modes_(Json::object()){
+LiveCalendar::LiveCalendar(Json c,Json modes):config_(std::move(c)),modes_(Json::object()),
+    isolate_command_costs_(config_.value("isolate_command_costs",false)){
     if(modes.is_array())for(const auto&m:modes)modes_[std::to_string(m.at("numeric_id").get<int>())]=m;
     else modes_=std::move(modes);
     if(!config_.count("adaptive"))config_["adaptive"]=true;
@@ -58,6 +59,16 @@ LiveCalendar::LiveCalendar(Json c,Json modes):config_(std::move(c)),modes_(Json:
 }
 Json LiveCalendar::state()const{std::lock_guard<std::mutex>lock(mutex_);return Json{{"revision",revision_},{"loops",loops_},{"future_modes",future_modes_},{"pending_recovery",pending_},{"planned_skip",planned_skip_},{"active",active_.empty()?Json(nullptr):Json(active_)},{"dispatch_order",dispatch_order_},{"dispatch_expires_ms",dispatch_expires_ms_},{"config",config_},{"modes",modes_}};}
 double LiveCalendar::next_wakeup_ms()const{std::lock_guard<std::mutex>lock(mutex_);double next=std::numeric_limits<double>::infinity();for(const auto&l:loops_)if(!l.at("retired").get<bool>())next=std::min(next,n(l,"next_ms"));return next;}
+double LiveCalendar::command_reserve_unlocked(const Json&job)const{
+    const double shared=n(config_,"command_reserve_ms");
+    if(!isolate_command_costs_)return shared;
+    return std::max(shared,loops_.at(job.at("vehicle").get_ref<const std::string&>()).value("command_reserve_ms",shared));
+}
+double LiveCalendar::command_reserve(const std::string&v)const{
+    std::lock_guard<std::mutex>lock(mutex_);
+    const double shared=n(config_,"command_reserve_ms");
+    return std::max(shared,loops_.at(v).value("command_reserve_ms",shared));
+}
 Json LiveCalendar::row(const std::string&v,std::uint64_t cycle,double* lock_wait_us)const{
     using Clock=std::chrono::steady_clock;
     const auto start=lock_wait_us?Clock::now():Clock::time_point{};
@@ -161,13 +172,14 @@ Json LiveCalendar::take(double now,double* lock_wait_us,double (*refresh_ms)()){
     }else selected=earliest();
     auto&r=rows_.at(selected);Json tail=Json::array();for(const auto&name:dispatch_order_)if(name!=selected)tail.push_back(name);dispatch_order_=tail;
     if(future_modes_.count(selected)){r["model_id"]=future_modes_.at(selected);future_modes_.erase(selected);}
-    double budget=r.value("actuation_deadline_ms",n(r,"deadline_ms"))-now-n(config_,"command_reserve_ms");std::vector<int>affordable;
+    const double reserve=command_reserve_unlocked(r);
+    double budget=r.value("actuation_deadline_ms",n(r,"deadline_ms"))-now-reserve;std::vector<int>affordable;
     for(int id:config_.at("candidate_ids").get<std::vector<int>>())if(n(modes_.at(std::to_string(id)),"service_ms")<=budget)affordable.push_back(id);
     int selected_model=r.at("model_id").get<int>();
     const auto mode_cost=[&](int id){return n(modes_.at(std::to_string(id)),"service_ms");};
     auto reject_budget=[&](int required_model,const char* reason){
         r["dispatch_rejection_evidence"]={{"checked_ms",now},{"budget_ms",budget},
-            {"command_reserve_ms",n(config_,"command_reserve_ms")},
+            {"command_reserve_ms",reserve},
             {"required_model_id",required_model},{"required_service_ms",mode_cost(required_model)}};
         r["cancelled"]=true;r["dispatch_checked"]=true;r["dispatch"]=false;r["status"]="dropped_inference";
         r["dispatch_rejection"]=reason;++revision_;return r;
@@ -200,7 +212,7 @@ Json LiveCalendar::take(double now,double* lock_wait_us,double (*refresh_ms)()){
                     const auto&job=rows_.at(name);
                     const int mode=name==selected?head_mode:fastest;
                     finish+=n(modes_.at(std::to_string(mode)),"service_ms");
-                    if(finish+n(config_,"command_reserve_ms")>=
+                    if(finish+command_reserve_unlocked(job)>=
                        job.value("actuation_deadline_ms",n(job,"deadline_ms"))-epsilon)return false;
                 }
                 return true;
@@ -236,12 +248,12 @@ Json LiveCalendar::take(double now,double* lock_wait_us,double (*refresh_ms)()){
             selected_model=fastest;
             r["model_id"]=selected_model;
             if(r.count("ready_queue_fast_tail_fits")){
-                double end=now+n(config_,"command_reserve_ms");
+                double end=now;
                 bool tail_fits=true;
                 for(const auto& name:live){
                     const auto& job=rows_.at(name);
                     end+=mode_cost(fastest);
-                    if(end>=job.value("actuation_deadline_ms",n(job,"deadline_ms"))-epsilon){tail_fits=false;break;}
+                    if(end+command_reserve_unlocked(job)>=job.value("actuation_deadline_ms",n(job,"deadline_ms"))-epsilon){tail_fits=false;break;}
                 }
                 r["ready_queue_fast_tail_fits"]=tail_fits;
             }
@@ -275,7 +287,7 @@ CommandAdmission LiveCalendar::command_begin_unlocked(const std::string&v,std::u
     expire_hold_unlocked(v,l,now);
     const double due=std::min(r.value("actuation_deadline_ms",n(r,"deadline_ms")),l.value("watch_hold_ms",std::numeric_limits<double>::infinity()));
     CommandAdmission result;
-    result.checked_ms=now;result.deadline_ms=due;result.reserve_ms=n(config_,"command_reserve_ms");
+    result.checked_ms=now;result.deadline_ms=due;result.reserve_ms=command_reserve_unlocked(r);
     if(l.at("retired").get<bool>())result.rejection="retired";
     else if(r.at("cancelled").get<bool>())result.rejection="cancelled";
     else if(r.at("control_version")!=l.at("control_version"))result.rejection="control_version_changed";
@@ -332,6 +344,18 @@ Json LiveCalendar::expire_holds(double now){
     Json events=Json::array();events.swap(hold_expiries_);return events;
 }
 void LiveCalendar::update_costs(double prep,double post,double rearm,double reserve){const std::vector<std::pair<std::string,double>> observations{{"prep_ms",prep},{"post_ms",post},{"rearm_ms",rearm},{"command_reserve_ms",reserve}};for(const auto&p:observations)if(!finite(p.second)||p.second<0)throw std::invalid_argument("Invalid cost observation");std::lock_guard<std::mutex>lock(mutex_);for(const auto&p:observations)if(p.second>config_.at(p.first).get<double>()){config_[p.first]=p.second;++revision_;}}
+void LiveCalendar::update_command_costs(const std::string&v,double post,double reserve){
+    if(!finite(post)||post<0||!finite(reserve)||reserve<0)throw std::invalid_argument("Invalid command cost observation");
+    std::lock_guard<std::mutex>lock(mutex_);
+    if(!isolate_command_costs_)throw std::invalid_argument("Vehicle command costs require isolation mode");
+    auto& loop=loops_.at(v);
+    if(loop.at("retired").get<bool>())return;
+    const double old_post=loop.value("post_ms",n(config_,"post_ms"));
+    const double old_reserve=loop.value("command_reserve_ms",n(config_,"command_reserve_ms"));
+    if(post<=old_post&&reserve<=old_reserve)return;
+    loop["post_ms"]=std::max(old_post,post);loop["command_reserve_ms"]=std::max(old_reserve,reserve);
+    dispatch_order_=Json::array();++revision_;
+}
 
 Json LiveCalendar::snapshot(double now)const{finite_time(now,"snapshot");std::lock_guard<std::mutex>lock(mutex_);return snapshot_unlocked(now);}
 Json LiveCalendar::snapshot_current()const{std::lock_guard<std::mutex>lock(mutex_);return snapshot_unlocked(monotonic_ms());}
@@ -399,23 +423,26 @@ Json LiveCalendar::snapshot_unlocked(double now)const{
     }
     Json jobs=Json::array(),permissions=Json::array(),versions=Json::object(),pending_keys=Json::array(),delivering=Json::array();double blocked=0.;
     for(const auto&v:config_.at("names").get<std::vector<std::string>>()){
-        const auto&l=loops_.at(v);if(l.at("retired").get<bool>())continue;if(!precheck&&!observation_usable(l))return nullptr;const auto&ob=l.at("observation");const double hold=n(ob,"deadline_ms"),next=n(l,"next_ms");versions[v]=l.at("control_version");
+        const auto&l=loops_.at(v);if(l.at("retired").get<bool>())continue;if(!precheck&&!observation_usable(l))return nullptr;const auto&ob=l.at("observation");const double hold=n(ob,"deadline_ms"),next=n(l,"next_ms");
+        double post=n(config_,"post_ms");
+        if(isolate_command_costs_)post=std::max({post,l.value("post_ms",0.),l.value("command_reserve_ms",0.),n(config_,"command_reserve_ms")});
+        versions[v]=l.at("control_version");
         if(!l.at("busy").is_null()){
             const auto&r=rows_.at(l.at("busy").get<std::string>());const auto stage=s(r,"phase");
             if(n(r,"release_ms")>now)return nullptr; // Reject stale explicit snapshot time; never invent negative preparation.
             if(stage=="board"||stage=="post"){
                 delivering.push_back(key(v,r.at("cycle").get<std::uint64_t>()));
                 double remaining=stage=="board"?std::max(0.,n(modes_.at(std::to_string(r.at("model_id").get<int>())),"service_ms")-(now-n(r,"board_start_ms"))):0.;
-                if(!r.count("command_return_ms")&&now+remaining+n(config_,"post_ms")>std::min(next,std::min(hold,n(r,"deadline_ms"))))return nullptr;
+                if(!r.count("command_return_ms")&&now+remaining+post>std::min(next,std::min(hold,n(r,"deadline_ms"))))return nullptr;
                 if(r.count("command_return_ms")&&now+n(config_,"rearm_ms")>next)return nullptr;
                 blocked=std::max(blocked,remaining);
             }else if(!r.count("command_return_ms")&&stage!="finished"){
                 double prep=stage=="queued"?0.:n(config_,"prep_ms");double fresh=r.value("sample_start_ms",n(r,"release_ms"))+n(config_,"fresh_ms");bool recovery=pending_.count(v)&&pending_.at(v).at("cycle")==r.at("cycle");
-                jobs.push_back(make_job(key(v,r.at("cycle").get<std::uint64_t>()),v,n(r,"release_ms")-now,0.,prep,n(config_,"post_ms"),n(r,"deadline_ms")-now,std::min(hold,r.value("recovery_due_ms",hold))-now,fresh-now,config_.at("candidate_ids"),r.at("model_id").get<int>(),recovery));
+                jobs.push_back(make_job(key(v,r.at("cycle").get<std::uint64_t>()),v,n(r,"release_ms")-now,0.,prep,post,n(r,"deadline_ms")-now,std::min(hold,r.value("recovery_due_ms",hold))-now,fresh-now,config_.at("candidate_ids"),r.at("model_id").get<int>(),recovery));
             }
         }
         auto cycle=l.at("cycle").get<std::uint64_t>();auto name=key(v,cycle);bool recovery=pending_.count(v)&&pending_.at(v).at("cycle").get<std::uint64_t>()==cycle;double period=n(l,"period_ms");int model=future_modes_.count(name)?future_modes_.at(name).get<int>():config_.at("model_id").get<int>();
-        Json first=make_job(name,v,next-now,next-now,n(config_,"prep_ms"),n(config_,"post_ms"),next+period-now,std::min(hold,recovery?n(pending_.at(v),"deadline_ms"):hold)-now,next-now+n(config_,"fresh_ms"),config_.at("candidate_ids"),model,recovery);
+        Json first=make_job(name,v,next-now,next-now,n(config_,"prep_ms"),post,next+period-now,std::min(hold,recovery?n(pending_.at(v),"deadline_ms"):hold)-now,next-now+n(config_,"fresh_ms"),config_.at("candidate_ids"),model,recovery);
         if(!recovery){first["periodic_edit"]=true;for(double t:config_.at("periods_ms").get<std::vector<double>>())if(t!=period&&n(l,"previous_ms")+t>now+n(config_,"decision_ms"))first["release_options"].push_back(Json::array({n(l,"previous_ms")+t-now,n(l,"previous_ms")+2*t-now}));}
         jobs.push_back(first);Json successor=first;successor["name"]=key(v,cycle+1);successor["release"]=n(first,"release")+period;successor["prep_ready"]=n(first,"release")+period;successor["slot_deadline"]=n(first,"slot_deadline")+period;successor["hold_deadline"]=n(first,"slot_deadline")+period;successor["fresh_deadline"]=n(first,"fresh_deadline")+period;successor["release_options"]=Json::array();successor["recovery"]=false;successor["periodic_edit"]=false;jobs.push_back(successor);
         // A finite flight must not approve a skip whose mandatory EXISTING

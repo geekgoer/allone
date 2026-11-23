@@ -1,4 +1,5 @@
 #include "live_calendar.hpp"
+#include <algorithm>
 #include <cmath>
 #include <functional>
 #include <iostream>
@@ -13,8 +14,68 @@ void check(bool pass,const std::string&msg){++count;if(!pass)throw std::runtime_
 template<typename F>void throws(F fn,const std::string&msg){bool caught=false;try{fn();}catch(const std::exception&){caught=true;}check(caught,msg);}
 Json config(){return Json{{"names",Json::array({"Drone1"})},{"origin_ms",100000.},{"period_ms",50.},{"periods_ms",Json::array({20.,50.,80.})},{"model_id",2},{"candidate_ids",Json::array({1,2})},{"prep_ms",.5},{"post_ms",.5},{"decision_ms",3.}};}
 Json modes(){return Json::array({Json{{"numeric_id",1},{"service_ms",1.},{"selection_mse",.02}},Json{{"numeric_id",2},{"service_ms",5.},{"selection_mse",.01}}});}
+void check_command_tail_isolation(double spike,bool isolate){
+    auto cfg=config();
+    cfg["names"]=Json::array({"A","B"});cfg["period_ms"]=20.;cfg["model_id"]=1;
+    cfg["isolate_command_costs"]=isolate;cfg["retire_on_hold_expiry"]=true;cfg["maximum_update_ms"]=160.;
+    ps_scheduler::LiveCalendar calendar(cfg,modes());
+    calendar.release_due(100000.,100500.);
+    calendar.observe("A",100000.,100160.,0);
+    calendar.queued("A",0,100000.,100001.,100160.);
+    calendar.take(100001.);calendar.dpu_done("A",0,100002.,true);
+    check(calendar.command_begin("A",0,100003.),"A starts command before its slot deadline");
+
+    calendar.release_due(100010.,100500.);
+    calendar.queued("B",0,100010.,100011.,100170.);
+    calendar.take(100011.);calendar.dpu_done("B",0,100012.,true);
+    check(calendar.command_begin("B",0,100013.),"B can start a command while A awaits its ACK");
+    calendar.command_return("B",0,100014.);
+    calendar.observe("B",100015.,100174.,1);calendar.finish("B",0,100016.,"delivered");
+
+    const double late_ack=100003.+spike;
+    check(calendar.command_return("A",0,late_ack)==1,"A's late ACK still records the actual held version");
+    if(isolate)calendar.update_command_costs("A",spike+1.,spike);
+    else calendar.update_costs(0.,spike+1.,0.,spike);
+    calendar.observe("A",late_ack+.1,late_ack+160.,1);
+    calendar.finish("A",0,late_ack+.2,"command_return_late");
+    calendar.release_due(100070.,100500.);
+    calendar.queued("A",3,100070.,100070.2,late_ack+160.);
+    calendar.queued("B",3,100070.,100070.2,100174.);
+    const auto denied=calendar.take(100070.3);
+    check(denied.at("vehicle")=="A"&&!denied.at("dispatch").get<bool>()&&
+          denied.at("dispatch_rejection_evidence").at("command_reserve_ms")==spike,
+          "A's over-period reserve is preserved and A's next command cannot be dispatched");
+    calendar.finish("A",3,100070.4,"dropped_inference");
+    const auto next=calendar.take(100070.5);
+    check(next.at("vehicle")=="B"&&next.at("dispatch").get<bool>()==isolate,
+          "only isolation keeps B admissible after A's long ACK");
+    if(!isolate)return;
+
+    calendar.dpu_done("B",3,100072.,true);
+    fake_dispatch_ms=100073.;fake_dispatch_step_ms=0.;
+    const auto admit=calendar.command_begin_current("B",3,dispatch_clock);
+    check(admit.accepted&&admit.reserve_ms==.5&&admit.deadline_ms==100090.,
+          "B reaches its unchanged atomic reserve and absolute deadline guard");
+    check(calendar.command_return("B",3,100074.)==2,"B can deliver another command after A's long ACK");
+    calendar.observe("B",100075.,100234.,2);calendar.finish("B",3,100075.5,"delivered");
+    const auto snapshot=calendar.snapshot(100076.);
+    const auto& jobs=snapshot.at("calendar").at("jobs");
+    check(jobs.size()==4,"planner still represents both loops before hold expiry");
+    for(const auto& job:jobs)check(job.at("post_ms")==((job.at("vehicle")=="A")?spike+1.:.5),
+                                   "planner charges only the owning vehicle for the delayed command");
+
+    const auto expiries=calendar.expire_holds(late_ack+160.1);
+    check(expiries.size()==1&&expiries.at(0).at("vehicle")=="A","A alone retires at its held-command deadline");
+    auto releases=calendar.release_due(late_ack+160.1,100500.);
+    check(!releases.empty()&&std::all_of(releases.begin(),releases.end(),[](const Json&j){return j.at("vehicle")=="B";}),
+          "B continues releasing after A retires");
+}
 }
 int main(){try{
+    for(double spike:{42.606,35.104}){
+        check_command_tail_isolation(spike,false);
+        check_command_tail_isolation(spike,true);
+    }
     ps_scheduler::LiveCalendar rt(config(),modes());
     check(rt.snapshot(99999.).is_null(),"before origin has no planner snapshot");
     auto released=rt.release_due(100000.,100500.);

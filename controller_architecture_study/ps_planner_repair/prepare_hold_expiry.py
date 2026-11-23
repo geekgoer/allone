@@ -52,6 +52,8 @@ def main():
                        '        if(!config.count("retire_on_hold_expiry"))config["retire_on_hold_expiry"]=true;\n'
                        '        const bool single_command_check=config.value("single_command_check",false);\n'
                        '        config["single_command_check"]=single_command_check;\n'
+                       '        const bool isolate_command_costs=config.value("isolate_command_costs",false);\n'
+                       '        config["isolate_command_costs"]=isolate_command_costs;\n'
                        '        const double maximum_update_ms=')
     for sentence in ('experimental error<0.15m and first6 reference speed-vector change<0.3m/s; separate conditional hold required',
                      'new sampled state paired with actual acknowledged held version'):
@@ -78,7 +80,8 @@ def main():
                     due=std::uint64_t(current.at("actuation_deadline_ms").get<double>()*1000.);
                     cancelled=current.at("cancelled").get<bool>();
                     check=a::now_us();
-                    reserve=cancelled?0:std::uint64_t(costs.command_reserve()*1000.);
+                    reserve=cancelled?0:std::uint64_t(1000.*(isolate_command_costs?
+                        calendar.command_reserve(v->name):costs.command_reserve()));
                     reserve_read=a::now_us();
                     reject=cancelled||check+reserve>=due;
                     if(reject){log_precheck();row["status"]="dropped_before_command";throw std::runtime_error("__drop__");}
@@ -101,6 +104,11 @@ def main():
     code = replace_one(code, 'row["status"]=ack_us<due?"delivered":"command_return_late";',
                        'row["status"]=(single_command_check?ack_us/1000.<admission.deadline_ms:ack_us<due)'
                        '?"delivered":"command_return_late";')
+    code = replace_one(code, '''                costs.observe(0.,double(ack_us-output_ready)/1000.,0.,double(ack_us-row.at("control_converted_us").get<std::uint64_t>())/1000.);''',
+        '''                const double post_sample=double(ack_us-output_ready)/1000.;
+                const double reserve_sample=double(ack_us-row.at("control_converted_us").get<std::uint64_t>())/1000.;
+                if(isolate_command_costs)calendar.update_command_costs(v->name,post_sample,reserve_sample);
+                else costs.observe(0.,post_sample,0.,reserve_sample);''')
     code = replace_one(code, '            const auto finished=a::now_us();row["slot_return_us"]=finished;',
         '''            const auto finished=a::now_us();row["slot_return_us"]=finished;
             if(admission.accepted||admission.rejection){
