@@ -73,6 +73,53 @@ def add_command_retime_probe(code):
             raw_journal.submit(std::shared_ptr<const Json>(slot,&slot->log));executor.notify();''')
 
 
+def add_fleet_command_retime(code):
+    code = replace_one(code, '        config["names"]=names;',
+        '''        const bool command_retime=config.at("enable_command_retime");
+        const auto& probes=config.at("ack_delay_probes");
+        if(policy!="fixed"||enable_skip||!isolate_command_costs||!single_command_check||
+           !config.value("retire_on_hold_expiry",false)||config.count("initial_periods")||!probes.is_array())
+            throw std::runtime_error("Fleet retime comparison requires fixed EDF and isolated guarded commands");
+        std::map<std::string,std::pair<std::uint64_t,double>> ack_probes;
+        for(const auto& probe:probes){
+            const std::string vehicle=probe.at("vehicle");
+            const auto cycle=probe.at("cycle").get<std::int64_t>();
+            const double delay=probe.at("ack_delay_ms");
+            if(!probe.at("cycle").is_number_integer()||cycle<=0||!by_name.count(vehicle)||
+               !std::isfinite(delay)||delay<=0.||delay>=maximum_update_ms||
+               (double(cycle)+1.)*config.at("period_ms").get<double>()+maximum_update_ms>=duration*1000.||
+               !ack_probes.emplace(vehicle,std::make_pair(std::uint64_t(cycle),delay)).second)
+                throw std::runtime_error("Invalid or duplicate controlled ACK delay");
+        }
+        config["names"]=names;''')
+    code = replace_one(code, 'v->worker=std::thread([&,v]{for(;;)',
+        '''v->worker=std::thread([&,v]{
+            std::uint64_t late_version=0,late_cycle=0;
+            const auto probe=ack_probes.find(v->name);
+            for(;;)''')
+    code = replace_one(code, '                row["command_sent"]=true;row["command_return_proxy"]=true;',
+        '''                if(ack.ping_ok&&probe!=ack_probes.end()&&slot->cycle==probe->second.first){
+                    row["probe_real_ping_return_us"]=ack_us;
+                    std::this_thread::sleep_for(std::chrono::microseconds(std::uint64_t(probe->second.second*1000.)));
+                    row["command_return_us"]=ack_us=a::now_us();
+                }
+                row["command_sent"]=true;row["command_return_proxy"]=true;''')
+    code = replace_one(code, '                if(isolate_command_costs)calendar.update_command_costs(v->name,post_sample,reserve_sample);',
+        '''                if(command_retime&&row["status"]=="command_return_late"&&reserve_sample>row["period_ms"].get<double>()){
+                    late_version=v->version;late_cycle=slot->cycle;
+                }
+                if(isolate_command_costs)calendar.update_command_costs(v->name,post_sample,reserve_sample);''')
+    return replace_one(code, '            raw_journal.submit(std::shared_ptr<const Json>(slot,&slot->log));executor.notify();',
+        '''            if(late_version&&late_version==v->version&&row["status"]=="dropped_inference"){
+                const auto start=a::now_us();
+                const auto update=calendar.try_command_retime(v->name,slot->cycle,a::now_ms);
+                row["command_retime_attempt"]={{"late_ack_cycle",late_cycle},{"held_version",late_version},
+                    {"wall_us",a::now_us()-start},{"accepted",!update.is_null()}};
+                if(!update.is_null()){row["command_retime"]=update;late_version=0;}
+            }
+            raw_journal.submit(std::shared_ptr<const Json>(slot,&slot->log));executor.notify();''')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
@@ -81,6 +128,8 @@ def main():
                         help="Generate an experiment-only fixed-policy binary that requires an explicit omission config")
     probes.add_argument("--command-retime-probe", action="store_true",
                         help="Generate an experiment-only fixed-policy binary with one controlled ACK observation delay")
+    probes.add_argument("--fleet-command-retime", action="store_true",
+                        help="Generate a fixed-EDF comparison binary with opt-in recovery for every vehicle")
     args = parser.parse_args()
     here = Path(__file__).resolve().parent
     source = here.parent / "ps_board_source/20261117_executor_trace"
@@ -211,6 +260,8 @@ def main():
         code = add_critical_update_probe(code)
     if args.command_retime_probe:
         code = add_command_retime_probe(code)
+    if args.fleet_command_retime:
+        code = add_fleet_command_retime(code)
     runtime.write_text(code, encoding="utf-8", newline="\n")
     manifest = {p.relative_to(args.output).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
                 for p in sorted(args.output.rglob("*")) if p.is_file()}

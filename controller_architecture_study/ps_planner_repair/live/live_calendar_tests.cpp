@@ -19,7 +19,7 @@ void check_command_tail_isolation(double spike,bool isolate,bool retime=false){
     auto cfg=config();
     cfg["names"]=Json::array({"A","B"});cfg["period_ms"]=20.;cfg["model_id"]=1;
     cfg["isolate_command_costs"]=isolate;cfg["retire_on_hold_expiry"]=true;cfg["maximum_update_ms"]=160.;
-    if(retime){cfg["adaptive"]=false;cfg["periods_ms"]=Json::array({20.,60.,80.,120.});}
+    if(retime){cfg["adaptive"]=false;cfg["periods_ms"]=Json::array({20.,40.,60.,80.,120.});}
     ps_scheduler::LiveCalendar calendar(cfg,modes());
     calendar.release_due(100000.,100500.);
     calendar.observe("A",100000.,100160.,0);
@@ -78,6 +78,23 @@ void check_command_tail_isolation(double spike,bool isolate,bool retime=false){
         check(calendar.command_begin("A",4,100123.),"the replacement still passes the ordinary command guard");
         calendar.command_return("A",4,100124.);
         calendar.finish("A",4,100124.1,"delivered");
+        calendar.queued("B",5,100124.2,100124.5,100234.);
+        check(calendar.take(100124.5).at("vehicle")=="B","B still uses the normal queue after A retimes");
+        calendar.dpu_done("B",5,100125.,true);
+        check(calendar.command_begin("B",5,100126.),"B begins command with its original guard");
+        calendar.command_return("B",5,100149.);
+        calendar.update_command_costs("B",24.,23.);
+        calendar.observe("B",100149.2,100300.,3);calendar.finish("B",5,100149.3,"command_return_late");
+        calendar.release_due(100150.,100500.);
+        calendar.queued("B",7,100150.,100150.5,100300.);
+        const auto blocked=calendar.take(100150.5);
+        check(blocked.at("vehicle")=="B"&&!blocked.at("dispatch").get<bool>(),"B's own long ACK blocks its next 20 ms inference");
+        calendar.finish("B",7,100150.6,"dropped_inference");
+        fake_dispatch_ms=100150.7;
+        const auto second=calendar.try_command_retime("B",7,dispatch_clock);
+        check(second.at("period_ms")==40.&&second.at("next_release_ms")==100190.,"B recovers independently at 40 ms");
+        const auto own=calendar.state().at("loops").at("A");
+        check(own.at("period_ms")==60.&&own.at("next_ms")==100180.,"B retime leaves recovered A unchanged");
         check(calendar.expire_holds(late_ack+160.1).empty(),"a new acknowledgement replaces the expiring held version");
         return;
     }

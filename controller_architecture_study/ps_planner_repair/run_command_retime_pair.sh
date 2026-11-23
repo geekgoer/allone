@@ -1,5 +1,5 @@
 #!/bin/sh
-# Matched delayed-ACK runs. Only the target-loop retime option differs per pair.
+# Run named ACK recovery arms, defaulting to the original paired pilot.
 set -eu
 KIT=${1:?prepared kit directory}
 OUT=${2:?new result directory}
@@ -8,7 +8,13 @@ OLD=/home/root/ps_migration_20261116_run001
 (cd "$KIT" && sha256sum -c inputs.sha256)
 mkdir "$OUT"
 cp "$KIT/inputs.sha256" "$OUT/"
-for job in drone2_off drone2_on drone5_on drone5_off; do
+shift 2
+if [ "$#" -eq 0 ]; then
+    set -- drone2_off drone2_on drone5_on drone5_off
+fi
+for job in "$@"; do
+    case "$job" in ''|*[!a-z0-9_]*) echo "Invalid run name: $job" >&2; exit 1;; esac
+    test -r "$KIT/config_$job.json"
     run="$OUT/$job"
     mkdir "$run"
     echo "RUN $job"
