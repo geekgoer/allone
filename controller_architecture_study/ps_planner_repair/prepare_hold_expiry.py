@@ -50,34 +50,66 @@ def main():
     code = runtime.read_text(encoding="utf-8")
     code = replace_one(code, '        const double maximum_update_ms=',
                        '        if(!config.count("retire_on_hold_expiry"))config["retire_on_hold_expiry"]=true;\n'
+                       '        const bool single_command_check=config.value("single_command_check",false);\n'
+                       '        config["single_command_check"]=single_command_check;\n'
                        '        const double maximum_update_ms=')
     for sentence in ('experimental error<0.15m and first6 reference speed-vector change<0.3m/s; separate conditional hold required',
                      'new sampled state paired with actual acknowledged held version'):
         code = replace_one(code, f'"{sentence}");', f'"{sentence}",a::now_ms());')
+    code = replace_one(code, '            try{\n                const auto release_row=calendar.row(v->name,slot->cycle);',
+                       '            ps_scheduler::CommandAdmission admission;\n'
+                       '            try{\n                const auto release_row=calendar.row(v->name,slot->cycle);')
     code = replace_one(code, '''                const auto current=calendar.row(v->name,slot->cycle);row["calendar_after_dpu"]=current;
                 due=std::uint64_t(current.at("actuation_deadline_ms").get<double>()*1000.);
                 if(current.at("cancelled").get<bool>()||a::now_us()+std::uint64_t(costs.command_reserve()*1000.)>=due){
                     row["status"]="dropped_before_command";throw std::runtime_error("__drop__");}''',
-        '''                const auto row_start=a::now_us();double row_lock_wait=0.;
-                const auto current=calendar.row(v->name,slot->cycle,&row_lock_wait);
-                const auto row_end=a::now_us();row["calendar_after_dpu"]=current;
-                due=std::uint64_t(current.at("actuation_deadline_ms").get<double>()*1000.);
-                const bool cancelled=current.at("cancelled").get<bool>();
-                const auto check=a::now_us();
-                const auto reserve=cancelled?0:std::uint64_t(costs.command_reserve()*1000.);
-                const auto reserve_read=a::now_us();
-                const bool reject=cancelled||check+reserve>=due;
-                const auto log_precheck=[&]{row["command_precheck"]={{"row_start_us",row_start},
-                    {"row_return_us",row_end},{"row_lock_wall_us",row_lock_wait},
-                    {"checked_us",check},{"reserve_return_us",reserve_read},
-                    {"deadline_us",due},{"reserve_us",reserve},{"cancelled",cancelled},{"accepted",!reject}};};
-                if(reject){log_precheck();row["status"]="dropped_before_command";throw std::runtime_error("__drop__");}''')
-    code = replace_one(code, '                if(!row.at("command_guard_accepted").get<bool>()){',
-                       '                if(!row.at("command_guard_accepted").get<bool>()){\n'
+        '''                std::uint64_t row_start=0,row_end=0,check=0,reserve=0,reserve_read=0;
+                double row_lock_wait=0.;bool cancelled=false,reject=false;
+                const auto log_precheck=[&]{
+                    if(single_command_check)return;
+                    row["command_precheck"]={{"row_start_us",row_start},{"row_return_us",row_end},
+                        {"row_lock_wall_us",row_lock_wait},{"checked_us",check},{"reserve_return_us",reserve_read},
+                        {"deadline_us",due},{"reserve_us",reserve},{"cancelled",cancelled},{"accepted",!reject}};
+                };
+                if(!single_command_check){
+                    row_start=a::now_us();
+                    const auto current=calendar.row(v->name,slot->cycle,&row_lock_wait);
+                    row_end=a::now_us();row["calendar_after_dpu"]=current;
+                    due=std::uint64_t(current.at("actuation_deadline_ms").get<double>()*1000.);
+                    cancelled=current.at("cancelled").get<bool>();
+                    check=a::now_us();
+                    reserve=cancelled?0:std::uint64_t(costs.command_reserve()*1000.);
+                    reserve_read=a::now_us();
+                    reject=cancelled||check+reserve>=due;
+                    if(reject){log_precheck();row["status"]="dropped_before_command";throw std::runtime_error("__drop__");}
+                }''')
+    code = replace_one(code, '''                row["command_guard_accepted"]=calendar.command_begin(v->name,slot->cycle,a::now_ms());
+                if(!row.at("command_guard_accepted").get<bool>()){''',
+                       '                bool guard_accepted;\n'
+                       '                if(single_command_check){\n'
+                       '                    admission=calendar.command_begin_current(v->name,slot->cycle);\n'
+                       '                    guard_accepted=admission.accepted;\n'
+                       '                }else{\n'
+                       '                    guard_accepted=calendar.command_begin(v->name,slot->cycle,a::now_ms());\n'
+                       '                    row["command_guard_accepted"]=guard_accepted;\n'
+                       '                }\n'
+                       '                if(!guard_accepted){\n'
                        '                    log_precheck();')
     code = replace_one(code, '                row["command_submit_us"]=std::uint64_t(ack.submit_ns/1000);',
                        '                log_precheck();\n'
                        '                row["command_submit_us"]=std::uint64_t(ack.submit_ns/1000);')
+    code = replace_one(code, 'row["status"]=ack_us<due?"delivered":"command_return_late";',
+                       'row["status"]=(single_command_check?ack_us/1000.<admission.deadline_ms:ack_us<due)'
+                       '?"delivered":"command_return_late";')
+    code = replace_one(code, '            const auto finished=a::now_us();row["slot_return_us"]=finished;',
+        '''            const auto finished=a::now_us();row["slot_return_us"]=finished;
+            if(admission.accepted||admission.rejection){
+                row["command_guard_accepted"]=admission.accepted;
+                row["command_admission"]={{"checked_us",admission.checked_ms*1000.},
+                    {"deadline_us",admission.deadline_ms*1000.},{"reserve_us",admission.reserve_ms*1000.},
+                    {"lock_wall_us",admission.lock_wait_us},{"accepted",admission.accepted}};
+                if(admission.rejection)row["command_admission"]["rejection"]=admission.rejection;
+            }''')
     code = replace_one(code, '        std::string stop_reason;',
         """        Json hold_expiries=Json::array();
         auto record_expiries=[&](const Json& events){

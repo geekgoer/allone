@@ -4,6 +4,12 @@
 #include <condition_variable>
 
 namespace ps_scheduler {
+struct CommandAdmission {
+    bool accepted=false;
+    double checked_ms=0., deadline_ms=0., reserve_ms=0., lock_wait_us=0.;
+    const char* rejection=nullptr;
+};
+
 // Live lifecycle adapter. EVERY absolute time is CLOCK_MONOTONIC milliseconds.
 // config: names[], origin_ms, period_ms, periods_ms[], model_id, candidate_ids[],
 // prep_ms, post_ms, decision_ms, fresh_ms=80, command_reserve_ms=post_ms,
@@ -44,6 +50,10 @@ public:
     // Pending persists on uncertain/no acknowledgement; retire that vehicle.
     bool command_begin(const std::string& vehicle, std::uint64_t cycle,
                        double begin_ms);
+    // Production clock is read after acquiring the calendar lock. A supplied
+    // clock must use the same absolute timebase and is only for deterministic tests.
+    CommandAdmission command_begin_current(const std::string& vehicle, std::uint64_t cycle,
+                                           double (*clock_ms)()=nullptr);
     // Call whenever a real command was sent and acknowledged, even if LATE.
     // Invalidates held-control certificates, then caller must observe new pair.
     std::uint64_t command_return(const std::string& vehicle, std::uint64_t cycle,
@@ -77,6 +87,8 @@ public:
     Json install_at_for_test(const Json& snapshot,const Json& decision,double now_ms);
 private:
     std::string key(const std::string&v,std::uint64_t cycle) const;
+    CommandAdmission command_begin_unlocked(const std::string& vehicle, std::uint64_t cycle,
+                                            double now_ms);
     void expire_hold_unlocked(const std::string& vehicle, Json& loop, double now);
     void retire_unlocked(const std::string& vehicle, Json& loop);
     Json snapshot_unlocked(double now_ms) const;

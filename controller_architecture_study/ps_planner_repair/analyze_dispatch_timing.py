@@ -27,6 +27,8 @@ def analyze(trial):
     slow_lock_windows = []
     before_command = Counter()
     preliminary_budget_loss = Counter()
+    replay_headroom = []
+    admissions = Counter()
     service_events, rejection_events = [], []
     stamped = downgraded_at_handoff = 0
     trace_sha = hashlib.sha256()
@@ -49,6 +51,22 @@ def analyze(trial):
             ack = row.get("command_return_us")
             if ack is not None and row.get("control_converted_us") is not None:
                 stages["command_prepare_to_ack"].append(ack - row["control_converted_us"])
+            admission = row.get("command_admission")
+            if admission is not None:
+                accepted = admission["accepted"]
+                if accepted != row["command_guard_accepted"]:
+                    raise ValueError("Atomic admission disagrees with the command guard")
+                slack = admission["deadline_us"] - admission["reserve_us"] - admission["checked_us"]
+                admissions["accepted" if accepted else admission["rejection"]] += 1
+                stages["command_guard_lock_wall"].append(admission["lock_wall_us"])
+                stages["command_guard_slack"].append(slack)
+                stages["command_output_to_guard_check"].append(admission["checked_us"] - row["output_ready_us"])
+                if accepted and slack < -0.001:
+                    raise ValueError("Command accepted without sufficient reserve")
+                if status in ("delivered", "command_return_late"):
+                    if not accepted or (abs(ack - admission["deadline_us"]) > 0.001 and
+                                        (ack < admission["deadline_us"]) != (status == "delivered")):
+                        raise ValueError("ACK classification disagrees with the effective deadline")
             precheck = row.get("command_precheck")
             if precheck is not None:
                 output = row["output_ready_us"]
@@ -69,6 +87,10 @@ def analyze(trial):
                         cause = "cancelled"
                     else:
                         assert checked >= cutoff
+                        # Keep the measured first lock wait and the old cutoff. This
+                        # screens potential headroom, without replaying contention,
+                        # wire conversion, or changes to the active hold deadline.
+                        replay_headroom.append(cutoff - (start + lock))
                         marks = (output, start, start + lock, end, checked)
                         names = ("already_short_at_worker_output", "output_to_row", "row_lock_wall",
                                  "row_other_wall", "row_return_to_check")
@@ -161,6 +183,14 @@ def analyze(trial):
             "planner_snapshot_build_us": {k: stats(v) for k, v in snapshot_builds.items()},
             "before_command_drops": before_command,
             "precheck_cutoff_crossings": preliminary_budget_loss,
+            "atomic_command_admissions": admissions,
+            "historical_after_first_lock_screen": {
+                "noncancelled_precheck_drops": len(replay_headroom),
+                "remaining_positive_us_after_assumed_extra_us": {
+                    extra: sum(headroom > extra for headroom in replay_headroom)
+                    for extra in (0, 50, 100, 250)
+                },
+            },
             "slow_lock_overlap_with_approx_planner_snapshot": {"n": len(slow_lock_windows), "overlap": overlaps},
             "top_slow_services": sorted(worst, key=lambda d: -d["timing_us"]["take_to_local_return"])[:20],
             "rejection_evidence_count": len(rejection_evidence),

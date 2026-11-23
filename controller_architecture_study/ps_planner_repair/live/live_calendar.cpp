@@ -254,18 +254,37 @@ void LiveCalendar::dpu_done(const std::string&v,std::uint64_t cycle,double now,b
     std::lock_guard<std::mutex>lock(mutex_);auto name=key(v,cycle);if(active_!=name)throw std::invalid_argument("DPU completion identity does not match active nonpreemptive job");auto&r=rows_.at(name);if(now<n(r,"board_start_ms"))throw std::invalid_argument("DPU completion precedes dispatch");r["board_done_ms"]=now;r["phase"]="post";r["board_success"]=success;auto&m=modes_.at(std::to_string(r.at("model_id").get<int>()));m["service_ms"]=std::max(n(m,"service_ms"),now-n(r,"board_start_ms"));active_.clear();++revision_;
 }
 bool LiveCalendar::command_begin(const std::string&v,std::uint64_t cycle,double now){
+    std::lock_guard<std::mutex>lock(mutex_);
+    return command_begin_unlocked(v,cycle,now).accepted;
+}
+CommandAdmission LiveCalendar::command_begin_current(const std::string&v,std::uint64_t cycle,double (*clock_ms)()){
+    using Clock=std::chrono::steady_clock;
+    const auto before=Clock::now();
+    std::lock_guard<std::mutex>lock(mutex_);
+    const auto acquired=Clock::now();
+    auto result=command_begin_unlocked(v,cycle,clock_ms?clock_ms():monotonic_ms());
+    result.lock_wait_us=std::chrono::duration<double,std::micro>(acquired-before).count();
+    return result;
+}
+CommandAdmission LiveCalendar::command_begin_unlocked(const std::string&v,std::uint64_t cycle,double now){
     finite_time(now,"command_begin");
-    std::lock_guard<std::mutex>lock(mutex_);auto&r=rows_.at(key(v,cycle));auto&l=loops_.at(v);
-    if(l.at("busy")!=key(v,cycle))throw std::invalid_argument("Command attempt no longer owns worker");
+    const auto name=key(v,cycle);auto&r=rows_.at(name);auto&l=loops_.at(v);
+    if(l.at("busy")!=name)throw std::invalid_argument("Command attempt no longer owns worker");
     if(s(r,"phase")!="post"||!r.value("board_success",false)||!r.count("board_done_ms")||now<n(r,"board_done_ms"))throw std::invalid_argument("Command attempt requires a completed successful DPU job");
     if(l.at("command_pending").get<bool>()||r.count("command_begin_ms")||r.count("command_return_ms"))throw std::invalid_argument("Command attempt already recorded");
     expire_hold_unlocked(v,l,now);
     const double due=std::min(r.value("actuation_deadline_ms",n(r,"deadline_ms")),l.value("watch_hold_ms",std::numeric_limits<double>::infinity()));
-    if(l.at("retired").get<bool>()||r.at("cancelled").get<bool>()||now+n(config_,"command_reserve_ms")>=due){
-        r["cancelled"]=true;r["status"]="dropped_before_command";r["command_begin_rejected_ms"]=now;++revision_;return false;
+    CommandAdmission result;
+    result.checked_ms=now;result.deadline_ms=due;result.reserve_ms=n(config_,"command_reserve_ms");
+    if(l.at("retired").get<bool>())result.rejection="retired";
+    else if(r.at("cancelled").get<bool>())result.rejection="cancelled";
+    else if(r.at("control_version")!=l.at("control_version"))result.rejection="control_version_changed";
+    else if(now+result.reserve_ms>=due)result.rejection="insufficient_reserve";
+    if(result.rejection){
+        r["cancelled"]=true;r["status"]="dropped_before_command";r["command_begin_rejected_ms"]=now;++revision_;return result;
     }
     r["command_begin_ms"]=now;r["command_pending"]=true;l["command_pending"]=true;
-    l["observation"]=nullptr;dispatch_order_=Json::array();++revision_;return true;
+    l["observation"]=nullptr;dispatch_order_=Json::array();++revision_;result.accepted=true;return result;
 }
 std::uint64_t LiveCalendar::command_return(const std::string&v,std::uint64_t cycle,double now){
     finite_time(now,"command_return");

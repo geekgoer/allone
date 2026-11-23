@@ -295,6 +295,34 @@ int main(){try{
     begin_expired.queued("Drone1",0,100000.,100001.,100200.);begin_expired.take(100002.);begin_expired.dpu_done("Drone1",0,100007.,true);
     check(!begin_expired.command_begin("Drone1",0,100049.5),"atomic command guard reserves post cost before submission");
     check(!begin_expired.state().at("loops").at("Drone1").at("command_pending").get<bool>(),"refused unsent command creates no uncertain pending state");
+
+    ps_scheduler::LiveCalendar fresh_guard(one_watchdog,modes());
+    fresh_guard.release_due(100000.,100500.);
+    fresh_guard.observe("Drone1",100000.,100048.,0);
+    fresh_guard.queued("Drone1",0,100000.,100001.,100048.);
+    fresh_guard.take(100002.);fresh_guard.dpu_done("Drone1",0,100007.,true);
+    check(fresh_guard.observe("Drone1",100040.,100046.,0),"new held-control observation tightens the queued deadline");
+    fresh_guard.update_costs(0.,0.,0.,1.);
+    fake_dispatch_ms=100045.;fake_dispatch_step_ms=0.;
+    const auto guard_rejected=fresh_guard.command_begin_current("Drone1",0,dispatch_clock);
+    check(!guard_rejected.accepted&&guard_rejected.rejection&&std::string(guard_rejected.rejection)=="insufficient_reserve"&&
+          guard_rejected.checked_ms==100045.&&guard_rejected.deadline_ms==100046.&&guard_rejected.reserve_ms==1.,
+          "lock-time clock and latest reserve use a strict cutoff against the tightened hold");
+    check(!fresh_guard.state().at("loops").at("Drone1").at("command_pending").get<bool>()&&
+          fresh_guard.control_version("Drone1")==0,"atomic refusal neither sends nor advances held version");
+
+    ps_scheduler::LiveCalendar fresh_accept(one_watchdog,modes());
+    fresh_accept.release_due(100000.,100500.);
+    fresh_accept.observe("Drone1",100000.,100020.,0);
+    fresh_accept.queued("Drone1",0,100000.,100001.,100020.);
+    fresh_accept.take(100002.);fresh_accept.dpu_done("Drone1",0,100007.,true);
+    fake_dispatch_ms=100019.25;
+    const auto admitted=fresh_accept.command_begin_current("Drone1",0,dispatch_clock);
+    check(admitted.accepted&&admitted.rejection==nullptr&&admitted.lock_wait_us>=0.&&
+          admitted.checked_ms==100019.25&&admitted.deadline_ms==100020.,"atomic admission records the decision and effective deadline");
+    throws([&]{fresh_accept.command_begin_current("Drone1",0,dispatch_clock);},"accepted command cannot be sent twice");
+    check(fresh_accept.command_return("Drone1",0,100020.1)==1&&fresh_accept.expire_holds(100020.2).size()==1,
+          "late ACK is recorded but cannot undo latched hold expiry");
     // Reproduce the real early-stop race: caller captured 100049 before waiting
     // for the lock, but a release at 100050 already owns the row under that lock.
     ps_scheduler::LiveCalendar stale(config(),modes());stale.release_due(100000.,100500.);

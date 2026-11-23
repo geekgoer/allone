@@ -230,6 +230,35 @@ python controller_architecture_study/ps_planner_repair/audit_segment_opportuniti
     --output .\segment_opportunities_new.json
 ```
 
+## 实验八 · 单次原子下发检查（2026-11-23）
+
+新路径先将 DNN 输出转换为命令，再取得一次日历锁。锁内刷新时钟，核对当前周期仍拥有该机执行位置、推理成功、控制版本仍匹配、未取消或退役，并验证 `当前时间 + 下发预留 < min(任务执行期限, 最新保持期限)`。通过即登记命令在途，防止重复下发。RPC 在锁外执行，迟到 ACK 仍更新实际控制版本，保持期限退役继续生效。ACK 仍用下发和 ping 返回作代理，预留仍使用实测经验成本。新路径用锁内取得的有效期限判定 ACK 是否迟到。
+
+生成的控制程序用 `single_command_check` 切换路径，默认 `false`。开启后省去推理返回后的完整日历行复制和单独的成本读取。新字段 `command_admission` 记录取锁等待、锁内决策时间、有效期限、预留与拒绝原因，日志在返回或拒绝后补写。原任务期限字段保留，便于对照。固定策略、模型候选池、保持期限退出和规划逻辑沿用原配置。
+
+### 用历史日志检验剩余余量
+
+对 2026-11-22 的诊断复飞重新计算。在 139 条前置拒绝中排除 1 条已取消任务，保留当时第一次锁等待、前置期限及预留。把第一次取锁的结束近似当成新检查的起点，得到以下筛查结果。
+
+| 假设取锁完成后再花的时间 | 138 条中仍有正余量的条数 |
+| ---: | ---: |
+| 0 μs | 35 |
+| 50 μs | 14 |
+| 100 μs | 4 |
+| 250 μs | 2 |
+
+这个静态复算固定了原有竞争和期限。新路径先转换命令，进入锁的时刻、锁等待和最新保持期限都可能变化。表中条数表示在相应假设下能通过预留门槛的潜在样本，实际按时交付需要新闭环日志。锁内取时也可能挡住以前曾以过时的时间戳获准的命令。
+
+Windows 和 AXU3EGB 各通过 43＋126＋47 项回归。新增覆盖最新保持期限和预留同时收紧、等于预算边界时拒绝、重复命令尝试及迟到 ACK。候选位于 `/home/root/ps_command_atomic_20261123_001`，控制二进制 SHA-256 为 `546f692696947adddd0fc8ed7308b9e01ec431c7f003166d0bddeb768720c34c`。本轮未运行 Blocks 闭环。
+
+```powershell
+$base = 'controller_architecture_study/results'
+python -m controller_architecture_study.ps_planner_repair.analyze_dispatch_timing `
+    --trial "$base/ps_command_margin_20261122_001/trial" --output .\command_atomic_replay.json
+```
+
+闭环对照沿用冻结的十二机场景、20 ms、32 秒及相同预检配置。用同一二进制仅切换 `single_command_check`，同时核对下发前丢弃、有效期限内 ACK、推理前排队、退役及过门。若有退役，分别报告退役前共同窗口和整轮结果。原始复算和本轮构建保存在 `results/ps_command_atomic_20261123_001/`。[复算结果](../results/ps_command_atomic_20261123_001/historical_screen.json)
+
 ## Drone10 到期处置
 
 C++ 日历已接入独立的到期处置候选版本。发布循环在分配新任务前检查各机旧命令，匹配观测不能跨过旧期限刷新旧版本，也不能把 hold 延长到 ACK 的绝对保持上限之外。在 DPU 里执行的整任务正常结束，结果无法再下发。命令 RPC 若已发出，实际 ACK 即使迟到也继续记录，退休状态不会重开。生成后的板端主循环会把到期原因写入 hold_expiries.json。该版只实施逻辑退役。悬停、制动及其物理效果仍需单独验证。
