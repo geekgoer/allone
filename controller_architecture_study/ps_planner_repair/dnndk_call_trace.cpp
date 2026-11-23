@@ -3,6 +3,7 @@
 #include <dnndk/dnndk.h>
 #include <dlfcn.h>
 #include <fcntl.h>
+#include <sched.h>
 #include <sys/resource.h>
 #include <sys/syscall.h>
 #include <time.h>
@@ -21,6 +22,63 @@ struct Event {
 constexpr unsigned capacity=50000;
 Event events[capacity];
 std::atomic<unsigned> used{0};
+int executor_cpu=-1;
+int executor_nice=0;
+bool change_nice=false;
+
+int setting(const char* name,const char* value,int low,int high){
+    char* end=nullptr;
+    const auto number=std::strtol(value,&end,10);
+    if(end==value||*end||number<low||number>high){
+        std::fprintf(stderr,"Invalid %s\n",name);
+        _exit(2);
+    }
+    return int(number);
+}
+
+void log_placement(const char* role,pid_t tid,int error){
+    cpu_set_t mask;
+    const bool read_mask=sched_getaffinity(tid,sizeof(mask),&mask)==0;
+    const int nice=getpriority(PRIO_PROCESS,tid);
+    std::fprintf(stderr,"ROUTE_B_PLACEMENT role=%s tid=%d error=%d policy=%d nice=%d cpus=",
+                 role,int(tid),error,sched_getscheduler(tid),nice);
+    if(read_mask)for(int i=0;i<CPU_SETSIZE;++i)if(CPU_ISSET(i,&mask))std::fprintf(stderr,"%d,",i);
+    std::fputc('\n',stderr);
+}
+
+__attribute__((constructor)) void configure_main(){
+    if(!std::getenv("ROUTE_B_DNNDK_TRACE"))return;
+    const char* cpu=std::getenv("ROUTE_B_EXECUTOR_CPU");
+    const char* nice=std::getenv("ROUTE_B_EXECUTOR_NICE");
+    if(nice){executor_nice=setting("ROUTE_B_EXECUTOR_NICE",nice,-20,19);change_nice=true;}
+    if(cpu){
+        executor_cpu=setting("ROUTE_B_EXECUTOR_CPU",cpu,0,CPU_SETSIZE-1);
+        cpu_set_t mask;
+        if(sched_getaffinity(0,sizeof(mask),&mask)!=0||!CPU_ISSET(executor_cpu,&mask)||CPU_COUNT(&mask)<2){
+            std::fprintf(stderr,"Requested executor CPU is unavailable or the parent's only CPU\n");
+            _exit(2);
+        }
+        // Threads created by the controller inherit this mask. The executor
+        // subsequently claims its own CPU on its first DPU call.
+        CPU_CLR(executor_cpu,&mask);
+        if(sched_setaffinity(0,sizeof(mask),&mask)!=0){std::perror("controller affinity");_exit(2);}
+    }
+    log_placement("main",getpid(),0);
+}
+
+pid_t configure_executor(){
+    const auto tid=pid_t(syscall(SYS_gettid));
+    if(tid==getpid())return tid;  // Warmup runs on the main thread.
+    int error=0;
+    if(executor_cpu>=0){
+        cpu_set_t mask;
+        CPU_ZERO(&mask);CPU_SET(executor_cpu,&mask);
+        if(sched_setaffinity(tid,sizeof(mask),&mask)!=0)error=errno;
+    }
+    if(change_nice&&setpriority(PRIO_PROCESS,tid,executor_nice)!=0)error=errno;
+    log_placement("executor",tid,error);
+    return tid;
+}
 
 Int stamp(clockid_t clock){
     timespec tv{};
@@ -63,7 +121,7 @@ int dpuRunTask(DPUTask* task){
     if(!enabled)return run(task);
 
     rusage before{},after{};
-    const auto tid=Int(syscall(SYS_gettid));
+    static thread_local const auto tid=configure_executor();
     const bool have_before=getrusage(RUSAGE_THREAD,&before)==0;
     const auto wait_before=runqueue_ns();
     const auto cpu_before=stamp(CLOCK_THREAD_CPUTIME_ID);
