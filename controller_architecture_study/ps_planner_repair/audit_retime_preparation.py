@@ -38,7 +38,7 @@ def adoption_evidence(command, decision_row, events, clocks):
     return result
 
 
-def audit(trial):
+def audit(trial, include_all_posts=False):
     config = load(trial / 'config_source.json')
     if config['adaptive'] or not config['retime_pin_release'] or not config['isolate_command_costs']:
         raise ValueError('Expected the fixed-model, isolated-cost pin-release experiment')
@@ -112,6 +112,8 @@ def audit(trial):
                                 for v, (r, cost, command) in by_vehicle.items() if cost > periods[v]},
                             post_source=adoption_evidence(prior, evidence_row, events, clocks)
                             if evidence_row is not None else None))
+        if include_all_posts:
+            results[-1]['fleet_post_ms'] = {v: cost for v, (_, cost, _) in by_vehicle.items()}
     if not results:
         raise ValueError('No recorded peer-slot rejections to audit')
     counts = Counter(name for r in results for name, blocked in r['still_blocks'].items() if blocked)
