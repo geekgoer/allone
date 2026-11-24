@@ -11,7 +11,7 @@ test "$(dirname "$kit")" = /home/root
 case "$(basename "$kit")" in tcs_command_trace_*) ;; *) exit 2 ;; esac
 test "$(dirname "$out")" = "$kit"
 case "$(basename "$out")" in run_[a-zA-Z0-9_]*) ;; *) exit 2 ;; esac
-case "$config" in config_natural_fixed20.json|config_natural_retime20.json) ;; *) exit 2 ;; esac
+case "$config" in config_natural_fixed20.json|config_natural_retime20.json|config_ping.json|config_receipt.json) ;; *) exit 2 ;; esac
 
 require_idle() {
     for fd in /proc/[0-9]*/fd/*; do

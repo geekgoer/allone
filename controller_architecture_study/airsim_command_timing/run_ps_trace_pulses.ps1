@@ -1,7 +1,8 @@
 param(
     [Parameter(Mandatory = $true)][string]$Output,
     [Parameter(Mandatory = $true)][string]$BoardKit,
-    [Parameter(Mandatory = $true)][int]$DiagnosticPid
+    [Parameter(Mandatory = $true)][int]$DiagnosticPid,
+    [ValidateSet('natural_retime20', 'ping', 'receipt')][string]$Arm = 'natural_retime20'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -12,9 +13,9 @@ if ($diag.ProcessName -ne 'UE4Editor-Cmd' -or -not (netstat -ano -p tcp |
 $saved = $diag.ProcessorAffinity
 $mask = 15L
 if (($saved.ToInt64() -band $mask) -ne $mask -or $saved.ToInt64() -eq $mask) { throw 'Expected four logical CPUs and a wider original allocation' }
-$label = 'run_pulse4'
+$label = if ($Arm -eq 'natural_retime20') { 'run_pulse4' } else { "run_$Arm" }
 $seed = (Get-Random -Minimum 500000 -Maximum 2000000000) * 32768L
-$line = 'ssh -o BatchMode=yes axu3egb "sh {0}/run_ps_trace.sh {0} {0}/{1} config_natural_retime20.json {2}"' -f $BoardKit, $label, $seed
+$line = 'ssh -o BatchMode=yes axu3egb "sh {0}/run_ps_trace.sh {0} {0}/{1} config_{2}.json {3}"' -f $BoardKit, $label, $Arm, $seed
 $marker = 'ssh -o BatchMode=yes axu3egb "test -s {0}/{1}/trial/execution_identity.json"' -f $BoardKit, $label
 $job = Start-Job -ArgumentList $line -ScriptBlock {
     param($remote)

@@ -76,4 +76,12 @@ inline std::vector<std::vector<Stamp>> read(const std::vector<Stamp>& ids) {
     return result;
 }
 
+inline std::vector<Stamp> snapshot(Stamp id) {
+    std::lock_guard<std::mutex> lock(history_mutex());
+    const auto& record = history()[id % history().size()];
+    if (id == 0 || record[0] != id)
+        return {now_ns(), 0, 0, 0};
+    return {now_ns(), id, record[3], record[4]};
+}
+
 } // namespace falcon_trace
