@@ -8,7 +8,7 @@ import shutil
 from .prepare_ps_trace import edit, prepare
 
 
-def build(source, config, output):
+def build(source, config, output, pin_release_pair=False):
     code = output / 'source'
     prepare(source, code)
     for name in ('receipt_policy.hpp', 'adoption_inbox.hpp'):
@@ -74,8 +74,22 @@ void Client::pause'''),
     cfg = json.loads(config.read_text(encoding='utf-8'))
     if not (cfg['isolate_command_costs'] and cfg['single_command_check'] and cfg['enable_command_retime']):
         raise ValueError('Use the frozen retime comparison config')
-    for name, enabled in (('event_log', False), ('event_schedule', True)):
-        (output / f'config_{name}.json').write_text(json.dumps(dict(cfg, use_adoption_event=enabled), indent=2), encoding='utf-8')
+    if pin_release_pair:
+        maintained = Path(__file__).resolve().parents[1] / 'ps_planner_repair' / 'live'
+        for name in ('scheduler.cpp', 'scheduler.hpp', 'live_calendar.cpp', 'live_calendar.hpp', 'live_calendar_tests.cpp'):
+            shutil.copyfile(maintained / name, code / 'scheduler' / name)
+        edit(code / 'adaptive_runtime.cpp', [
+            ('const auto update=calendar.try_command_retime(v->name,slot->cycle,a::now_ms);',
+             'Json retime_guard;\n                const auto update=calendar.try_command_retime(v->name,slot->cycle,a::now_ms,&retime_guard);'),
+            ('{"wall_us",a::now_us()-start},{"accepted",!update.is_null()}};',
+             '{"wall_us",a::now_us()-start},{"accepted",!update.is_null()},{"guard",std::move(retime_guard)}};'),
+        ])
+        arms = (('event_schedule', dict(use_adoption_event=True, retime_pin_release=False)),
+                ('pin_release', dict(use_adoption_event=True, retime_pin_release=True)))
+    else:
+        arms = (('event_log', dict(use_adoption_event=False)), ('event_schedule', dict(use_adoption_event=True)))
+    for name, changes in arms:
+        (output / f'config_{name}.json').write_text(json.dumps(dict(cfg, **changes), indent=2), encoding='utf-8')
 
 
 def main():
@@ -83,8 +97,9 @@ def main():
     parser.add_argument('--source', type=Path, required=True)
     parser.add_argument('--config', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--pin-release-pair', action='store_true')
     args = parser.parse_args()
-    build(args.source, args.config, args.output)
+    build(args.source, args.config, args.output, args.pin_release_pair)
 
 
 if __name__ == '__main__':

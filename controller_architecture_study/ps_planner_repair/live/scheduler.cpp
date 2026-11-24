@@ -1,4 +1,10 @@
 #include "scheduler.hpp"
+#ifdef PS_PROFILE_ENABLED
+#include "profile.hpp"
+namespace ps_profile {thread_local State state;}
+#else
+#define PS_SCOPE(stage)
+#endif
 
 #include <algorithm>
 #include <cmath>
@@ -25,14 +31,14 @@ std::string name_of(const Json& job) { return job.at("name").get<std::string>();
 double due(const Json& job) {
     return std::min(number(job,"slot_deadline"), std::min(number(job,"hold_deadline"),number(job,"fresh_deadline")));
 }
-Modes parse_modes(const Json& raw) {
+Modes parse_modes(const Json& raw) { PS_SCOPE(Preprocess);
     Modes out;
     if(raw.is_array()) for(const auto& m:raw) out[m.at("numeric_id").get<int>()]=m;
     else if(raw.is_object()) for(auto i=raw.begin();i!=raw.end();++i) out[std::stoi(i.key())]=i.value();
     else throw std::invalid_argument("Expected model array or numeric-keyed object");
     return out;
 }
-Choice parse_choice(const Json& raw) {
+Choice parse_choice(const Json& raw) { PS_SCOPE(Preprocess);
     Choice out;
     for(auto i=raw.begin();i!=raw.end();++i)out[i.key()]=i.value().get<int>();
     return out;
@@ -40,7 +46,7 @@ Choice parse_choice(const Json& raw) {
 Json choice_json(const Choice& choice) {
     Json out=Json::object(); for(const auto& item:choice)out[item.first]=item.second;return out;
 }
-Jobs parse_jobs(const Json& raw) { return raw.get<Jobs>(); }
+Jobs parse_jobs(const Json& raw) { PS_SCOPE(Preprocess); return raw.get<Jobs>(); }
 const Json& find_job(const Jobs& jobs,const std::string& name) {
     for(const auto& j:jobs)if(name_of(j)==name)return j;
     throw std::invalid_argument("Unknown job: "+name);
@@ -73,7 +79,7 @@ struct Event{double t;std::uint64_t serial;std::string resource,name;bool named;
 struct EventLater{bool operator()(const Event&a,const Event&b)const{return std::make_pair(a.t,a.serial)>std::make_pair(b.t,b.serial);}};
 struct Queued{double priority,release;std::string name;double ready,cost;};
 struct QueueLater{bool operator()(const Queued&a,const Queued&b)const{return std::tie(a.priority,a.release,a.name,a.ready,a.cost)>std::tie(b.priority,b.release,b.name,b.ready,b.cost);}};
-Json simulate(const std::vector<Demand>& jobs,const Sequence& order,double decision,double block) {
+Json simulate(const std::vector<Demand>& jobs,const Sequence& order,double decision,double block,bool ready_edf) { PS_SCOPE(Simulation);
     if(order.size()!=jobs.size())throw std::invalid_argument("PL order must contain every job exactly once");
     std::map<std::string,int> rank,progress;
     std::map<std::string,Demand> by_name;
@@ -100,7 +106,7 @@ Json simulate(const std::vector<Demand>& jobs,const Sequence& order,double decis
         while(!events.empty()&&events.top().t<=now+1e-10){Event e=events.top();events.pop();if(busy.count(e.resource))busy[e.resource]=false;if(e.named)advance(e.name,now);}
         for(const std::string r:std::vector<std::string>{"ps","pl"}){
             if(busy[r]||queues[r].empty())continue;
-            if(r=="pl"&&(position>=order.size()||queues[r].top().name!=order[position]))continue;
+            if(r=="pl"&&!ready_edf&&(position>=order.size()||queues[r].top().name!=order[position]))continue;
             Queued q=queues[r].top();queues[r].pop();
             waits[q.name][r]=waits[q.name][r].get<double>()+now-q.ready;
             if(r=="pl"){++position;last_pl=q.name;}
@@ -109,6 +115,7 @@ Json simulate(const std::vector<Demand>& jobs,const Sequence& order,double decis
         }
     }
     if(finish.size()!=jobs.size())throw std::runtime_error("Dispatch order failed to drain");
+    PS_SCOPE(SimulationReport);
     Json slack=Json::object(),misses=Json::array(),raw_jobs=Json::array();std::string worst;double worst_slack=inf;
     for(const auto&j:jobs){double s=j.deadline-command_finish.at(j.name).get<double>();slack[j.name]=s;if(s < -epsilon)misses.push_back(j.name);if(s<worst_slack){worst_slack=s;worst=j.name;}raw_jobs.push_back(demand_json(j));}
     Json report{{"feasible",misses.empty()},{"worst",worst.empty()?Json(nullptr):Json(worst)},
@@ -118,24 +125,30 @@ Json simulate(const std::vector<Demand>& jobs,const Sequence& order,double decis
     report["waits"]=std::move(waits); report["timeline"]=std::move(timeline);
     report["jobs"]=std::move(raw_jobs); return report;
 }
-double tail(const Jobs&jobs,const Sequence&order,const Choice&choice,const Modes&modes,double now){
+double tail(const Jobs&jobs,const Sequence&order,const Choice&choice,const Modes&modes,double now){ PS_SCOPE(Budget);
     double latest=inf;
     for(auto i=order.rbegin();i!=order.rend();++i){const auto&j=find_job(jobs,*i);latest=std::min(due(j)-number(j,"post_ms")-number(j,"transport_ms"),latest)-service(modes,choice.at(*i));if(std::max(now,number(j,"prep_ready"))+number(j,"prep_ms")>latest+epsilon)return -inf;}
     return latest-now;
 }
-double dispatch(const Jobs&jobs,const Sequence&order,const Choice&choice,const Modes&modes,double now){
+double dispatch(const Jobs&jobs,const Sequence&order,const Choice&choice,const Modes&modes,double now){ PS_SCOPE(Budget);
     if(order.empty())throw std::invalid_argument("Missing dispatch head");
     const auto&head=find_job(jobs,order.front());Sequence rest(order.begin()+1,order.end());double tb=tail(jobs,rest,choice,modes,now);if(tb==-inf)return -inf;
     double end=std::min(due(head)-number(head,"post_ms")-number(head,"transport_ms"),now+tb);return end-(std::max(now,number(head,"prep_ready"))+number(head,"prep_ms"));
 }
-Json evaluate_impl(const Jobs&jobs,const Sequence&order,const Choice&choice,const Modes&modes,double now,double decision,double block){
-    Json forecast=simulate(demands(jobs,choice,modes,now),order,decision,std::max(0.,block-now));Json overlap=Json::array();std::set<std::string> vehicles;
+Json evaluate_impl(const Jobs&jobs,const Sequence&order,const Choice&choice,const Modes&modes,double now,double decision,double block,bool ready_edf=false,double rearm=0.){ PS_SCOPE(GlobalCheck);
+    Json forecast=simulate(demands(jobs,choice,modes,now),order,decision,std::max(0.,block-now),ready_edf);Json overlap=Json::array();std::set<std::string> vehicles;
     for(const auto&j:jobs)vehicles.insert(j.at("vehicle").get<std::string>());
-    for(const auto&v:vehicles){Jobs loop;for(const auto&j:jobs)if(j.at("vehicle")==v)loop.push_back(j);std::stable_sort(loop.begin(),loop.end(),[](const Json&a,const Json&b){return number(a,"release")<number(b,"release");});for(std::size_t i=1;i<loop.size();++i)if(now+forecast.at("finish").at(name_of(loop[i-1])).get<double>()>number(loop[i],"release")+epsilon)overlap.push_back(name_of(loop[i-1]));}
+    if(ready_edf){
+        for(const auto& job:jobs){
+            const auto name=name_of(job);
+            if(job.count("rearm_by")&&number(forecast.at("finish"),name.c_str())+rearm>number(job,"rearm_by")+epsilon)
+                overlap.push_back(name);
+        }
+    }else for(const auto&v:vehicles){Jobs loop;for(const auto&j:jobs)if(j.at("vehicle")==v)loop.push_back(j);std::stable_sort(loop.begin(),loop.end(),[](const Json&a,const Json&b){return number(a,"release")<number(b,"release");});for(std::size_t i=1;i<loop.size();++i)if(now+forecast.at("finish").at(name_of(loop[i-1])).get<double>()>number(loop[i],"release")+epsilon)overlap.push_back(name_of(loop[i-1]));}
     Json checked{{"accepted",forecast.at("feasible").get<bool>()&&overlap.empty()}};
     checked["overlap"]=std::move(overlap);checked["forecast"]=std::move(forecast);return checked;
 }
-Json diagnose_impl(const Jobs&jobs,const Choice&choice,const Modes&modes,double now,double decision,double block){
+Json diagnose_impl(const Jobs&jobs,const Choice&choice,const Modes&modes,double now,double decision,double block){ PS_SCOPE(Diagnosis);
     const auto all=demands(jobs,choice,modes,now);Json worst{{"deficit",0.},{"kind","none"},{"start",0.},{"end",0.},{"jobs",Json::array()}};
     for(const auto&j:all){double sum=0;for(const auto&o:j.ops)sum+=o.cost;double earliest=std::max(j.release,decision)+sum;if(earliest-j.deadline>number(worst,"deficit"))worst=Json{{"deficit",earliest-j.deadline},{"kind","path"},{"start",j.release},{"end",j.deadline},{"jobs",Json::array({j.name})}};}
     std::vector<Demand> sorted=all;std::stable_sort(sorted.begin(),sorted.end(),[](const Demand&a,const Demand&b){return a.deadline<b.deadline;});std::set<double> starts{0.};for(const auto&j:all)starts.insert(std::max(0.,j.release));
@@ -149,7 +162,7 @@ Json diagnose_impl(const Jobs&jobs,const Choice&choice,const Modes&modes,double 
 void finite_number(double x,const char*label){if(!std::isfinite(x))throw std::invalid_argument(std::string("Non-finite ")+label);}
 } // namespace
 
-void validate(const Json&calendar,const Json&raw_modes){
+void validate(const Json&calendar,const Json&raw_modes){ PS_SCOPE(Preprocess);
     auto jobs=parse_jobs(calendar.at("jobs"));auto modes=parse_modes(raw_modes);std::set<std::string> names;
     if(jobs.empty())throw std::invalid_argument("Expected nonempty uniquely named obligations");
     for(const auto&j:jobs){std::string n=name_of(j);if(!names.insert(n).second)throw std::invalid_argument("Duplicate obligation "+n);
@@ -163,11 +176,19 @@ void validate(const Json&calendar,const Json&raw_modes){
     for(const auto&p:calendar.value("pending",Json::array())){bool found=false;for(const auto&j:jobs)if(j.at("name")==p.at(1)&&j.at("vehicle")==p.at(0)&&j.value("recovery",false))found=true;if(!found)throw std::invalid_argument("Missing recovery obligation");}
 }
 Json evaluate(const Json&jobs,const Json&order,const Json&choice,const Json&modes,double now,double decision,double blocked){return evaluate_impl(parse_jobs(jobs),order.get<Sequence>(),parse_choice(choice),parse_modes(modes),now,decision,blocked);}
+Json evaluate_ready_edf(const Json& raw,const Json& modes,double decision,double rearm){
+    auto jobs=parse_jobs(raw);Choice choice;
+    for(const auto& job:jobs)choice.emplace(name_of(job),job.at("current_mode").get<int>());
+    std::sort(jobs.begin(),jobs.end(),[](const Json& a,const Json& b){
+        return std::make_pair(due(a),name_of(a))<std::make_pair(due(b),name_of(b));
+    });
+    return evaluate_impl(jobs,sequence(jobs),choice,parse_modes(modes),0.,decision,decision,true,rearm);
+}
 Json diagnosis(const Json&jobs,const Json&choice,const Json&modes,double now,double decision,double blocked){return diagnose_impl(parse_jobs(jobs),parse_choice(choice),parse_modes(modes),now,decision,blocked);}
 Json tail_budget(const Json&jobs,const Json&order,const Json&choice,const Json&modes,double now){return nullable(tail(parse_jobs(jobs),order.get<Sequence>(),parse_choice(choice),parse_modes(modes),now));}
 Json dispatch_budget(const Json&jobs,const Json&order,const Json&choice,const Json&modes,double now){return nullable(dispatch(parse_jobs(jobs),order.get<Sequence>(),parse_choice(choice),parse_modes(modes),now));}
 
-Json plan(const Json&calendar,const Json&raw_modes,const Json&options){
+Json plan(const Json&calendar,const Json&raw_modes,const Json&options){ PS_SCOPE(Other);
     validate(calendar,raw_modes);const auto modes=parse_modes(raw_modes);double now=number(options,"now"),decision=options.value("decision_ms",.5),blocked=options.value("blocked_until",0.);int max_checks=options.value("max_checks",8),max_candidates=options.value("max_candidates",12);
     finite_number(now,"now");finite_number(decision,"decision_ms");finite_number(blocked,"blocked_until");if(max_checks<1||max_candidates<1||decision<0)throw std::invalid_argument("Invalid decision budget");
     bool enable_modes=options.value("enable_modes",true),enable_reorder=options.value("enable_reorder",true),enable_retime=options.value("enable_retime",true),enable_skip=options.value("enable_skip",true);
@@ -175,6 +196,7 @@ Json plan(const Json&calendar,const Json&raw_modes,const Json&options){
     for(const auto&j:initial){auto n=name_of(j);base[n]=j.at("current_mode").get<int>();fast[n]=enable_modes?fastest(j,modes):base[n];}
     int checks=0,candidates=0;Json trace=Json::array(),approved=nullptr;double commit_time=now+decision;const Json initial_diagnosis=diagnose_impl(initial,base,modes,now,decision,blocked);
     auto attempt=[&](const Jobs&jobs,const Sequence&seq,const Choice&choice,const std::string&action,const Json&permission){
+        PS_SCOPE(Candidate);
         if(candidates>=max_candidates||checks>=max_checks)return;
         ++candidates;
         double screen=dispatch(jobs,seq,choice,modes,std::max(commit_time,blocked));Json delta=nullptr;

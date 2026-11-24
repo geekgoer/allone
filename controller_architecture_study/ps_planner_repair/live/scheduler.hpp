@@ -21,6 +21,7 @@ Json plan(const Json& calendar, const Json& modes, const Json& options);
 Json evaluate(const Json& jobs, const Json& order, const Json& choice,
               const Json& modes, double now, double decision_ms,
               double blocked_until = 0.0);
+Json evaluate_ready_edf(const Json& jobs, const Json& modes, double decision_ms, double rearm_ms);
 Json diagnosis(const Json& jobs, const Json& choice, const Json& modes,
                double now, double decision_ms, double blocked_until = 0.0);
 Json tail_budget(const Json& jobs, const Json& order, const Json& choice,

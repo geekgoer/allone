@@ -11,6 +11,11 @@ int count=0;
 bool off_lock=false;
 double fake_dispatch_ms=0.,fake_dispatch_step_ms=0.;
 double dispatch_clock(){const auto current=fake_dispatch_ms;fake_dispatch_ms+=fake_dispatch_step_ms;return current;}
+int clock_calls=0;
+double retime_clock(){
+    if(clock_calls++==0)return 100020.5;
+    return 100021.6;
+}
 void check(bool pass,const std::string&msg){++count;if(!pass)throw std::runtime_error(msg);}
 template<typename F>void throws(F fn,const std::string&msg){bool caught=false;try{fn();}catch(const std::exception&){caught=true;}check(caught,msg);}
 Json config(){return Json{{"names",Json::array({"Drone1"})},{"origin_ms",100000.},{"period_ms",50.},{"periods_ms",Json::array({20.,50.,80.})},{"model_id",2},{"candidate_ids",Json::array({1,2})},{"prep_ms",.5},{"post_ms",.5},{"decision_ms",3.},{"snapshot_build_off_lock",off_lock}};}
@@ -110,10 +115,65 @@ void check_command_tail_isolation(double spike,bool isolate,bool retime=false){
     check(!releases.empty()&&std::all_of(releases.begin(),releases.end(),[](const Json&j){return j.at("vehicle")=="B";}),
           "B continues releasing after A retires");
 }
+void check_pinned_release(double hold_offset,double post,double peer_period,double peer_phase,
+                          bool pin,const char* expected,bool overrun=false){
+    auto cfg=config();
+    cfg["names"]=Json::array({"A","B"});cfg["period_ms"]=20.;cfg["model_id"]=1;
+    cfg["periods_ms"]=Json::array({20.,30.,40.,50.,60.,80.,120.});
+    cfg["initial_periods"]={{"A",20.},{"B",peer_period}};
+    cfg["initial_phase_ms"]={{"A",0.},{"B",peer_phase}};
+    cfg["adaptive"]=false;cfg["retire_on_hold_expiry"]=true;cfg["maximum_update_ms"]=160.;
+    cfg["isolate_command_costs"]=true;cfg["retime_pin_release"]=pin;
+    auto profiles=modes();profiles.at(0)["service_ms"]=2.296;
+    ps_scheduler::LiveCalendar calendar(cfg,profiles);
+    const double origin=100000.,hold=origin+hold_offset;
+    calendar.release_due(origin,origin+400.);
+    calendar.observe("A",origin,hold,0);
+    calendar.queued("A",0,origin,origin+.1,hold);
+    check(calendar.take(origin+.1).at("dispatch")==true,"seed command acquires DPU");
+    calendar.dpu_done("A",0,origin+2.396,true);
+    check(calendar.command_begin("A",0,origin+3.),"seed command enters delivery");
+    calendar.command_return("A",0,origin+4.);
+    calendar.finish("A",0,origin+4.1,"delivered");
+    calendar.observe("B",origin+5.,origin+300.,0);
+    calendar.release_due(origin+20.,origin+400.);
+    calendar.observe("A",origin+20.,hold,1);
+    calendar.queued("A",1,origin+20.,origin+20.1,hold);
+    calendar.update_costs(42.416,0.,0.,0.);
+    calendar.update_command_costs("A",post,post);
+    const auto rejected=calendar.take(origin+20.1);
+    check(rejected.at("vehicle")=="A"&&rejected.count("dispatch_rejection_evidence"),"historical path fails with original 20 ms slot");
+    calendar.finish("A",1,origin+20.2,"dropped_inference");
+    Json guard;fake_dispatch_ms=origin+20.5;fake_dispatch_step_ms=0.;clock_calls=0;
+    const auto update=calendar.try_command_retime("A",1,overrun?retime_clock:dispatch_clock,&guard);
+    check(guard.at("status")==expected,"retime status should be "+std::string(expected)+", got "+guard.dump());
+    check(calendar.state().at("loops").at("B").at("next_ms")==origin+peer_phase+
+          (peer_phase<=20.?peer_period:0.),"peer release is never edited");
+    if(update.is_null()){
+        check(calendar.state().at("loops").at("A").at("period_ms")==20.,"rejected edit leaves old period");
+        return;
+    }
+    check(update.at("old_release_ms")==origin+40.&&update.at("next_release_ms")==origin+40.&&
+          update.at("period_ms")==80.&&update.at("hold_deadline_ms")==hold,"original release and physical limit are preserved");
+    const auto released=calendar.release_due(origin+40.,origin+400.);
+    const auto row=std::find_if(released.begin(),released.end(),[](const Json& job){return job.at("vehicle")=="A";});
+    check(row!=released.end()&&row->at("deadline_ms")==origin+120.,"published job gets longer relative deadline");
+    check(calendar.state().at("loops").at("A").at("next_ms")==origin+120.,"subsequent interval uses new cadence");
+    check(calendar.queued("A",2,origin+40.,origin+41.,hold).at("actuation_deadline_ms")==std::min(hold,origin+120.),
+          "widening a slot never bypasses the runtime hold bound");
+}
 }
 int main(int argc,char** argv){try{
     if(argc>2||(argc==2&&std::string(argv[1])!="--off-lock"))throw std::invalid_argument("Expected optional --off-lock");
     off_lock=argc==2;
+    check_pinned_release(122.502,26.295,120.,95.,false,"target_path_does_not_fit");
+    check_pinned_release(162.451,32.011,120.,95.,false,"target_path_does_not_fit");
+    check_pinned_release(122.502,26.295,120.,95.,true,"installed");
+    check_pinned_release(162.451,32.011,120.,95.,true,"installed");
+    check_pinned_release(116.,26.295,120.,95.,true,"installed");
+    check_pinned_release(122.502,26.295,20.,19.,true,"peer_path_exceeds_slot");
+    check_pinned_release(122.502,26.295,80.,38.,true,"group_timing_rejected");
+    check_pinned_release(122.502,26.295,120.,95.,true,"group_check_budget_exhausted",true);
     auto phased=config();phased["names"]=Json::array({"A","B"});phased["period_ms"]=20.;
     phased["initial_phase_ms"]={{"A",16.},{"B",1.25}};
     ps_scheduler::LiveCalendar phased_rt(phased,modes());

@@ -55,7 +55,33 @@ def budgets(log, vehicle_rows, attempt, config, final):
                               after_collision_ms=(peak['feature_ready_us'] - peak['collision_ready_us']) / 1000)
 
 
-def analyze(trial, final_path):
+def peer_slot_floor(groups, retirements, attempt, config, costs, candidate, stop):
+    now = attempt['slot_return_us'] / 1000
+    due = candidate['release_ms'] + candidate['window_ms']
+    # Use only published periods and the initial shared post budget. This can
+    # show a peer already cannot fit alone, without guessing its live hold.
+    floor = costs['prep_ms'] + costs['service_ms'] + max(config['post_ms'], config['command_reserve_ms'])
+    blocked = []
+    for name, sequence in groups.items():
+        if name == attempt['vehicle'] or retirements.get(name, float('inf')) <= now:
+            continue
+        published = [row['calendar_release'] for row in sequence
+                     if row['calendar_release']['published_ms'] <= now]
+        if not published:
+            continue
+        last = max(published, key=lambda row: row['cycle'])
+        period = last['period_ms']
+        release = last['release_ms'] + period
+        for row in sequence:
+            edit = row.get('command_retime')
+            if edit and edit['cycle'] == last['cycle'] + 1 and edit['commit_ms'] <= now:
+                period, release = edit['period_ms'], edit['next_release_ms']
+        if now < release < due and floor > min(period, config['fresh_ms'], stop - release):
+            blocked.append(dict(vehicle=name, next_release_ms=release, period_ms=period))
+    return dict(minimum_empirical_path_ms=floor, peer_slot_conflicts=blocked)
+
+
+def analyze(trial, final_path, include_peers=False):
     config, final = load(trial / 'config_source.json'), load(final_path)
     if not config['use_adoption_event'] or not config['enable_command_retime']:
         raise ValueError('Use the adoption-enabled retime trial')
@@ -64,6 +90,7 @@ def analyze(trial, final_path):
     groups = defaultdict(list)
     for row in log:
         groups[row['vehicle']].append(row)
+    retirements = {row['vehicle']: row['detected_ms'] for row in load(trial / 'hold_expiries.json')} if include_peers else {}
     results = []
     for vehicle, sequence in groups.items():
         activations = {d['cycle'] for row in sequence if (d := row.get('prior_adoption_decision'))
@@ -94,6 +121,10 @@ def analyze(trial, final_path):
                                 wall_us=attempt['wall_us'], costs_lower_ms=costs, costs_final_cap_ms=caps, prep_peak=spike,
                                 current_rule=actual, current_rule_zero_dpu=no_model,
                                 keep_successor_release=pinned))
+            if include_peers and dispatch_rejected and not published:
+                candidate = next((p for p in pinned if p['fits']), None)
+                if candidate is not None:
+                    results[-1]['peer_slot_screen'] = peer_slot_floor(groups, retirements, row, config, costs, candidate, stop)
     return dict(scope='Offline local screen; lower bounds from prior completed observations; no full group admission',
                 attempts=results)
 
@@ -103,8 +134,9 @@ def main():
     parser.add_argument('--trial', type=Path, required=True)
     parser.add_argument('--calendar', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--include-peers', action='store_true')
     args = parser.parse_args()
-    report = analyze(args.trial, args.calendar)
+    report = analyze(args.trial, args.calendar, args.include_peers)
     with args.output.open('x', encoding='utf-8') as out:
         json.dump(report, out, indent=2, allow_nan=False)
     print(json.dumps(dict(attempts=len(report['attempts']),

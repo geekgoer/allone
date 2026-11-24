@@ -17,6 +17,8 @@ def summarize(trial):
     received = {event[0]: event for event in stream['events']}
     sent, decision_ids = {}, set()
     outcomes, evidence, effects, attempts = Counter(), Counter(), Counter(), Counter()
+    guards = Counter()
+    guard_wall_max_us = 0
     changed = []
     with (trial / 'requests.jsonl').open(encoding='utf-8') as source:
         for row in map(json.loads, source):
@@ -24,7 +26,11 @@ def summarize(trial):
             if 'command_trace_id' in row:
                 sent[row['command_trace_id']] = row
             if 'command_retime_attempt' in row:
-                attempts[str(row['command_retime_attempt']['accepted'])] += 1
+                attempt = row['command_retime_attempt']
+                attempts[str(attempt['accepted'])] += 1
+                if 'guard' in attempt:
+                    guards[attempt['guard']['status']] += 1
+                    guard_wall_max_us = max(guard_wall_max_us, attempt['wall_us'])
             decision = row.get('prior_adoption_decision')
             if decision is None:
                 continue
@@ -41,7 +47,8 @@ def summarize(trial):
     return dict(enabled=enabled, stream_failed=stream['failed'], outcomes=outcomes,
                 tagged=len(sent), received=len(received.keys() & sent.keys()), received_by_rpc_reply=before_reply,
                 next_cycle_decisions=len(decision_ids), evidence=evidence, trigger_changes=effects, changed=changed,
-                retime_attempts=attempts, measured_s=(app['pause_start_us'] - origin) / 1e6,
+                retime_attempts=attempts, retime_guard_counts=guards, retime_guard_wall_max_us=guard_wall_max_us,
+                measured_s=(app['pause_start_us'] - origin) / 1e6,
                 retired={v['name']: v['reason'] for v in app['vehicles'] if v['retired']})
 
 

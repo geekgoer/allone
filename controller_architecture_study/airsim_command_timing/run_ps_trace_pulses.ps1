@@ -2,11 +2,11 @@ param(
     [Parameter(Mandatory = $true)][string]$Output,
     [Parameter(Mandatory = $true)][string]$BoardKit,
     [Parameter(Mandatory = $true)][int]$DiagnosticPid,
-    [ValidateSet('natural_retime20', 'ping', 'receipt', 'event_log', 'event_schedule')][string]$Arm = 'natural_retime20'
+    [ValidateSet('natural_retime20', 'ping', 'receipt', 'event_log', 'event_schedule', 'pin_release')][string]$Arm = 'natural_retime20'
 )
 
 $ErrorActionPreference = 'Stop'
-if ($BoardKit -notmatch '^/home/root/tcs_command_trace_20261124_[a-zA-Z0-9]+$') { throw 'Expected the dedicated diagnostic kit' }
+if ($BoardKit -notmatch '^(/home/root|/run)/tcs_command_trace_20261124_[a-zA-Z0-9]+$') { throw 'Expected the dedicated diagnostic kit' }
 $diag = Get-Process -Id $DiagnosticPid
 if ($diag.ProcessName -ne 'UE4Editor-Cmd' -or -not (netstat -ano -p tcp |
         Select-String "192\.168\.77\.1:41591\s+.*LISTENING\s+$DiagnosticPid\s*$")) { throw 'Unexpected diagnostic port owner' }

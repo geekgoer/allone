@@ -373,38 +373,112 @@ void LiveCalendar::update_command_costs(const std::string&v,double post,double r
     dispatch_order_=Json::array();++revision_;
 }
 
-Json LiveCalendar::try_command_retime(const std::string&v,std::uint64_t cycle,double (*clock_ms)()){
-    std::lock_guard<std::mutex> lock(mutex_);
-    const double now=clock_ms?clock_ms():monotonic_ms();
-    if(config_.at("adaptive").get<bool>()||!isolate_command_costs_||!config_.value("retire_on_hold_expiry",false))return nullptr;
+Json LiveCalendar::try_command_retime(const std::string&v,std::uint64_t cycle,double (*clock_ms)(),Json* guard){
+    std::unique_lock<std::mutex> lock(mutex_);
+    const auto clock=[&](){return clock_ms?clock_ms():monotonic_ms();};
+    const double now=clock();
+    const bool pin=config_.value("retime_pin_release",false);
+    const auto deny=[&](const char* reason)->Json{if(guard)(*guard)["status"]=reason;return nullptr;};
+    if(config_.at("adaptive").get<bool>()||!isolate_command_costs_||!config_.value("retire_on_hold_expiry",false))return deny("incompatible_retime_policy");
     auto& loop=loops_.at(v);
     const auto& row=rows_.at(key(v,cycle));
     if(!row.count("dispatch_rejection_evidence")||s(row,"status")!="dropped_inference"||
        loop.at("retired").get<bool>()||loop.at("command_pending").get<bool>()||!loop.at("busy").is_null()||
-       loop.at("cycle").get<std::uint64_t>()!=cycle+1||row.at("control_version")!=loop.at("control_version"))return nullptr;
+       loop.at("cycle").get<std::uint64_t>()!=cycle+1||row.at("control_version")!=loop.at("control_version"))return deny("no_editable_rejected_successor");
     const auto& obs=loop.at("observation");
     if(!observation_usable(loop,now)||obs.at("control_version")!=loop.at("control_version")||
-       n(obs,"sample_ms")+n(config_,"fresh_ms")<=now)return nullptr;
+       n(obs,"sample_ms")+n(config_,"fresh_ms")<=now)return deny("stale_target_context");
     const double next=n(loop,"next_ms"),old=n(loop,"period_ms"),reserve=command_reserve_unlocked(row);
-    if(next<=now||reserve<=old)return nullptr;
+    if(next<=now||reserve<=old)return deny("no_over_period_reserve");
     const double hold=std::min(n(obs,"deadline_ms"),n(loop,"watch_hold_ms"));
     const double service=n(modes_.at(std::to_string(config_.at("model_id").get<int>())),"service_ms");
-    const double post=std::max({reserve,loop.value("post_ms",0.),n(config_,"post_ms")});
+    const double post=std::max({reserve,loop.value("post_ms",0.),n(config_,"post_ms")}),prep=n(config_,"prep_ms");
     const double infinity=std::numeric_limits<double>::infinity();
-    double chosen=infinity;
-    double completion=0.;
-    for(double period:config_.at("periods_ms").get<std::vector<double>>()){
-        if(period<=old||period>=chosen)continue;
-        const double release=n(loop,"previous_ms")+period;
-        const double finish=release+n(config_,"prep_ms")+service+post;
-        const double due=std::min({release+period,hold,release+n(config_,"fresh_ms"),config_.value("measurement_stop_ms",infinity)});
-        if(finish<due){chosen=period;completion=finish;}
+    const double stop=config_.value("measurement_stop_ms",infinity);
+    double chosen=infinity,release=0.,completion=0.,due=0.,commit=now;
+    for(double period:config_.at("periods_ms")){
+        if(period<=old)continue;
+        const double r=pin?next:n(loop,"previous_ms")+period;
+        const double finish=r+prep+service+post;
+        const double deadline=std::min({r+period,hold,r+n(config_,"fresh_ms"),stop});
+        if(finish<deadline){chosen=period;release=r;completion=finish;due=deadline;break;}
     }
-    if(!finite(chosen))return nullptr;
-    const double release=n(loop,"previous_ms")+chosen;
-    loop["period_ms"]=chosen;loop["next_ms"]=release;++revision_;
+    if(!finite(chosen))return deny("target_path_does_not_fit");
+    if(pin){
+        if(guard)*guard={{"candidate_period_ms",chosen},{"target_path_slack_ms",due-completion}};
+        constexpr double decision_reserve=1.; // Trial allowance, enforced at commit.
+        const double rearm=n(config_,"rearm_ms"),fresh=n(config_,"fresh_ms");
+        double commit_by=std::min({next,n(obs,"sample_ms")+fresh,now+decision_reserve});
+        Json next_releases=Json::object(),frozen_due=Json::object();
+        for(auto i=loops_.begin();i!=loops_.end();++i){
+            const auto& peer=i.value();if(peer.at("retired").get<bool>())continue;
+            const double r=n(peer,"next_ms"),period=n(peer,"period_ms");
+            if(i.key()!=v&&r<due){
+                const double peer_post=std::max({n(config_,"post_ms"),peer.value("post_ms",0.),
+                    n(config_,"command_reserve_ms"),peer.value("command_reserve_ms",0.)});
+                const auto name=key(i.key(),peer.at("cycle").get<std::uint64_t>());
+                const int model=future_modes_.value(name,config_.at("model_id").get<int>());
+                const double path=prep+n(modes_.at(std::to_string(model)),"service_ms")+peer_post;
+                if(path>std::min({period,fresh,stop-r})+epsilon){
+                    if(guard){(*guard)["peer"]=i.key();(*guard)["peer_path_ms"]=path;(*guard)["peer_period_ms"]=period;}
+                    return deny("peer_path_exceeds_slot");
+                }
+            }
+            if(!observation_usable(peer,now)||peer.at("observation").at("control_version")!=peer.at("control_version"))
+                return deny("peer_context_unavailable");
+            commit_by=std::min({commit_by,r,n(peer.at("observation"),"deadline_ms")});
+            next_releases[i.key()]={r,i.key()==v?chosen:period};
+            if(peer.at("busy").is_null())continue;
+            const auto name=s(peer,"busy");const auto& job=rows_.at(name);
+            if(job.at("cancelled").get<bool>()||s(job,"phase")=="board"||s(job,"phase")=="post")
+                return deny("peer_work_in_transition");
+            if(job.count("actuation_deadline_ms"))frozen_due[name]=n(job,"actuation_deadline_ms")-now;
+        }
+        // Capture under the runtime lock, expand and replay outside it.
+        const auto snap=capture_snapshot(lock,now,nullptr,true);
+        if(snap.is_null())return deny("group_snapshot_unavailable");
+        Json jobs=Json::array();
+        for(auto job:snap.at("calendar").at("jobs")){
+            const auto name=s(job,"name"),vehicle=s(job,"vehicle");
+            const double first=next_releases.at(vehicle).at(0).get<double>()-now;
+            const double period=next_releases.at(vehicle).at(1).get<double>();
+            const double r=n(job,"release");
+            if(r>first||r>=due-now)continue; // Rebuild the forecast successors with the applicable cadence.
+            if(frozen_due.count(name))job["hold_deadline"]=std::min(n(job,"hold_deadline"),n(frozen_due,name.c_str()));
+            if(vehicle==v&&r==first){job["slot_deadline"]=first+chosen;job["hold_deadline"]=hold-now;}
+            const double following=r==first?first+period:first;
+            if(following<stop-now)job["rearm_by"]=following;
+            job["slot_deadline"]=std::min(n(job,"slot_deadline"),stop-now);
+            jobs.push_back(job);
+            if(r!=first)continue;
+            const auto next_cycle=std::stoull(name.substr(name.rfind(':')+1));
+            for(std::size_t k=1;first+k*period<due-now;++k){
+                if(jobs.size()>=96)return deny("group_job_limit");
+                const double t=first+k*period;
+                auto successor=job;successor["name"]=key(vehicle,next_cycle+k);
+                successor["release"]=t;successor["prep_ready"]=t;
+                const double slot=std::min(t+period,stop-now);
+                successor["slot_deadline"]=slot;successor["hold_deadline"]=slot;
+                successor["fresh_deadline"]=t+fresh;
+                if(t+period<stop-now)successor["rearm_by"]=t+period;
+                else successor.erase("rearm_by");
+                jobs.push_back(std::move(successor));
+            }
+        }
+        if(jobs.size()>96)return deny("group_job_limit");
+        const auto checked=evaluate_ready_edf(jobs,snap.at("modes"),decision_reserve,rearm);
+        if(guard){(*guard)["jobs"]=jobs.size();(*guard)["misses"]=checked.at("forecast").at("misses");(*guard)["overlap"]=checked.at("overlap");}
+        if(!checked.at("accepted").get<bool>())return deny("group_timing_rejected");
+        lock.lock();commit=clock();
+        if(revision_!=snap.at("calendar").at("revision"))return deny("group_context_changed");
+        if(commit>=commit_by)return deny(commit>=now+decision_reserve?"group_check_budget_exhausted":"group_commit_window_closed");
+    }
+    // Reacquire by key, since the replay may have released the lock.
+    auto& current=loops_.at(v);
+    current["period_ms"]=chosen;current["next_ms"]=release;++revision_;
+    if(guard)(*guard)["status"]="installed";
     return Json{{"cycle",cycle+1},{"old_period_ms",old},{"period_ms",chosen},{"old_release_ms",next},
-        {"next_release_ms",release},{"commit_ms",now},{"hold_deadline_ms",hold},{"reserve_ms",reserve},
+        {"next_release_ms",release},{"commit_ms",commit},{"hold_deadline_ms",hold},{"reserve_ms",reserve},
         {"earliest_budgeted_ack_ms",completion}};
 }
 
@@ -478,10 +552,10 @@ bool LiveCalendar::can_capture_snapshot_unlocked(double now)const{
     }
     return true;
 }
-Json LiveCalendar::capture_snapshot(std::unique_lock<std::mutex>& lock,double now,ManagementStamp* released)const{
+Json LiveCalendar::capture_snapshot(std::unique_lock<std::mutex>& lock,double now,ManagementStamp* released,bool force_off_lock)const{
     const auto unlock=[&](){if(released)*released=management_stamp();lock.unlock();};
     if(!can_capture_snapshot_unlocked(now)){unlock();return nullptr;}
-    if(!config_.value("snapshot_build_off_lock",false)){
+    if(!force_off_lock&&!config_.value("snapshot_build_off_lock",false)){
         auto snapshot=build_snapshot(now,config_,modes_,loops_,rows_,future_modes_,pending_,revision_);
         unlock();return snapshot;
     }

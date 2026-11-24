@@ -7,11 +7,11 @@ config=${3:?configuration filename required}
 trace=${4:?trace base required}
 base=/home/root/ps_migration_20261116_run001
 test "$(readlink -f "$kit")" = "$kit"
-test "$(dirname "$kit")" = /home/root
+case "$(dirname "$kit")" in /home/root|/run) ;; *) exit 2 ;; esac
 case "$(basename "$kit")" in tcs_command_trace_*) ;; *) exit 2 ;; esac
 test "$(dirname "$out")" = "$kit"
 case "$(basename "$out")" in run_[a-zA-Z0-9_]*) ;; *) exit 2 ;; esac
-case "$config" in config_natural_fixed20.json|config_natural_retime20.json|config_ping.json|config_receipt.json|config_event_log.json|config_event_schedule.json) ;; *) exit 2 ;; esac
+case "$config" in config_natural_fixed20.json|config_natural_retime20.json|config_ping.json|config_receipt.json|config_event_log.json|config_event_schedule.json|config_pin_release.json) ;; *) exit 2 ;; esac
 
 require_idle() {
     for fd in /proc/[0-9]*/fd/*; do

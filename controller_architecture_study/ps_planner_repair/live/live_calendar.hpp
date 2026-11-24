@@ -70,7 +70,7 @@ public:
     // Isolated fixed-EDF experiment. Edit only the first unpublished release
     // after a long-ACK budget rejection. A null result leaves the calendar intact.
     Json try_command_retime(const std::string& vehicle, std::uint64_t rejected_cycle,
-                            double (*clock_ms)()=nullptr);
+                            double (*clock_ms)()=nullptr, Json* guard=nullptr);
     Json snapshot(double now_ms, double* lock_held_us=nullptr) const;
     // Production snapshot clock is sampled AFTER acquiring the calendar lock.
     // Explicit-time snapshot above remains for deterministic reference tests.
@@ -102,7 +102,7 @@ private:
     void retire_unlocked(const std::string& vehicle, Json& loop);
     bool can_capture_snapshot_unlocked(double now_ms) const;
     Json capture_snapshot(std::unique_lock<std::mutex>& lock, double now_ms,
-                          ManagementStamp* lock_release=nullptr) const;
+                          ManagementStamp* lock_release=nullptr, bool force_off_lock=false) const;
     static Json build_snapshot(double now_ms, const Json& config, const Json& modes,
                                const Json& loops, const Json& rows, const Json& future_modes,
                                const Json& pending, std::uint64_t revision);
