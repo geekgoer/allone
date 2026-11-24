@@ -2,7 +2,7 @@ param(
     [Parameter(Mandatory = $true)][string]$Output,
     [Parameter(Mandatory = $true)][string]$BoardKit,
     [Parameter(Mandatory = $true)][int]$DiagnosticPid,
-    [ValidateSet('natural_retime20', 'ping', 'receipt')][string]$Arm = 'natural_retime20'
+    [ValidateSet('natural_retime20', 'ping', 'receipt', 'event_log', 'event_schedule')][string]$Arm = 'natural_retime20'
 )
 
 $ErrorActionPreference = 'Stop'

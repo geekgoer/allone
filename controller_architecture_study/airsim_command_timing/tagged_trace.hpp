@@ -1,7 +1,9 @@
 #pragma once
 
+#include <algorithm>
 #include <array>
 #include <chrono>
+#include <condition_variable>
 #include <cstdint>
 #include <mutex>
 #include <stdexcept>
@@ -33,6 +35,40 @@ inline std::mutex& history_mutex() {
     return mutex;
 }
 
+struct EventStream {
+    std::array<Record, 4096> entries{};
+    Stamp published = 0;
+    std::condition_variable changed;
+};
+
+inline EventStream& event_stream() {
+    static EventStream stream;
+    return stream;
+}
+
+inline Stamp event_cursor() {
+    std::lock_guard<std::mutex> lock(history_mutex());
+    return event_stream().published;
+}
+
+inline std::vector<std::vector<Stamp>> events_after(Stamp cursor) {
+    auto& stream = event_stream();
+    std::unique_lock<std::mutex> lock(history_mutex());
+    if (cursor > stream.published)
+        throw std::invalid_argument("Invalid adoption event cursor");
+    stream.changed.wait_for(lock, std::chrono::milliseconds(4), [&] { return cursor < stream.published; });
+    const Stamp oldest = stream.published > stream.entries.size() ? stream.published - stream.entries.size() : 0;
+    if (cursor < oldest)
+        throw std::runtime_error("Adoption event history overrun");
+    const auto next = std::min(cursor + 64, stream.published);
+    std::vector<std::vector<Stamp>> batch{{next}};
+    for (; cursor < next; ++cursor) {
+        const auto& record = stream.entries[cursor % stream.entries.size()];
+        batch.emplace_back(record.begin(), record.end());
+    }
+    return batch;
+}
+
 class Command {
 public:
     explicit Command(Stamp id) {
@@ -60,6 +96,10 @@ inline void mark_firmware(Stamp id, Stamp started, Stamp ended) {
     if (record[0] == id && record[2] != 0 && record[3] == 0) {
         record[3] = started;
         record[4] = ended;
+        auto& stream = event_stream();
+        stream.entries[stream.published % stream.entries.size()] = record;
+        ++stream.published;
+        stream.changed.notify_one();
     }
 }
 
