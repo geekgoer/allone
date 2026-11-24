@@ -36,7 +36,7 @@ public:
                                                    const std::string& vehicle) {
             if (!std::isfinite(roll) || !std::isfinite(pitch) || !std::isfinite(yaw) ||
                 !std::isfinite(throttle) || throttle < 0 || throttle > 1 ||
-                !std::isfinite(duration) || duration <= 0 || duration > 0.25f || delay_ms > 80)
+                !std::isfinite(duration) || duration <= 0 || duration > 1.0f || delay_ms > 80)
                 throw std::invalid_argument("Invalid diagnostic command");
             Command command(id);
             if (delay_ms != 0)

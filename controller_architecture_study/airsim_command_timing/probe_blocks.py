@@ -14,8 +14,8 @@ import msgpack
 
 
 class LocalRpc:
-    def __init__(self, port):
-        self.socket = socket.create_connection(('127.0.0.1', port), timeout=5)
+    def __init__(self, port, host='127.0.0.1'):
+        self.socket = socket.create_connection((host, port), timeout=5)
         self.socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
         self.reader = msgpack.Unpacker(raw=False, max_buffer_size=2**24)
         self.next_id = 0
