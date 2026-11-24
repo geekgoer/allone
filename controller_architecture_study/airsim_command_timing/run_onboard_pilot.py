@@ -76,7 +76,7 @@ def metrics(trace, gates, hit, incident):
                 maximum_telemetry_gap_ms=max(((b[0]-a[0])/1e6 for a, b in zip(trace, trace[1:])), default=None))
 
 
-def trial(client, port, directory, gates, mode, inject, shared_feed=None):
+def trial(client, port, directory, gates, mode, inject, shared_feed=None, *, stagger_s=0., leading='Drone1'):
     directory.mkdir()
     client.reset()
     client.simPause(False)
@@ -93,8 +93,12 @@ def trial(client, port, directory, gates, mode, inject, shared_feed=None):
     started = []
     with LocalRpc(port) as rpc, ThreadPoolExecutor(max_workers=2) as pool:
         try:
-            for v, amplitude in VEHICLES.items():
-                rpc.call('falconPilotStart', v, mode, amplitude, Z)
+            order = [leading] + [v for v in VEHICLES if v != leading]
+            for v in order:
+                if stagger_s and started:
+                    client.simPause(False)
+                    sleep(stagger_s)
+                rpc.call('falconPilotStart', v, mode, VEHICLES[v], Z)
                 started.append(v)
             client.simPause(False)
             feeders = {}

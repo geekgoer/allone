@@ -55,6 +55,15 @@ def sample(rpc, vehicle):
                                   vector('angular_velocity'), state['timestamp'])
 
 
+def infer_command(board, calibration, planner, route, state):
+    window = planner.reference_window_for_trajectory(route, elapsed=max(0., state.position[0]) / SPEED,
+                                                      dt=.1, horizon=21)
+    output, timing = predict(board, MODEL, encode(state, window))
+    thrust, roll, pitch, yaw = np.clip(output, [2., -3., -3., -2.], [20., 3., 3., 2.])
+    command = [float(roll), float(pitch), float(yaw), thrust_to_throttle(thrust, calibration)]
+    return command, dict(status='ready', output=output.tolist(), board=timing)
+
+
 def feed(port, board, calibration, policy, stop):
     planner = QuinticMotionPrimitivePlanner()
     routes = {v: Route(amplitude) for v, amplitude in VEHICLES.items()}
@@ -80,13 +89,8 @@ def feed(port, board, calibration, policy, stop):
             row = dict(slot=seq, vehicle=vehicle, sample_ns=stamp, lateral_error_m=errors)
             records.append(row)
             try:
-                window = planner.reference_window_for_trajectory(routes[vehicle], elapsed=max(0., state.position[0]) / SPEED,
-                                                                  dt=.1, horizon=21)
-                feature = encode(state, window)
-                output, board_timing = predict(board, MODEL, feature)
-                row.update(status='ready', output=output.tolist(), board=board_timing)
-                thrust, roll, pitch, yaw = np.clip(output, [2., -3., -3., -2.], [20., 3., 3., 2.])
-                command = [float(roll), float(pitch), float(yaw), thrust_to_throttle(thrust, calibration)]
+                command, response = infer_command(board, calibration, planner, routes[vehicle], state)
+                row.update(response)
             except (OSError, ValueError) as exc:
                 row.update(status='error', error=str(exc))
                 if seq == PAUSE_SLOT:
@@ -121,7 +125,7 @@ def verify_model(board, manifest, bundle):
     return dict(model=MODEL, wire_tag=manifest['wire_tag_hex'], golden_max_abs=max(errors))
 
 
-def assess(directory, result):
+def assess(directory, result, require_gap=True):
     requests = json.loads((directory / 'board_requests.json').read_text(encoding='utf-8'))
     accepted = {(r['vehicle'], r['slot']): r for r in requests if r.get('accepted')}
     adopted = Counter()
@@ -134,7 +138,7 @@ def assess(directory, result):
             if row[6] != request['sample_ns'] or not 0 <= row[0] - row[6] < 55_000_000:
                 raise ValueError('DPU adoption did not match a fresh accepted request')
         adopted[vehicle] = len(central)
-        if not (incident and not incident['late_accepted'] and metrics['local_updates_during_gap'] and
+        if require_gap and not (incident and not incident['late_accepted'] and metrics['local_updates_during_gap'] and
                 any(r[0] < incident['start_ns'] for r in central) and any(r[0] > incident['end_ns'] for r in central)):
             raise ValueError(f'DPU handoff check failed for {vehicle}')
     return dict(requests=len(requests), ready=sum(r['status'] == 'ready' for r in requests),
