@@ -14,7 +14,6 @@ import numpy as np
 
 from .decision_dataset import ROOT, atomic_json, sha256
 from .convex_features import CONTRACT
-from .eval_offline import load_checkpoint, load_normalization
 
 
 RESULTS = ROOT / "controller_architecture_study/results"
@@ -85,6 +84,7 @@ class ModelPool:
     """Only network weights reside on the device; outputs return to CPU before timing ends."""
     def __init__(self, names, device):
         import torch
+        from .eval_offline import load_checkpoint, load_normalization
 
         torch.set_num_threads(1)
         if device == "cuda" and not torch.cuda.is_available():

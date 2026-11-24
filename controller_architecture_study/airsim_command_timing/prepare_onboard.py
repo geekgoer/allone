@@ -25,9 +25,11 @@ def build(blocks, output, settings, port):
                 auto next = falcon_pilot::choose(pilot_vehicle_, pos, falcon_trace::now_ns());
                 if (next.id) {
                     using Kind = simple_flight::GoalModeType;
-                    const simple_flight::GoalMode mode(Kind::VelocityWorld, Kind::VelocityWorld,
-                                                       Kind::AngleLevel, Kind::PositionWorld);
-                    const simple_flight::Axis4r goal(float(next.vy), float(next.vx), 0.f, float(next.z));
+                    const auto mode = next.rates ?
+                        simple_flight::GoalMode(Kind::AngleRate, Kind::AngleRate, Kind::AngleRate, Kind::Passthrough) :
+                        simple_flight::GoalMode(Kind::VelocityWorld, Kind::VelocityWorld, Kind::AngleLevel, Kind::PositionWorld);
+                    const simple_flight::Axis4r goal(float(next.goal[0]), float(next.goal[1]),
+                                                     float(next.goal[2]), float(next.goal[3]));
                     std::string message;
                     if (!firmware_->offboardApi().setGoalAndMode(&goal, &mode, message)) next = {};
                 }
@@ -47,6 +49,7 @@ def build(blocks, output, settings, port):
                         '''        rpc_server->bind("falconTraceClock", [] { return now_ns(); });
         rpc_server->bind("falconPilotStart", falcon_pilot::start);
         rpc_server->bind("falconPilotSubmit", falcon_pilot::submit);
+        rpc_server->bind("falconPilotRates", falcon_pilot::submit_rates);
         rpc_server->bind("falconPilotStop", falcon_pilot::stop);''')
     server.write_text(text, encoding='utf-8')
     config = output / 'diagnostic_settings.json'

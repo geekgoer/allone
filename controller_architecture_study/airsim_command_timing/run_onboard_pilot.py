@@ -2,6 +2,7 @@
 
 import argparse
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
 import json
 import math
 from pathlib import Path
@@ -48,7 +49,7 @@ def feed_central(port, vehicle, inject, stop):
 
 
 def metrics(trace, gates, hit, incident):
-    adopted = [row for row in trace if row[4] in (1, 2)]
+    adopted = [row for row in trace if row[4] in (1, 2, 3)]
     pairs = list(zip(adopted, adopted[1:]))
     gaps = [(b[0] - a[0]) / 1e6 for a, b in pairs]
     incident_gaps = [(b[0] - a[0]) / 1e6 for a, b in pairs if incident and
@@ -68,14 +69,14 @@ def metrics(trace, gates, hit, incident):
                 crossings=crossing, minimum_clearance_m=min(margins, default=None), contact=hit,
                 minimum_approach_clearance_m=min(approach, default=None),
                 local_updates=sum(row[4] == 1 for row in adopted),
-                central_updates=sum(row[4] == 2 for row in adopted),
+                central_updates=sum(row[4] in (2, 3) for row in adopted),
                 local_updates_during_gap=sum(row[4] == 1 and incident['start_ns'] <= row[0] <= incident['end_ns']
                                              for row in adopted) if incident else 0,
                 maximum_gap_ms=max(gaps, default=None), incident_maximum_gap_ms=max(incident_gaps, default=None),
                 maximum_telemetry_gap_ms=max(((b[0]-a[0])/1e6 for a, b in zip(trace, trace[1:])), default=None))
 
 
-def trial(client, port, directory, gates, mode, inject):
+def trial(client, port, directory, gates, mode, inject, shared_feed=None):
     directory.mkdir()
     client.reset()
     client.simPause(False)
@@ -96,16 +97,22 @@ def trial(client, port, directory, gates, mode, inject):
                 rpc.call('falconPilotStart', v, mode, amplitude, Z)
                 started.append(v)
             client.simPause(False)
-            feeders = {v: pool.submit(feed_central, port, v, inject and v == 'Drone1', stop)
-                       for v in VEHICLES} if mode != 1 else {}
+            feeders = {}
+            shared = pool.submit(shared_feed, stop) if shared_feed else None
+            if mode != 1 and not shared:
+                feeders = {v: pool.submit(feed_central, port, v, inject and v == 'Drone1', stop) for v in VEHICLES}
             sleep(9.3)
         finally:
             stop.set()
             client.simPause(True)
             traces = {v: rpc.call('falconPilotStop', v) for v in started}
     report = {}
+    incidents = {v: future.result() for v, future in feeders.items()}
+    if shared:
+        incidents, requests = shared.result()
+        (directory / 'board_requests.json').write_text(json.dumps(requests, indent=2), encoding='utf-8')
     for v, trace in traces.items():
-        incident = feeders[v].result() if v in feeders else None
+        incident = incidents.get(v)
         contact = client.simGetCollisionInfo(vehicle_name=v)
         hit = contact.object_name if contact.has_collided and contact.time_stamp != previous[v] else ''
         (directory / f'{v}.json').write_text(json.dumps(trace), encoding='utf-8')
@@ -118,7 +125,8 @@ def trial(client, port, directory, gates, mode, inject):
     return report
 
 
-def run(port, output):
+@contextmanager
+def scenario(port, output):
     if port != 41592:
         raise ValueError('Use the isolated onboard pilot port 41592')
     with LocalRpc(port) as rpc:
@@ -137,8 +145,17 @@ def run(port, output):
         bars={obj.name: dict(requested=obj.position.tolist(), scale=obj.scale.tolist(),
                        actual=client.simGetObjectPose(obj.name).position.to_numpy_array().tolist())
               for obj in scene.objects}), indent=2), encoding='utf-8')
-    reports = {}
     try:
+        yield client, gates
+    finally:
+        client.simPause(False)
+        client.reset()
+        scene.destroy()
+
+
+def run(port, output):
+    reports = {}
+    with scenario(port, output) as (client, gates):
         for name, mode, inject in [('local_normal', 1, False), ('central_normal', 2, False),
                                    ('central_gap', 2, True), ('hybrid_gap', 3, True)]:
             result = trial(client, port, output / name, gates, mode, inject)
@@ -147,11 +164,7 @@ def run(port, output):
             if (not inject and not all(r['pass_gates'] for r in result.values())) or (
                     inject and (result['Drone1']['incident'] is None or result['Drone1']['incident']['late_accepted'])):
                 break
-    finally:
         (output / 'summary.json').write_text(json.dumps(reports, indent=2), encoding='utf-8')
-        client.simPause(False)
-        client.reset()
-        scene.destroy()
     return reports
 
 
