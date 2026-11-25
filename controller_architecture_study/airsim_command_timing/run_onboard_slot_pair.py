@@ -48,9 +48,9 @@ def state_difference(first, second):
                 matched=position <= .04 and velocity <= .06 and attitude <= 2.)
 
 
-def audit_trial(path, plan, report):
+def audit_trial(path, plan, report, *, target_slot=TARGET_SLOT):
     requests = read(path / 'board_requests.json')
-    target = next(r for r in requests if r['slot'] == TARGET_SLOT)
+    target = next(r for r in requests if r['slot'] == target_slot)
     applied = {(v, r[5], r[6]): r[0] for v in report['vehicles'] for r in read(path / f'{v}.json') if r[4] == 3}
     expected = {(r['vehicle'], r['slot'], r['sample_ns']) for r in requests}
     if ([(r['slot'], r['vehicle']) for r in requests] != list(plan.items()) or set(applied) != expected or
@@ -58,10 +58,10 @@ def audit_trial(path, plan, report):
                 r['board']['saturated_input_channels'] != 0 for r in requests)):
         raise RuntimeError('Frozen DPU schedule or request adoption differs from the experiment plan')
     stamp = target['sample_ns']
-    target_apply = applied[target['vehicle'], TARGET_SLOT, stamp]
+    target_apply = applied[target['vehicle'], target_slot, stamp]
     other = SWAP if target['vehicle'] == CONTROL else CONTROL
-    before = max(t for (v, s, _), t in applied.items() if v == other and s < TARGET_SLOT)
-    after = min(t for (v, s, _), t in applied.items() if v == other and s > TARGET_SLOT)
+    before = max(t for (v, s, _), t in applied.items() if v == other and s < target_slot)
+    after = min(t for (v, s, _), t in applied.items() if v == other and s > target_slot)
     local = sum(row[4] == 1 and before < row[0] < after for row in read(path / f'{other}.json'))
     return dict(target_states=target['states'], target_applied_ms=(target_apply-stamp)/1e6,
                 omitted_vehicle=other, omitted_vehicle_dpu_gap_ms=(after-before)/1e6,
