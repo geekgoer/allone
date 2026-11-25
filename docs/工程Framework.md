@@ -9,3 +9,5 @@
 完整公式、手算例子和研究假设见[框架规格](../controller_architecture_study/docs/义务保护预算分配Framework_20261116.md)。[目前板端实现](../controller_architecture_study/docs/Route-B实现现状与交接_20261117.md)及[最新板端派发验收](../controller_architecture_study/docs/PS就绪队列派发修复_20261117.md)分别说明实现范围和实测结果。后续工作见[协作看板](协作进度.md)。
 
 机载闭环原型另测了一种共享方式。每架飞机有持续的机载控制，DPU 提供额外纠偏。一次推理优先给关键时机仍在前方的飞机，同时核对让出方往后两道已标定门的余量。每场最多让一次，下一可用槽优先补给让出方。这项试验由 Windows 脚本选机、真板 DPU 推理与 AirSim 机载控制结合，作为板端主框架的后续设计证据。[整场对照](../controller_architecture_study/docs/Route-B一次让出整场对照_20261125.md)
+
+扩大到四机和六机后，两次让出均得到补回。接手的飞机略有改善，全队最紧处仍由第三架飞机决定。后续选机需判断一次分配会改变全队谁的风险。[扩大试验](../controller_architecture_study/docs/Route-B四机六机同预算对照_20261125.md)

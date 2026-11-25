@@ -100,9 +100,10 @@ def save(path, value):
     path.write_text(json.dumps(value, indent=2, allow_nan=False), encoding='utf-8')
 
 
-def report_trial(client, gates, directory, feed, leading, *, stagger_s=STAGGER_S, amplitudes=VEHICLES):
+def report_trial(client, gates, directory, feed, leading, *, stagger_s=STAGGER_S, amplitudes=VEHICLES,
+                 departures_s=None):
     result = trial(client, PORT, directory, gates, 3, False, feed, stagger_s=stagger_s, leading=leading,
-                   amplitudes=amplitudes)
+                   amplitudes=amplitudes, departures_s=departures_s)
     board = assess(directory, result, require_gap=False)
     gate3 = {}
     for vehicle, vreport in result.items():

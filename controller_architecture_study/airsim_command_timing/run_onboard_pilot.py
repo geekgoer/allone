@@ -77,35 +77,40 @@ def metrics(trace, gates, hit, incident):
 
 
 def trial(client, port, directory, gates, mode, inject, shared_feed=None, *, stagger_s=0., leading='Drone1',
-          amplitudes=VEHICLES):
+          amplitudes=VEHICLES, departures_s=None):
     directory.mkdir()
     client.reset()
     client.simPause(False)
-    for v in VEHICLES:
+    for v in amplitudes:
         client.enableApiControl(True, vehicle_name=v)
         if not client.armDisarm(True, vehicle_name=v):
             raise RuntimeError(f'Could not arm {v}')
-    for future in [client.takeoffAsync(timeout_sec=7, vehicle_name=v) for v in VEHICLES]:
+    for future in [client.takeoffAsync(timeout_sec=7, vehicle_name=v) for v in amplitudes]:
         future.join()
     sleep(.35)
-    previous = {v: client.simGetCollisionInfo(vehicle_name=v).time_stamp for v in VEHICLES}
+    previous = {v: client.simGetCollisionInfo(vehicle_name=v).time_stamp for v in amplitudes}
     client.simPause(True)
     stop = Event()
     started = []
-    with LocalRpc(port) as rpc, ThreadPoolExecutor(max_workers=2) as pool:
+    with LocalRpc(port) as rpc, ThreadPoolExecutor(max_workers=len(amplitudes)) as pool:
         try:
-            order = [leading] + [v for v in VEHICLES if v != leading]
+            order = [leading] + [v for v in amplitudes if v != leading]
+            delays = departures_s if departures_s is not None else {v: i*stagger_s for i, v in enumerate(order)}
+            order.sort(key=delays.__getitem__)
+            last_departure = 0.
             for v in order:
-                if stagger_s and started:
+                wait = delays[v]-last_departure
+                if wait:
                     client.simPause(False)
-                    sleep(stagger_s)
+                    sleep(wait)
                 rpc.call('falconPilotStart', v, mode, amplitudes[v], Z)
                 started.append(v)
+                last_departure = delays[v]
             client.simPause(False)
             feeders = {}
             shared = pool.submit(shared_feed, stop) if shared_feed else None
             if mode != 1 and not shared:
-                feeders = {v: pool.submit(feed_central, port, v, inject and v == 'Drone1', stop) for v in VEHICLES}
+                feeders = {v: pool.submit(feed_central, port, v, inject and v == 'Drone1', stop) for v in amplitudes}
             sleep(9.3)
         finally:
             stop.set()
@@ -138,12 +143,12 @@ def scenario(port, output, *, amplitudes=VEHICLES, distances=DISTANCES):
         rpc.call('falconTraceClock')
     airsim = require_airsim()
     client = airsim.MultirotorClient(ip='127.0.0.1', port=port, timeout_value=8)
-    if set(client.listVehicles()) != set(VEHICLES):
-        raise RuntimeError('Expected the isolated two-vehicle scene')
+    if set(client.listVehicles()) != set(amplitudes):
+        raise RuntimeError('Simulator vehicles differ from the requested isolated scene')
     output.mkdir(parents=True)
     gates = {v: [Gate(i, np.array([x, amplitude * math.sin(.6 * x), Z]), np.array([1., 0., 0., 0.]))
                  for i, x in enumerate(distances, 1)] for v, amplitude in amplitudes.items()}
-    offsets = {v: vehicle_local_to_world_offset(client, v) for v in VEHICLES}
+    offsets = {v: vehicle_local_to_world_offset(client, v) for v in amplitudes}
     scene = spawn_gate_sequences(client, gates, width=APERTURE + .15, height=APERTURE + .15, thickness=.15,
                                  object_prefix='FalconOnboardPilot_', vehicle_world_offsets=offsets)
     (output / 'scene.json').write_text(json.dumps(dict(offsets={v: d.tolist() for v, d in offsets.items()},

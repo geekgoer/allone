@@ -63,8 +63,10 @@ def nominal_schedule(paths, leading, gains, baseline, *, stagger=STAGGER_S, dist
     return schedule
 
 
-def run_trial(client, gates, directory, feed, leading, stagger=STAGGER_S, *, amplitudes=VEHICLES):
-    report = report_trial(client, gates, directory, feed, leading, stagger_s=stagger, amplitudes=amplitudes)
+def run_trial(client, gates, directory, feed, leading, stagger=STAGGER_S, *, amplitudes=VEHICLES,
+              departures_s=None):
+    report = report_trial(client, gates, directory, feed, leading, stagger_s=stagger, amplitudes=amplitudes,
+                          departures_s=departures_s)
     report['gate2'] = {}
     for v, result in report['vehicles'].items():
         trace = read(directory / f'{v}.json')
