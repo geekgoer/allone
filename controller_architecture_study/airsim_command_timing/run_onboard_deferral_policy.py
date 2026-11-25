@@ -89,8 +89,11 @@ def fleet_plan(template, count):
     return expanded, types, departures
 
 
-def preplanned_table(calibration, types, departures, available, choose):
-    shadows = sorted(Path(calibration['calibration_source']).glob('cal_*_shadow'))
+def preplanned_table(calibration, types, departures, available, choose, *, shadow_root=None):
+    root = shadow_root if shadow_root is not None else Path(calibration['calibration_source'])
+    shadows = sorted(root.glob('cal_*_shadow'))
+    if not shadows:
+        raise FileNotFoundError(f'Missing calibration shadow traces at {root}')
     series = {v: [np.asarray(read(path / f'{v}.json'))[:, :2] for path in shadows] for v in set(types.values())}
     last = dict.fromkeys(types, 0)
     table = {}
@@ -106,11 +109,14 @@ def preplanned_table(calibration, types, departures, available, choose):
 
 
 def run(args):
-    prior = args.replay_from
+    prior = args.frozen_from or args.replay_from
     calibration = read(prior / 'departure_plans.json')
-    trace_source = Path(read(prior / 'load_masks.json')['source'])
-    load = load_windows(trace_source, window_starts=WINDOW_STARTS)
-    profiles = {route: gate_profiles(plan) for route, plan in calibration.items()}
+    load = read(prior / 'load_masks.json')
+    if args.frozen_from:
+        profiles = read(prior / 'gate_profiles.json')
+    else:
+        load = load_windows(Path(load['source']), window_starts=WINDOW_STARTS)
+        profiles = {route: gate_profiles(plan) for route, plan in calibration.items()}
     configurations = ROUTES
     fleet = {}
     if args.fleet > 2:
@@ -130,7 +136,8 @@ def run(args):
     summary = {}
     try:
         identity = verify_model(board, manifest, args.bundle)
-        if identity != read(prior / 'deployment.json'):
+        expected = read(prior / 'deployment.json')
+        if any(identity[key] != expected[key] for key in ('model', 'wire_tag')):
             raise ValueError('Expected the source replay board deployment')
         save(args.output / 'deployment.json', identity)
         calib = load_calibration()
@@ -144,7 +151,8 @@ def run(args):
                     occupied = {r['slot'] for r in slots if r['covering_call_ns']}
                     available = [r['slot'] for r in slots if r['slot'] not in occupied]
                     if fleet:
-                        table = preplanned_table(plan, types, departures, available, baseline)
+                        shadow_root = args.frozen_from / 'shadow' / route if args.frozen_from else None
+                        table = preplanned_table(plan, types, departures, available, baseline, shadow_root=shadow_root)
                         save(args.output / f'static_plan_{window}.json', table)
 
                         def fixed(seq, positions, last):
@@ -180,7 +188,9 @@ def run(args):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--replay-from', type=Path, required=True)
+    source = parser.add_mutually_exclusive_group(required=True)
+    source.add_argument('--replay-from', type=Path)
+    source.add_argument('--frozen-from', type=Path, help='Portable frozen masks, profiles and calibration traces')
     parser.add_argument('--bundle', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--fleet', type=int, choices=(2, 4, 6), default=2)
