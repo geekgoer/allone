@@ -15,19 +15,24 @@ from .run_onboard_value import (BAND_M, PORT, SLOTS, SLOT_S, SLOT_START_S, STAGG
                                 probe, read, report_trial, save)
 
 
-PHASES = {'g2_early': 4.25, 'g2_near': 5.20, 'g3_early': 7.25, 'g3_near': 8.20}
+def probe_phases(distances):
+    return {f'g{g}_{phase}': round(x-offset, 2) for g, x in enumerate(distances[1:], 2)
+            for phase, offset in (('early', 1.75), ('near', .80))}
 
 
-def gate_choice(seq, positions, last, gains, baseline):
+PHASES = probe_phases(DISTANCES)
+
+
+def gate_choice(seq, positions, last, gains, baseline, *, distances=DISTANCES, phases=PHASES):
     names = tuple(positions)
     fixed = names[(seq - 1) % len(names)]
     active = {}
     values = dict.fromkeys(names, 0.)
     for v, x in positions.items():
-        gate = next((g for g, start, end in ((2, 4., 6.6), (3, 7., 9.6)) if start <= x <= end), None)
+        gate = next((g for g, center in enumerate(distances[1:], 2) if center-2 <= x <= center+.6), None)
         if gate is not None:
             active[v] = baseline[v][f'gate{gate}']
-        values[v] = next((gains[key] for key, center in PHASES.items() if abs(x-center) <= BAND_M), 0.)
+        values[v] = next((gains[key] for key, center in phases.items() if abs(x-center) <= BAND_M), 0.)
     overdue = [v for v in names if seq-last[v] >= 4]
     if overdue:
         return min(overdue, key=lambda v: (last[v], v != fixed)), values
@@ -42,24 +47,24 @@ def gate_choice(seq, positions, last, gains, baseline):
     return max(names, key=score), values
 
 
-def nominal_schedule(paths, leading, gains, baseline):
+def nominal_schedule(paths, leading, gains, baseline, *, stagger=STAGGER_S, distances=DISTANCES, phases=PHASES):
     series = {v: [np.asarray(read(path / f'{v}.json'))[:, :2] for path in paths] for v in VEHICLES}
     last = dict.fromkeys(VEHICLES, 0)
     schedule = []
     for seq in range(1, SLOTS+1):
         positions = {}
         for v, traces in series.items():
-            age = SLOT_START_S + (seq-1)*SLOT_S + (STAGGER_S if v == leading else 0.)
+            age = SLOT_START_S + (seq-1)*SLOT_S + (stagger if v == leading else 0.)
             positions[v] = float(median(np.interp(age, (trace[:, 0]-trace[0, 0])/1e9, trace[:, 1])
                                         for trace in traces))
-        vehicle, values = gate_choice(seq, positions, last, gains, baseline)
+        vehicle, values = gate_choice(seq, positions, last, gains, baseline, distances=distances, phases=phases)
         schedule.append(dict(slot=seq, vehicle=vehicle, nominal_x_m=positions, values_m=values))
         last[vehicle] = seq
     return schedule
 
 
-def run_trial(client, gates, directory, feed, leading, stagger=STAGGER_S):
-    report = report_trial(client, gates, directory, feed, leading, stagger_s=stagger)
+def run_trial(client, gates, directory, feed, leading, stagger=STAGGER_S, *, amplitudes=VEHICLES):
+    report = report_trial(client, gates, directory, feed, leading, stagger_s=stagger, amplitudes=amplitudes)
     report['gate2'] = {}
     for v, result in report['vehicles'].items():
         trace = read(directory / f'{v}.json')
@@ -93,29 +98,32 @@ def interpolated_margin(trace, center):
     return min(residual, default=None)
 
 
+def trial_margins(path, *, amplitudes=VEHICLES, distances=DISTANCES):
+    margins = {}
+    for v, amplitude in amplitudes.items():
+        trace = read(path / f'{v}.json')
+        margins[v] = {f'gate{i}': interpolated_margin(trace, (x, amplitude*np.sin(.6*x), Z))
+                      for i, x in enumerate(distances, 1)}
+    complete = [margin for gates in margins.values() for margin in gates.values()]
+    return dict(by_gate_m=margins, fleet_min_m=min(complete) if None not in complete else None)
+
+
 def audit_margins(output):
-    report = {}
-    for path in sorted(output.iterdir()):
-        if not (path / 'value_report.json').is_file():
-            continue
-        margins = {}
-        for v, amplitude in VEHICLES.items():
-            trace = read(path / f'{v}.json')
-            margins[v] = {f'gate{i}': interpolated_margin(trace, (x, amplitude*np.sin(.6*x), Z))
-                          for i, x in enumerate(DISTANCES, 1)}
-        complete = [margin for gates in margins.values() for margin in gates.values()]
-        report[path.name] = dict(by_gate_m=margins, fleet_min_m=min(complete) if None not in complete else None)
+    report = {path.name: trial_margins(path) for path in sorted(output.iterdir())
+              if (path / 'value_report.json').is_file()}
     save(output / 'interpolated_margin_audit.json', report)
+    return report
 
 
-def calibrate(client, gates, output, board, calibration):
+def calibrate(client, gates, output, board, calibration, *, amplitudes=VEHICLES, distances=DISTANCES):
     comparisons, shadows = [], []
-    arms = ('shadow', *PHASES)
+    phases = probe_phases(distances)
+    arms = ('shadow', *phases)
     for rep, order in ((1, arms), (2, tuple(reversed(arms)))):
         directories = {name: output / f'cal_{rep}_{name}' for name in order}
         for name in order:
-            feed = partial(probe, board, calibration, name, phases=PHASES)
-            result = run_trial(client, gates, directories[name], feed, 'Drone1')
+            feed = partial(probe, board, calibration, name, phases=phases, amplitudes=amplitudes)
+            result = run_trial(client, gates, directories[name], feed, 'Drone1', amplitudes=amplitudes)
             expected = 0 if name == 'shadow' else 2
             if (result['board']['ready'] != 8 or sum(result['board']['adopted'].values()) != expected or
                     not all(r['pass_gates'] for r in result['vehicles'].values())):
@@ -123,8 +131,8 @@ def calibrate(client, gates, output, board, calibration):
         shadows.append(directories['shadow'])
         comparisons.extend(dict(repetition=rep, **paired(directories['shadow'], directories[phase], v, phase,
                                                          report_key=f'gate{phase[1]}'))
-                           for v in VEHICLES for phase in PHASES)
-    groups = {phase: [r['delta_m'] for r in comparisons if r['phase'] == phase and r['matched']] for phase in PHASES}
+                           for v in VEHICLES for phase in phases)
+    groups = {phase: [r['delta_m'] for r in comparisons if r['phase'] == phase and r['matched']] for phase in phases}
     save(output / 'calibration.json', dict(pairs=comparisons, samples=groups))
     if any(len(items) < 2 for items in groups.values()):
         raise RuntimeError('Insufficient matched calibration samples')
@@ -132,7 +140,8 @@ def calibrate(client, gates, output, board, calibration):
     baseline = {v: {f'gate{g}': median(r['baseline_margin_m'] for r in comparisons if
                                       r['vehicle'] == v and r['phase'].startswith(f'g{g}'))
                     for g in (2, 3)} for v in VEHICLES}
-    schedules = {v: nominal_schedule(shadows, v, gain, baseline) for v in VEHICLES}
+    schedules = {v: nominal_schedule(shadows, v, gain, baseline, distances=distances, phases=phases)
+                 for v in VEHICLES}
     save(output / 'frozen_plans.json', dict(gains_m=gain, baseline_m=baseline, nominal_stagger_s=STAGGER_S,
                                            planned_slots=schedules))
     return gain, baseline, schedules

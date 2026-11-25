@@ -27,9 +27,9 @@ SLOTS = 46
 SLOT_START_S = .45
 
 
-def probe(board, calibration, treatment, stop, *, phases=PHASES):
+def probe(board, calibration, treatment, stop, *, phases=PHASES, amplitudes=VEHICLES):
     planner = QuinticMotionPrimitivePlanner()
-    routes = {v: Route(a) for v, a in VEHICLES.items()}
+    routes = {v: Route(a) for v, a in amplitudes.items()}
     remaining = {(v, phase) for v in routes for phase in phases}
     records = []
     with LocalRpc(PORT) as rpc:
@@ -60,9 +60,9 @@ def choose(seq, positions, last, gains):
     return vehicle, values
 
 
-def allocate(board, calibration, gains, stop, *, selector=None):
+def allocate(board, calibration, gains, stop, *, selector=None, amplitudes=VEHICLES):
     planner = QuinticMotionPrimitivePlanner()
-    routes = {v: Route(a) for v, a in VEHICLES.items()}
+    routes = {v: Route(a) for v, a in amplitudes.items()}
     last, records = dict.fromkeys(routes, 0), []
     with LocalRpc(PORT) as rpc:
         origin = perf_counter() + SLOT_START_S
@@ -92,14 +92,16 @@ def save(path, value):
     path.write_text(json.dumps(value, indent=2, allow_nan=False), encoding='utf-8')
 
 
-def report_trial(client, gates, directory, feed, leading, *, stagger_s=STAGGER_S):
-    result = trial(client, PORT, directory, gates, 3, False, feed, stagger_s=stagger_s, leading=leading)
+def report_trial(client, gates, directory, feed, leading, *, stagger_s=STAGGER_S, amplitudes=VEHICLES):
+    result = trial(client, PORT, directory, gates, 3, False, feed, stagger_s=stagger_s, leading=leading,
+                   amplitudes=amplitudes)
     board = assess(directory, result, require_gap=False)
     gate3 = {}
     for vehicle, vreport in result.items():
         trace = read(directory / f'{vehicle}.json')
-        crossing = next(((a[0]+(9.-a[1])*(b[0]-a[0])/(b[1]-a[1])) for a, b in zip(trace, trace[1:])
-                         if a[1] <= 9. < b[1]), None)
+        gate_x = gates[vehicle][-1].center[0]
+        crossing = next(((a[0]+(gate_x-a[1])*(b[0]-a[0])/(b[1]-a[1])) for a, b in zip(trace, trace[1:])
+                         if a[1] <= gate_x < b[1]), None)
         margin = metrics(trace, [gates[vehicle][-1]], vreport['contact'], None)['minimum_approach_clearance_m']
         gate3[vehicle] = dict(crossing_ns=crossing, margin_m=margin)
     crossings = [v['crossing_ns'] for v in gate3.values()]

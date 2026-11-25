@@ -76,7 +76,8 @@ def metrics(trace, gates, hit, incident):
                 maximum_telemetry_gap_ms=max(((b[0]-a[0])/1e6 for a, b in zip(trace, trace[1:])), default=None))
 
 
-def trial(client, port, directory, gates, mode, inject, shared_feed=None, *, stagger_s=0., leading='Drone1'):
+def trial(client, port, directory, gates, mode, inject, shared_feed=None, *, stagger_s=0., leading='Drone1',
+          amplitudes=VEHICLES):
     directory.mkdir()
     client.reset()
     client.simPause(False)
@@ -98,7 +99,7 @@ def trial(client, port, directory, gates, mode, inject, shared_feed=None, *, sta
                 if stagger_s and started:
                     client.simPause(False)
                     sleep(stagger_s)
-                rpc.call('falconPilotStart', v, mode, VEHICLES[v], Z)
+                rpc.call('falconPilotStart', v, mode, amplitudes[v], Z)
                 started.append(v)
             client.simPause(False)
             feeders = {}
@@ -130,7 +131,7 @@ def trial(client, port, directory, gates, mode, inject, shared_feed=None, *, sta
 
 
 @contextmanager
-def scenario(port, output):
+def scenario(port, output, *, amplitudes=VEHICLES, distances=DISTANCES):
     if port != 41592:
         raise ValueError('Use the isolated onboard pilot port 41592')
     with LocalRpc(port) as rpc:
@@ -141,7 +142,7 @@ def scenario(port, output):
         raise RuntimeError('Expected the isolated two-vehicle scene')
     output.mkdir(parents=True)
     gates = {v: [Gate(i, np.array([x, amplitude * math.sin(.6 * x), Z]), np.array([1., 0., 0., 0.]))
-                 for i, x in enumerate(DISTANCES, 1)] for v, amplitude in VEHICLES.items()}
+                 for i, x in enumerate(distances, 1)] for v, amplitude in amplitudes.items()}
     offsets = {v: vehicle_local_to_world_offset(client, v) for v in VEHICLES}
     scene = spawn_gate_sequences(client, gates, width=APERTURE + .15, height=APERTURE + .15, thickness=.15,
                                  object_prefix='FalconOnboardPilot_', vehicle_world_offsets=offsets)
