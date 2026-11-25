@@ -60,7 +60,7 @@ def choose(seq, positions, last, gains):
     return vehicle, values
 
 
-def allocate(board, calibration, gains, stop, *, selector=None, amplitudes=VEHICLES):
+def allocate(board, calibration, gains, stop, *, selector=None, amplitudes=VEHICLES, occupied=()):
     planner = QuinticMotionPrimitivePlanner()
     routes = {v: Route(a) for v, a in amplitudes.items()}
     last, records = dict.fromkeys(routes, 0), []
@@ -69,6 +69,8 @@ def allocate(board, calibration, gains, stop, *, selector=None, amplitudes=VEHIC
         for seq in range(1, SLOTS + 1):
             if stop.wait(max(0., origin+(seq-1)*SLOT_S-perf_counter())):
                 break
+            if seq in occupied:
+                continue
             states = {v: sample(rpc, v) for v in routes}
             positions = {v: float(state.position[0]) for v, (_, state) in states.items()}
             vehicle, values = choose(seq, positions, last, gains) if selector is None else selector(seq, positions, last)
