@@ -60,7 +60,8 @@ def choose(seq, positions, last, gains):
     return vehicle, values
 
 
-def allocate(board, calibration, gains, stop, *, selector=None, amplitudes=VEHICLES, occupied=()):
+def allocate(board, calibration, gains, stop, *, selector=None, amplitudes=VEHICLES, occupied=(),
+             capture_state_slot=None):
     planner = QuinticMotionPrimitivePlanner()
     routes = {v: Route(a) for v, a in amplitudes.items()}
     last, records = dict.fromkeys(routes, 0), []
@@ -77,6 +78,9 @@ def allocate(board, calibration, gains, stop, *, selector=None, amplitudes=VEHIC
             last[vehicle] = seq
             stamp, state = states[vehicle]
             row = dict(slot=seq, vehicle=vehicle, sample_ns=stamp, positions_x_m=positions, values_m=values)
+            if seq == capture_state_slot:
+                row['states'] = {v: dict(sample_ns=t, position=s.position.tolist(), velocity=s.velocity.tolist(),
+                                         quaternion=s.quaternion.tolist()) for v, (t, s) in states.items()}
             records.append(row)
             try:
                 command, response = infer_command(board, calibration, planner, routes[vehicle], state)
