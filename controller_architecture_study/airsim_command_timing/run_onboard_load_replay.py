@@ -34,7 +34,7 @@ def slot_calls(intervals, origin_ns):
     return slots
 
 
-def load_windows(source):
+def load_windows(source, *, window_starts=WINDOW_STARTS_S):
     calls = source / 'api.csv'
     requests = source / 'trial' / 'requests.jsonl'
     with calls.open(newline='', encoding='utf-8') as f:
@@ -47,7 +47,7 @@ def load_windows(source):
         raise ValueError('Expected disjoint, nonempty DNNDK invocation intervals')
     origin = round(first_release*1e6)
     windows = {}
-    for second in WINDOW_STARTS_S:
+    for second in window_starts:
         slots = slot_calls(intervals, origin+second*1_000_000_000)
         if not intervals[0][0] <= slots[0]['source_probe_ns'] <= slots[-1]['source_probe_ns'] < intervals[-1][1]:
             raise ValueError('Replay slot outside the recorded invocation timespan')

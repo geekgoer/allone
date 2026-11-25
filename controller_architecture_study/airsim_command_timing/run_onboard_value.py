@@ -61,7 +61,7 @@ def choose(seq, positions, last, gains):
 
 
 def allocate(board, calibration, gains, stop, *, selector=None, amplitudes=VEHICLES, occupied=(),
-             capture_state_slot=None):
+             capture_state_slot=None, on_result=None):
     planner = QuinticMotionPrimitivePlanner()
     routes = {v: Route(a) for v, a in amplitudes.items()}
     last, records = dict.fromkeys(routes, 0), []
@@ -87,6 +87,8 @@ def allocate(board, calibration, gains, stop, *, selector=None, amplitudes=VEHIC
                 row.update(response, accepted=rpc.call('falconPilotRates', vehicle, seq, stamp, *command))
             except (OSError, ValueError) as exc:
                 row.update(status='error', error=str(exc), accepted=False)
+            if on_result is not None:
+                on_result(row)
     return {}, records
 
 

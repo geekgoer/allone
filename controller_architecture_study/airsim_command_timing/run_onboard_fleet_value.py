@@ -77,8 +77,8 @@ def run_trial(client, gates, directory, feed, leading, stagger=STAGGER_S, *, amp
     return report
 
 
-def interpolated_margin(trace, center):
-    """Include both boundaries of the gate slab in the sampled polyline."""
+def gate_minimum(trace, center):
+    """Return the smallest interpolated clearance and where it occurs."""
     half_depth = BODY + .075
     residual = []
     for a, b in zip(trace, trace[1:]):
@@ -94,8 +94,13 @@ def interpolated_margin(trace, center):
                 continue
         for t in (lo, hi):
             deviation = max(abs(a[j]+t*(b[j]-a[j])-center[j-1]) for j in (2, 3))
-            residual.append(APERTURE/2-BODY-deviation)
-    return min(residual, default=None)
+            residual.append((APERTURE/2-BODY-deviation, x0+t*(x1-x0)))
+    return min(residual, key=lambda item: item[0], default=(None, None))
+
+
+def interpolated_margin(trace, center):
+    """Include both boundaries of the gate slab in the sampled polyline."""
+    return gate_minimum(trace, center)[0]
 
 
 def trial_margins(path, *, amplitudes=VEHICLES, distances=DISTANCES):
