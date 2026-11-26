@@ -46,10 +46,12 @@ def trigger(target, stop):
     raise RuntimeError('Control window did not trigger')
 
 
-def run_case(args, client, gates, name, *, policy, calls, reserve, target=None, fixed='Drone2'):
+def run_case(args, client, gates, name, *, policy, calls, reserve, target=None, fixed='Drone2',
+             overlap=False, recovery_commands=1):
     path = args.output/name
     spec = dict(policy='deadline_pair', fixed_period_slots=1, fixed_model=11, request_budget=2,
                 pair_policy=policy, pair_static=fixed, pair_background_calls=calls, pair_reserve_ms=reserve,
+                pair_overlap_sample=overlap, pair_recovery_commands=recovery_commands,
                 gate_x_m=GATES[-1], port=PORT, calibration=read(DEFAULT_CALIBRATION_PATH),
                 probes=dict(g2_early=0., g3_early=THRESHOLD, g3_near=GATES[-1]-.8),
                 fleet=[dict(vehicle=v, amplitude=a) for v, a in AMPLITUDES.items()])
