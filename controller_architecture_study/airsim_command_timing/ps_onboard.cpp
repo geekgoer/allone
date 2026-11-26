@@ -98,9 +98,15 @@ double duration_ms(Clock::time_point start) {
 
 Json run(const Json& spec, const std::string& host, const std::string& package) {
     const std::string policy = spec.at("policy");
-    const bool adaptive = policy == "adaptive";
+    const bool use_table = policy == "route_table";
+    const bool adaptive = policy == "adaptive" || policy == "lock_T" ||
+                          policy == "lock_c" || policy == "lock_order";
+    const bool adapt_period = adaptive && policy != "lock_T";
+    const bool adapt_model = adaptive && policy != "lock_c";
+    const bool adapt_order = adaptive && policy != "lock_order";
     const bool probe = policy == "probe";
-    require(adaptive || probe || policy == "fixed", "invalid policy");
+    require(adaptive || use_table || probe || policy == "fixed", "invalid policy");
+    const auto table = spec.value("route_table", Json::object());
     const int fixed_period = spec.at("fixed_period_slots");
     const int fixed_model = spec.at("fixed_model");
     const int cap = spec.at("request_budget");
@@ -132,21 +138,25 @@ Json run(const Json& spec, const std::string& host, const std::string& package) 
         const auto begin = Clock::now();
         Json decision = {{"slot",slot}, {"start_lateness_ms",std::chrono::duration<double,std::milli>(begin-release).count()}};
         try {
+            const auto planned = table.find(std::to_string(slot));
+            const std::string recipient = planned != table.end() ? planned->at("vehicle").get<std::string>() : "";
             Vehicle* selected = nullptr;
             auto best = std::make_tuple(std::numeric_limits<double>::infinity(), 0, std::string());
             Json candidates = Json::array();
             for (auto& v : fleet) {
+                if (use_table && v.name != recipient) continue;
                 v.sample = pilot_rpc.call("falconTraceClock").as<std::uint64_t>();
                 v.state = state_rpc.get_state(v.name);
                 const double end = window_end(v);
                 const bool critical = std::isfinite(end);
-                const int period = adaptive ? (critical ? 1 : 4) : fixed_period;
+                const int period = use_table ? planned->at("period_slots").get<int>()
+                                             : (adapt_period ? (critical ? 1 : 4) : fixed_period);
                 const bool eligible = (!probe || &v == &fleet.front()) &&
                     (!v.last_slot || slot-v.last_slot >= period) && v.state.position[0] < 9.95;
                 candidates.push_back({{"vehicle",v.name}, {"x_m",v.state.position[0]}, {"T_ms",period*slot_ms},
                                       {"critical",critical}, {"eligible",eligible}});
                 if (!eligible) continue;
-                const auto key = std::make_tuple(adaptive ? (end-v.state.position[0])/std::max(.2,v.state.velocity[0])
+                const auto key = std::make_tuple(adapt_order ? (end-v.state.position[0])/std::max(.2,v.state.velocity[0])
                                                           : std::numeric_limits<double>::infinity(),
                                                  v.last_slot, v.name);
                 if (!selected || key < best) { selected = &v; best = key; }
@@ -157,7 +167,8 @@ Json run(const Json& spec, const std::string& host, const std::string& package) 
             if (selected) {
                 auto& v = *selected;
                 const bool critical = std::isfinite(window_end(v));
-                const int model = adaptive ? (critical ? 11 : 5) : fixed_model;
+                const int model = use_table ? planned->at("model").get<int>()
+                                            : (adapt_model ? (critical ? 11 : 5) : fixed_model);
                 v.last_slot = slot;
                 ++attempts;
                 Json row = {{"slot",slot}, {"sample_ns",v.sample}, {"vehicle",v.name}, {"model_id",model},
