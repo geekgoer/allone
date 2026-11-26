@@ -1,15 +1,16 @@
 """Run the native Zynq PS controller against the isolated onboard Blocks."""
 
 import argparse
+from bisect import bisect_right
 import json
-from math import inf
+from math import ceil, inf
 from pathlib import Path
 from random import Random
 import shlex
 import subprocess
 
 from config import DEFAULT_CALIBRATION_PATH
-from .run_onboard_fleet_value import trial_margins
+from .run_onboard_fleet_value import nominal_schedule, trial_margins
 from .run_onboard_load_replay import load_windows
 from .run_onboard_pilot import scenario, trial
 from .run_onboard_stagger_validation import LEADING, ROUTES
@@ -31,15 +32,17 @@ def ssh_command(args):
 
 
 def fly(args, client, gates, path, amplitudes, distances, slots, probes, policy, period, model, *,
-        stagger=STAGGER_S, table=None):
+        stagger=STAGGER_S, table=None, background_us=0):
     spec = dict(policy='route_table' if table is not None else policy, slots=slots,
                 request_budget=REQUEST_BUDGET, fixed_period_slots=period,
                 fixed_model=model, port=PORT, calibration=read(DEFAULT_CALIBRATION_PATH), probes=probes,
                 fleet=[dict(vehicle=v, amplitude=a) for v, a in amplitudes.items()])
     if table is not None:
         spec.update(route_table=table, request_budget=len(slots))
-    elif args.load_study:
+    elif args.load_study or background_us:
         spec['request_budget'] = len(slots)
+    if background_us:
+        spec['background_period_us'] = background_us
     log = path.with_suffix('.ps.log')
     with log.open('w', encoding='utf-8') as diagnostic:
         with subprocess.Popen(ssh_command(args), stdin=subprocess.PIPE, stdout=subprocess.PIPE,
@@ -73,6 +76,8 @@ def fly(args, client, gates, path, amplitudes, distances, slots, probes, policy,
                     ps.kill()
     native = read(path/'native_ps.json')
     summary = inspect(path, result, native, probes)
+    if background_us:
+        summary['contention'] = contention_metrics(native)
     summary.update(policy=policy, fixed_period_ms=period*180, fixed_model=model, golden_max_abs=ready['goldens'],
                    stagger_s=stagger, available_slots=len(slots), request_budget=spec['request_budget'],
                    **trial_margins(path, amplitudes=amplitudes, distances=distances))
@@ -108,9 +113,40 @@ def inspect(path, result, native, probes):
                 **{'pass': all(v['pass_gates'] and not v['contact'] for v in result.values())})
 
 
-def route_table(plan, slots, stagger=STAGGER_S):
+def contention_metrics(native):
+    background = native['background']
+    start = background['origin_us']
+    stop = start+background['horizon_us']
+    jobs = background['jobs']
+    if [row[0] for row in jobs] != list(range(0, background['horizon_us'], background['period_us'])):
+        raise RuntimeError('Background release sequence differs from its offered workload')
+    intervals = [(row[3], row[4]) for row in jobs if row[5] == 0]
+    if len(intervals) != len(jobs) or any(end <= begin for begin, end in intervals):
+        raise RuntimeError('Background DNNDK failed or produced invalid timing')
+    foreground = [r for r in native['requests'] if r.get('dpu_run_us', 0) > 0]
+    uses = sorted(intervals+[(r['dpu_run_start_us'], r['dpu_run_end_us']) for r in foreground])
+    if any(a[1] > b[0] for a, b in zip(uses, uses[1:])):
+        raise RuntimeError('DNNDK intervals overlap on the serialized device')
+    starts = [a for a, _ in intervals]
+    blocked = []
+    for r in foreground:
+        at = r['device_requested_us']
+        before = bisect_right(starts, at)-1
+        if before >= 0 and at < intervals[before][1] and r['device_acquired_us'] >= intervals[before][1]:
+            blocked.append(dict(slot=r['slot'], vehicle=r['vehicle'], wait_ms=r['device_wait_ms']))
+    busy = sum(max(0, min(b, stop)-max(a, start)) for a, b in intervals)
+    critical_candidates = {s['slot']: [c['vehicle'] for c in s.get('candidates', []) if c['critical'] and c['eligible']]
+                           for s in native['slots']}
+    release_lateness = sorted(row[1]-row[0] for row in jobs)
+    return dict(background_requests=len(jobs), background_call_fraction=busy/(stop-start),
+                background_release_lateness_p99_ms=release_lateness[ceil(.99*len(jobs))-1]/1000,
+                background_blocked=blocked, max_device_wait_ms=max((r['device_wait_ms'] for r in foreground), default=0.),
+                dual_critical={slot: vehicles for slot, vehicles in critical_candidates.items() if len(vehicles) >= 2})
+
+
+def route_table(plan, slots, stagger=STAGGER_S, *, prefer_smaller_margin=False):
     forecast = plan['schedules'][str(stagger)]
-    centers = [plan['probe_x_m'][p] for p in ('g2_early', 'g3_early', 'g3_near')]
+    centers = [(p, plan['probe_x_m'][p]) for p in ('g2_early', 'g3_early', 'g3_near')]
     last = dict.fromkeys(forecast[0]['nominal_x_m'], 0)
     table = {}
     for seq in slots:
@@ -120,19 +156,60 @@ def route_table(plan, slots, stagger=STAGGER_S):
         following = forecast[min(len(forecast)-1, i+1)]['nominal_x_m']
         choices = []
         for vehicle, x in positions.items():
-            end = next((p+BAND_M for p in centers if abs(x-p) <= BAND_M), inf)
-            critical = end < inf
+            phase, end = next(((p, center+BAND_M) for p, center in centers if abs(x-center) <= BAND_M), (None, inf))
+            critical = phase is not None
             period = 1 if critical else 4
             if x < 9.95 and (not last[vehicle] or seq-last[vehicle] >= period):
                 span = min(len(forecast)-1, i+1)-max(0, i-1)
                 velocity = (following[vehicle]-previous[vehicle])/(span*SLOT_S)
-                key = ((end-x)/max(.2, velocity), last[vehicle], vehicle)
+                margin = (plan['baseline_m'][vehicle][f'gate{phase[1]}']
+                          if prefer_smaller_margin and critical else inf)
+                key = (margin, (end-x)/max(.2, velocity), last[vehicle], vehicle)
                 choices.append((key, period, 11 if critical else 5))
         if choices:
-            (_, _, vehicle), period, model = min(choices)
+            (_, _, _, vehicle), period, model = min(choices)
             table[str(seq)] = dict(vehicle=vehicle, period_slots=period, model=model)
             last[vehicle] = seq
     return table
+
+
+def contention_pair(args, plan, amplitudes, distances):
+    sources = sorted((args.replay_from/'shadow'/'independent').glob('cal_*_shadow'))
+    if len(sources) != 2:
+        raise ValueError('Need the two frozen independent-route calibration flights')
+    slots = list(range(1, SLOTS+1))
+    cases = {'overlap': 0.} if args.contention_margin_check else {'staggered': STAGGER_S, 'overlap': 0.}
+    period_us = 3000
+    plan['schedules']['0.0'] = nominal_schedule(sources, LEADING, plan['gains_m'], plan['baseline_m'],
+                                                stagger=0., distances=distances, phases=plan['probe_x_m'])
+    tables = {name: route_table(plan, slots, stagger, prefer_smaller_margin=args.contention_margin_check)
+              for name, stagger in cases.items()}
+    with scenario(PORT, args.output, amplitudes=amplitudes, distances=distances) as (client, gates):
+        save(args.output/'contention_plan.json', dict(cases=cases, slots=slots, tables=tables,
+                                                    table_priority=('calibrated_gate_margin' if args.contention_margin_check
+                                                                    else 'time_to_band_exit'),
+                                                    background_period_us=period_us, repetitions=3))
+
+        def run_one(group, name, policy):
+            return fly(args, client, gates, args.output/name, amplitudes, distances, slots, plan['probe_x_m'],
+                       policy, 2, 11, stagger=cases[group],
+                       table=tables[group] if policy == 'route_table' else None, background_us=period_us)
+
+        validation = {name: run_one(name, f'verify_{name}', 'adaptive') for name in cases}
+        save(args.output/'setup_validation.json', validation)
+        verification = {case: row['contention'] for case, row in validation.items()}
+        if (any(not row['pass'] or not row['adopted'] for row in validation.values()) or
+                any(not row['background_blocked'] for row in verification.values()) or
+                verification.get('staggered', {}).get('dual_critical') or not verification['overlap']['dual_critical']):
+            raise RuntimeError('Pilot did not establish shared-device blocking and the intended phase contrast')
+        evaluation = {}
+        for rep in range(1, 4):
+            order = ('route_table', 'adaptive') if rep % 2 else ('adaptive', 'route_table')
+            for group in cases if rep % 2 else reversed(cases):
+                for policy in order:
+                    name = f'{group}_r{rep}_{policy}'
+                    evaluation[name] = run_one(group, name, policy)
+                    save(args.output/'summary.json', evaluation)
 
 
 def load_study(args, client, gates, plan, slots, amplitudes, distances):
@@ -166,6 +243,10 @@ def load_study(args, client, gates, plan, slots, amplitudes, distances):
 
 def run(args):
     plan = read(args.replay_from/'departure_plans.json')['independent']
+    amplitudes, distances = ROUTES['independent']
+    if args.contention_pair or args.contention_margin_check:
+        contention_pair(args, plan, amplitudes, distances)
+        return
     recorded = read(args.replay_from/'load_masks.json')
     if args.load_masks:
         masks = read(args.load_masks)
@@ -178,7 +259,6 @@ def run(args):
         raise ValueError('DPU trace does not match the frozen replay')
     available = {name: [row['slot'] for row in rows if not row['covering_call_ns']]
                  for name, rows in masks['windows'].items()}
-    amplitudes, distances = ROUTES['independent']
     with scenario(PORT, args.output, amplitudes=amplitudes, distances=distances) as (client, gates):
         save(args.output/'load_masks.json', masks)
         probes = plan['probe_x_m']
@@ -224,6 +304,11 @@ def main():
     parser.add_argument('--probe-only', action='store_true')
     parser.add_argument('--load-study', type=Path, metavar='STATIC_CHOICE',
                         help='Run route table, ablations and an opportunity sweep using the previously tuned static choice')
+    contention = parser.add_mutually_exclusive_group()
+    contention.add_argument('--contention-pair', action='store_true',
+                        help='Compare staggered and coincident critical phases under periodic real DNNDK background work')
+    contention.add_argument('--contention-margin-check', action='store_true',
+                        help='Repeat coincident phases with a static table prioritizing the lower calibrated gate margin')
     run(parser.parse_args())
 
 

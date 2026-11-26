@@ -7,8 +7,10 @@
 #include <chrono>
 #include <cmath>
 #include <fstream>
+#include <future>
 #include <iostream>
 #include <limits>
+#include <mutex>
 #include <sstream>
 #include <stdexcept>
 #include <thread>
@@ -42,7 +44,7 @@ void require(bool ok, const char* reason) {
     if (!ok) throw std::runtime_error(reason);
 }
 
-Json verify_models(psdpu::LocalDpu& dpu, const std::string& package) {
+Json verify_models(psdpu::LocalDpu& dpu, const std::string& package, std::vector<f::Raw237>& background_inputs) {
     std::ifstream registry_file(package + "/dpu_model_registry.json");
     Json registry;
     registry_file >> registry;
@@ -71,6 +73,7 @@ Json verify_models(psdpu::LocalDpu& dpu, const std::string& package) {
         require(inputs.size() == 32 && error <= .0001, "golden mismatch");
         for (std::size_t step = 0; step < 100; ++step)
             require(dpu.infer(id, inputs[step % inputs.size()]).status == 0, "warmup failed");
+        if (id == 11) background_inputs = std::move(inputs);
         checks[std::to_string(id)] = error;
     }
     require(checks.size() == 2, "both candidate models required");
@@ -96,6 +99,32 @@ double duration_ms(Clock::time_point start) {
     return std::chrono::duration<double, std::milli>(Clock::now()-start).count();
 }
 
+auto clock_us(Clock::time_point time) {
+    return std::chrono::duration_cast<std::chrono::microseconds>(time.time_since_epoch()).count();
+}
+
+Json run_background(psdpu::LocalDpu& dpu, std::mutex& device, const std::vector<f::Raw237>& inputs,
+                    Clock::time_point origin, int period_us) {
+    using Us = std::chrono::microseconds;
+    const int horizon_us = 46*slot_ms*1000;
+    Json jobs = Json::array();
+    for (int offset = 0, index = 0; offset < horizon_us; offset += period_us, ++index) {
+        const auto release = origin + Us(offset);
+        std::this_thread::sleep_until(release);
+        const auto requested = Clock::now();
+        std::unique_lock<std::mutex> lock(device);
+        const auto started = Clock::now();
+        const auto result = dpu.infer(11, inputs[index % inputs.size()]);
+        lock.unlock();
+        const auto to_us = [](Clock::duration d) { return std::chrono::duration_cast<Us>(d).count(); };
+        jobs.push_back({offset, to_us(requested-origin), to_us(started-requested),
+                        result.run_start_us, result.run_end_us, result.status});
+    }
+    return {{"model_id",11}, {"period_us",period_us}, {"origin_us",clock_us(origin)}, {"horizon_us",horizon_us},
+            {"fields",{"release_offset_us","requested_offset_us","wait_us","run_start_us","run_end_us","status"}},
+            {"jobs",std::move(jobs)}};
+}
+
 Json run(const Json& spec, const std::string& host, const std::string& package) {
     const std::string policy = spec.at("policy");
     const bool use_table = policy == "route_table";
@@ -110,6 +139,8 @@ Json run(const Json& spec, const std::string& host, const std::string& package) 
     const int fixed_period = spec.at("fixed_period_slots");
     const int fixed_model = spec.at("fixed_model");
     const int cap = spec.at("request_budget");
+    const int background_period_us = spec.value("background_period_us", 0);
+    require(background_period_us == 0 || background_period_us >= 2000, "background period is too short");
     std::vector<Vehicle> fleet;
     for (const auto& row : spec.at("fleet")) {
         const auto& probes = spec.at("probes");
@@ -124,11 +155,17 @@ Json run(const Json& spec, const std::string& host, const std::string& package) 
     rpc::client pilot_rpc(host, port);
     pilot_rpc.set_timeout(100);
     psdpu::LocalDpu dpu("main18_plain_mlp_h2_w128_seed0,main18_plain_mlp_h4_w1024_seed0");
-    const auto checks = verify_models(dpu, package);
+    std::vector<f::Raw237> background_inputs;
+    const auto checks = verify_models(dpu, package, background_inputs);
     std::cout << Json{{"ready", true}, {"goldens", checks}}.dump() << std::endl;
     std::string start;
     require(bool(std::getline(std::cin, start)) && start == "GO", "start signal missing");
     const auto origin = Clock::now() + std::chrono::milliseconds(450);
+    std::mutex device;
+    std::future<Json> background;
+    if (background_period_us)
+        background = std::async(std::launch::async, run_background, std::ref(dpu), std::ref(device),
+                                std::cref(background_inputs), origin, background_period_us);
     Json requests = Json::array(), slots = Json::array();
     int attempts = 0;
     for (const int slot : spec.at("slots")) {
@@ -180,7 +217,16 @@ Json run(const Json& spec, const std::string& host, const std::string& package) 
                     state.acceleration=v.state.acceleration; state.angular_velocity=v.state.angular_velocity;
                     auto input = make_input(state, v.amplitude);
                     row["encode_ms"] = duration_ms(selected_at);
+                    const auto queued_at = Clock::now();
+                    row["device_requested_us"] = clock_us(queued_at);
+                    std::unique_lock<std::mutex> lock(device);
+                    const auto lock_at = Clock::now();
+                    row["device_acquired_us"] = clock_us(lock_at);
+                    row["device_wait_ms"] = std::chrono::duration<double,std::milli>(lock_at-queued_at).count();
                     const auto result = dpu.infer(model,input);
+                    lock.unlock();
+                    row["dpu_run_start_us"] = result.run_start_us;
+                    row["dpu_run_end_us"] = result.run_end_us;
                     row["dpu_run_us"] = result.run_end_us-result.run_start_us;
                     row["board_service_us"] = result.end_us-result.start_us;
                     row["dpu_status"] = result.status;
@@ -209,7 +255,9 @@ Json run(const Json& spec, const std::string& host, const std::string& package) 
         decision["elapsed_ms"] = duration_ms(begin);
         slots.push_back(std::move(decision));
     }
-    return {{"requests", requests}, {"slots", slots}};
+    Json report = {{"requests", std::move(requests)}, {"slots", std::move(slots)}};
+    if (background.valid()) report["background"] = background.get();
+    return report;
 }
 }
 
