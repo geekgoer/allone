@@ -125,6 +125,63 @@ Json run_background(psdpu::LocalDpu& dpu, std::mutex& device, const std::vector<
             {"jobs",std::move(jobs)}};
 }
 
+Json state_record(const Vehicle& v) {
+    return {{"position",v.state.position}, {"velocity",v.state.velocity},
+            {"quaternion",v.state.orientation_wxyz}, {"sample_ns",v.sample}};
+}
+
+double projected_error(const Vehicle& v, double gate_x) {
+    return std::abs(v.state.position[1] + .25*v.state.velocity[1] - v.amplitude*std::sin(.6*gate_x));
+}
+
+void append_background(psdpu::LocalDpu& dpu, const std::vector<f::Raw237>& inputs, int count, Json& intervals) {
+    for (int i = 0; i < count; ++i) {
+        const auto r = dpu.infer(11, inputs[i % inputs.size()]);
+        require(r.status == 0 && r.run_end_us > r.run_start_us, "background inference failed");
+        intervals.push_back({r.run_start_us, r.run_end_us});
+    }
+}
+
+constexpr double deadline_budget_ms = 30.;
+
+Json deadline_update(const Vehicle& v, int slot, rpc::client& pilot_rpc, psdpu::LocalDpu& dpu,
+                     const f::Calibration& calibration, Clock::time_point start, Clock::time_point window_start,
+                     double reserve_ms, bool probe_late) {
+    const double before_ms = duration_ms(start);
+    const double slack = deadline_budget_ms-duration_ms(window_start);
+    Json row = {{"vehicle",v.name}, {"slot",slot}, {"sample_ns",v.sample}, {"before_ms",before_ms},
+                {"slack_ms",slack}, {"accepted",false}};
+    if (!probe_late && reserve_ms > slack) {
+        row["status"] = "insufficient_time";
+        return row;
+    }
+    f::State state;
+    state.position=v.state.position; state.velocity=v.state.velocity; state.quaternion=v.state.orientation_wxyz;
+    state.acceleration=v.state.acceleration; state.angular_velocity=v.state.angular_velocity;
+    const auto input = make_input(state, v.amplitude);
+    row["encode_ms"] = duration_ms(start)-before_ms;
+    const auto r = dpu.infer(11, input);
+    row["dpu_run_us"] = r.run_end_us-r.run_start_us;
+    row["dpu_interval_us"] = {r.run_start_us, r.run_end_us};
+    row["status"] = "dpu_rejected";
+    if (r.status == 0 && !r.saturation) {
+        f::Control control;
+        std::copy(r.output.begin(), r.output.end(), control.begin());
+        const auto wire = f::native_rpc_command(f::prepare_live_command(control, calibration));
+        row["submit_ms"] = duration_ms(start);
+        if (!probe_late && duration_ms(window_start) >= deadline_budget_ms) {
+            row["status"] = "expired_before_submit";
+        } else {
+            const bool accepted = pilot_rpc.call("falconPilotRates", v.name, std::uint64_t(slot), v.sample,
+                wire.roll_rate, wire.pitch_rate, wire.yaw_rate, wire.throttle).as<bool>();
+            row["accepted"] = accepted;
+            row["status"] = accepted ? "submitted" : "rejected";
+        }
+    }
+    row["return_ms"] = duration_ms(start);
+    return row;
+}
+
 Json run_deadline_pair(const Json& spec, std::vector<Vehicle>& fleet, psairsim::Client& state_rpc,
                        rpc::client& pilot_rpc, psdpu::LocalDpu& dpu, const std::vector<f::Raw237>& inputs,
                        const f::Calibration& calibration) {
@@ -135,8 +192,7 @@ Json run_deadline_pair(const Json& spec, std::vector<Vehicle>& fleet, psairsim::
     const double reserve_ms = spec.at("pair_reserve_ms");
     const bool overlap = spec.value("pair_overlap_sample", false);
     const int burst = spec.value("pair_recovery_commands", 1);
-    constexpr double budget_ms = 30.;
-    require(fleet.size() == 2 && calls >= 0 && calls <= 25 && reserve_ms >= 0. && reserve_ms < budget_ms,
+    require(fleet.size() == 2 && calls >= 0 && calls <= 25 && reserve_ms >= 0. && reserve_ms < deadline_budget_ms,
             "invalid deadline-pair config");
     require(policy == "local" || policy == "static" || policy == "online" || policy == "timing" ||
             policy == "recovery",
@@ -148,11 +204,7 @@ Json run_deadline_pair(const Json& spec, std::vector<Vehicle>& fleet, psairsim::
     double background_start_ms = 0., background_end_ms = 0.;
     auto batch = [&] {
         background_start_ms = duration_ms(start);
-        for (int i = 0; i < calls; ++i) {
-            const auto r = dpu.infer(11, inputs[i % inputs.size()]);
-            require(r.status == 0 && r.run_end_us > r.run_start_us, "background inference failed");
-            background.push_back({r.run_start_us, r.run_end_us});
-        }
+        append_background(dpu, inputs, calls, background);
         background_end_ms = duration_ms(start);
     };
     std::future<void> pending;
@@ -161,9 +213,8 @@ Json run_deadline_pair(const Json& spec, std::vector<Vehicle>& fleet, psairsim::
         v.sample = pilot_rpc.call("falconTraceClock").as<std::uint64_t>();
         if (i == 0 && overlap) pending = std::async(std::launch::async, batch);
         v.state = state_rpc.get_state(v.name);
-        states[v.name] = {{"position",v.state.position}, {"velocity",v.state.velocity},
-                          {"quaternion",v.state.orientation_wxyz}, {"sample_ns",v.sample}};
-        risks[i] = std::abs(v.state.position[1] + .25*v.state.velocity[1] - v.amplitude*std::sin(.6*gate_x));
+        states[v.name] = state_record(v);
+        risks[i] = projected_error(v, gate_x);
         scores[v.name] = risks[i];
     }
     const auto sample_done_ms = duration_ms(start);
@@ -183,46 +234,87 @@ Json run_deadline_pair(const Json& spec, std::vector<Vehicle>& fleet, psairsim::
             v.sample = pilot_rpc.call("falconTraceClock").as<std::uint64_t>();
             v.state = state_rpc.get_state(v.name);
         }
-        const double before_ms = duration_ms(start);
-        const double window_used_ms = duration_ms(window_start);
-        Json row = {{"vehicle",v.name}, {"slot",i+1}, {"sample_ns",v.sample}, {"before_ms",before_ms},
-                    {"slack_ms",budget_ms-window_used_ms}, {"accepted",false}};
-        if (policy != "timing" && window_used_ms+reserve_ms > budget_ms) {
-            row["status"] = "insufficient_time";
-            requests.push_back(std::move(row));
-            break;
-        }
-        f::State state;
-        state.position=v.state.position; state.velocity=v.state.velocity; state.quaternion=v.state.orientation_wxyz;
-        state.acceleration=v.state.acceleration; state.angular_velocity=v.state.angular_velocity;
-        const auto input = make_input(state, v.amplitude);
-        row["encode_ms"] = duration_ms(start)-before_ms;
-        const auto r = dpu.infer(11, input);
-        row["dpu_run_us"] = r.run_end_us-r.run_start_us;
-        row["dpu_interval_us"] = {r.run_start_us, r.run_end_us};
-        row["status"] = "dpu_rejected";
-        if (r.status == 0 && !r.saturation) {
-            f::Control control;
-            std::copy(r.output.begin(), r.output.end(), control.begin());
-            const auto wire = f::native_rpc_command(f::prepare_live_command(control, calibration));
-            row["submit_ms"] = duration_ms(start);
-            if (duration_ms(window_start) >= budget_ms && policy != "timing") {
-                row["status"] = "expired_before_submit";
-            } else {
-                const bool accepted = pilot_rpc.call("falconPilotRates", v.name, std::uint64_t(i+1), v.sample,
-                    wire.roll_rate, wire.pitch_rate, wire.yaw_rate, wire.throttle).as<bool>();
-                row["accepted"] = accepted;
-                row["status"] = accepted ? "submitted" : "rejected";
-            }
-        }
-        row["return_ms"] = duration_ms(start);
+        auto row = deadline_update(v, i+1, pilot_rpc, dpu, calibration, start, window_start, reserve_ms, policy == "timing");
+        const bool exhausted = row.at("status") == "insufficient_time";
         requests.push_back(std::move(row));
+        if (exhausted) break;
     }
+    const auto start_ns = states.at(fleet.front().name).at("sample_ns");
     return {{"states",std::move(states)}, {"risk",std::move(scores)}, {"background",std::move(background)},
-            {"requests",std::move(requests)}, {"background_done_ms",ready_ms}, {"budget_ms",budget_ms},
+            {"requests",std::move(requests)}, {"background_done_ms",ready_ms}, {"budget_ms",deadline_budget_ms},
             {"sample_done_ms",sample_done_ms}, {"background_start_ms",background_start_ms},
             {"background_end_ms",background_end_ms}, {"overlap_sample",overlap},
-            {"reserve_ms",reserve_ms}, {"start_ns",fleet.front().sample}};
+            {"reserve_ms",reserve_ms}, {"start_ns",start_ns}};
+}
+
+Json run_recovery_schedule(const Json& settings, std::vector<Vehicle>& fleet, psairsim::Client& state_rpc,
+                           rpc::client& pilot_rpc, psdpu::LocalDpu& dpu, const std::vector<f::Raw237>& inputs,
+                           const f::Calibration& calibration) {
+    const int windows = settings.at("windows");
+    const int calls = settings.at("background_calls");
+    const double gate_x = settings.at("gate_x_m");
+    const double reserve_ms = settings.at("reserve_ms");
+    const std::string policy = settings.at("policy");
+    const auto healthy = settings.at("healthy_error_m");
+    require(fleet.size() == 2 && windows >= 2 && windows <= 3 && calls == 17 &&
+            reserve_ms >= 0. && reserve_ms < deadline_budget_ms, "invalid schedule settings");
+    require(policy == "observe" || policy == "queue" || policy == "risk" || policy == "reserve",
+            "invalid schedule policy");
+
+    std::array<int, 2> last_sent{{-1, -1}};
+    int reserved = -1;
+    Json all_states, requests = Json::array(), phases = Json::array(), background = Json::array();
+    const auto start = Clock::now();
+    for (int w = 0; w < windows; ++w) {
+        std::this_thread::sleep_until(start + std::chrono::milliseconds(75*w));
+        const auto window_start = Clock::now();
+        Json batch = Json::array(), states = Json::object(), risks = Json::object();
+        std::array<double, 2> score{};
+        std::future<void> pending;
+        for (int i = 0; i < 2; ++i) {
+            auto& v = fleet[i];
+            v.sample = pilot_rpc.call("falconTraceClock").as<std::uint64_t>();
+            if (i == 0) pending = std::async(std::launch::async, [&] { append_background(dpu, inputs, calls, batch); });
+            v.state = state_rpc.get_state(v.name);
+            states[v.name] = state_record(v);
+            score[i] = projected_error(v, gate_x);
+            risks[v.name] = score[i];
+        }
+        const auto sample_ms = duration_ms(window_start);
+        pending.get();
+        const auto ready_ms = duration_ms(window_start);
+        background.insert(background.end(), batch.begin(), batch.end());
+
+        bool released = false;
+        const int by_risk = score[1] > score[0] ? 1 : 0;
+        const int by_wait = last_sent[1] < last_sent[0] ? 1 : 0;
+        if (reserved >= 0 && score[reserved] <= healthy.at(w).at(fleet[reserved].name).get<double>()) {
+            released = true;
+            reserved = -1;
+        }
+        const int first = w == 0 || policy == "risk" ? by_risk : (reserved >= 0 ? reserved : by_wait);
+        if (w == 0) all_states = states;
+        phases.push_back({{"window",w}, {"start_ns",fleet.front().sample}, {"states",std::move(states)},
+            {"risk",std::move(risks)}, {"sample_ms",sample_ms}, {"ready_ms",ready_ms},
+            {"first_candidate",fleet[first].name}, {"released",released}, {"background",std::move(batch)}});
+        if (policy == "observe") continue;
+        for (int i : {first, 1-first}) {
+            auto row = deadline_update(fleet[i], int(requests.size())+1, pilot_rpc, dpu, calibration,
+                                       start, window_start, reserve_ms, false);
+            row["window"] = w;
+            row["window_start_ns"] = fleet.front().sample;
+            if (row.at("accepted").get<bool>()) {
+                last_sent[i] = w;
+                if (w == 0 && i == first && policy == "reserve") reserved = i;
+            }
+            const bool exhausted = row.at("status") == "insufficient_time";
+            requests.push_back(std::move(row));
+            if (exhausted) break;
+        }
+    }
+    const auto start_ns = all_states.at(fleet.front().name).at("sample_ns");
+    return {{"states",std::move(all_states)}, {"requests",std::move(requests)}, {"windows",std::move(phases)},
+            {"background",std::move(background)}, {"start_ns",start_ns}};
 }
 
 Json run(const Json& spec, const std::string& host, const std::string& package) {
@@ -260,6 +352,9 @@ Json run(const Json& spec, const std::string& host, const std::string& package) 
     std::cout << Json{{"ready", true}, {"goldens", checks}}.dump() << std::endl;
     std::string start;
     require(bool(std::getline(std::cin, start)) && start == "GO", "start signal missing");
+    if (spec.count("recovery_schedule"))
+        return run_recovery_schedule(spec.at("recovery_schedule"), fleet, state_rpc, pilot_rpc, dpu,
+                                     background_inputs, calibration);
     if (policy == "deadline_pair")
         return run_deadline_pair(spec, fleet, state_rpc, pilot_rpc, dpu, background_inputs, calibration);
     const auto origin = Clock::now() + std::chrono::milliseconds(450);

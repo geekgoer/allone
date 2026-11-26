@@ -47,7 +47,7 @@ def trigger(target, stop):
 
 
 def run_case(args, client, gates, name, *, policy, calls, reserve, target=None, fixed='Drone2',
-             overlap=False, recovery_commands=1):
+             overlap=False, recovery_commands=1, recovery_schedule=None):
     path = args.output/name
     spec = dict(policy='deadline_pair', fixed_period_slots=1, fixed_model=11, request_budget=2,
                 pair_policy=policy, pair_static=fixed, pair_background_calls=calls, pair_reserve_ms=reserve,
@@ -55,6 +55,9 @@ def run_case(args, client, gates, name, *, policy, calls, reserve, target=None, 
                 gate_x_m=GATES[-1], port=PORT, calibration=read(DEFAULT_CALIBRATION_PATH),
                 probes=dict(g2_early=0., g3_early=THRESHOLD, g3_near=GATES[-1]-.8),
                 fleet=[dict(vehicle=v, amplitude=a) for v, a in AMPLITUDES.items()])
+    if recovery_schedule is not None:
+        spec['recovery_schedule'] = dict(recovery_schedule, background_calls=calls, gate_x_m=GATES[-1],
+                                         reserve_ms=reserve, policy=policy)
     with path.with_suffix('.ps.log').open('w', encoding='utf-8') as diagnostic:
         with subprocess.Popen(ssh_command(args), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=diagnostic,
                               text=True, encoding='utf-8') as ps:
@@ -94,16 +97,25 @@ def run_case(args, client, gates, name, *, policy, calls, reserve, target=None, 
                     raise RuntimeError('Unmatched central command')
                 adopted[int(slot)] = dict(vehicle=v, since_start_ms=(absolute-native['start_ns'])/1e6,
                                          age_ms=(absolute-sample_ns)/1e6)
-    intervals = native['background']+[r['dpu_interval_us'] for r in requests.values() if 'dpu_interval_us' in r]
-    if len(native['background']) != calls or any(a[1] > b[0] for a, b in zip(intervals, intervals[1:])):
+                if recovery_schedule is not None:
+                    window_ms = (absolute-row['window_start_ns'])/1e6
+                    adopted[int(slot)].update(window=row['window'], window_ms=window_ms,
+                                             on_time=0 <= window_ms <= DEADLINE_MS)
+    intervals = sorted(native['background']+[r['dpu_interval_us'] for r in requests.values() if 'dpu_interval_us' in r])
+    expected_calls = calls if recovery_schedule is None else calls*recovery_schedule['windows']
+    if len(native['background']) != expected_calls or any(a[1] > b[0] for a, b in zip(intervals, intervals[1:])):
         raise RuntimeError('Real DPU execution trace differs from the requested workload')
     summary = dict(native, policy=policy, target=target, background_calls=calls, adopted=adopted,
                    timely=sum(a['since_start_ms'] <= DEADLINE_MS for a in adopted.values()),
                    contacts={v: r['contact'] for v, r in flight.items()},
                    pass_gates=all(r['pass_gates'] for r in flight.values()),
                    **trial_margins(path, amplitudes=AMPLITUDES, distances=GATES))
+    if recovery_schedule is not None:
+        summary['timely'] = sum(a['on_time'] for a in adopted.values())
+        summary['background_calls'] = expected_calls
     save(path/'deadline_report.json', summary)
-    print(name, 'background', calls, 'ready_ms', round(native['background_done_ms'], 2),
+    print(name, 'background', expected_calls, 'ready_ms', round(native['background_done_ms'], 2)
+          if recovery_schedule is None else [round(w['ready_ms'], 2) for w in native['windows']],
           'adopted', adopted, 'gate3_mm', {v: round(m['gate3']*1000, 2) if m['gate3'] is not None else None
                                          for v, m in summary['by_gate_m'].items()}, flush=True)
     return summary
