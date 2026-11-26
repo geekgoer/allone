@@ -256,10 +256,17 @@ Json run_recovery_schedule(const Json& settings, std::vector<Vehicle>& fleet, ps
     const double reserve_ms = settings.at("reserve_ms");
     const std::string policy = settings.at("policy");
     const auto healthy = settings.at("healthy_error_m");
+    const auto recipients = settings.value("fixed_recipients", std::vector<std::string>{});
     require(fleet.size() == 2 && windows >= 2 && windows <= 3 && calls == 17 &&
             reserve_ms >= 0. && reserve_ms < deadline_budget_ms, "invalid schedule settings");
-    require(policy == "observe" || policy == "queue" || policy == "risk" || policy == "reserve",
+    require(policy == "observe" || policy == "queue" || policy == "risk" || policy == "reserve" || policy == "fixed",
             "invalid schedule policy");
+    if (policy == "fixed") {
+        require(recipients.size() == std::size_t(windows), "wrong number of fixed windows");
+        for (const auto& recipient : recipients)
+            require(recipient.empty() || recipient == fleet[0].name || recipient == fleet[1].name,
+                    "unknown fixed recipient");
+    }
 
     std::array<int, 2> last_sent{{-1, -1}};
     int reserved = -1;
@@ -292,13 +299,18 @@ Json run_recovery_schedule(const Json& settings, std::vector<Vehicle>& fleet, ps
             released = true;
             reserved = -1;
         }
-        const int first = w == 0 || policy == "risk" ? by_risk : (reserved >= 0 ? reserved : by_wait);
+        int first = w == 0 || policy == "risk" ? by_risk : (reserved >= 0 ? reserved : by_wait);
+        if (policy == "fixed")
+            first = recipients[w].empty() ? -1 : (recipients[w] == fleet[0].name ? 0 : 1);
         if (w == 0) all_states = states;
         phases.push_back({{"window",w}, {"start_ns",fleet.front().sample}, {"states",std::move(states)},
             {"risk",std::move(risks)}, {"sample_ms",sample_ms}, {"ready_ms",ready_ms},
-            {"first_candidate",fleet[first].name}, {"released",released}, {"background",std::move(batch)}});
-        if (policy == "observe") continue;
-        for (int i : {first, 1-first}) {
+            {"first_candidate",first < 0 ? "" : fleet[first].name}, {"released",released},
+            {"background",std::move(batch)}});
+        if (policy == "observe" || first < 0) continue;
+        const int count = policy == "fixed" ? 1 : 2;
+        for (int option = 0; option < count; ++option) {
+            const int i = option == 0 ? first : 1-first;
             auto row = deadline_update(fleet[i], int(requests.size())+1, pilot_rpc, dpu, calibration,
                                        start, window_start, reserve_ms, false);
             row["window"] = w;

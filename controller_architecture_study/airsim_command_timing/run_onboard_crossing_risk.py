@@ -26,18 +26,22 @@ def timing_ok(report):
             and {row['window'] for row in report['adopted'].values() if row['on_time']} == {0, 1})
 
 
+def staged_timing_ok(report):
+    first, second = report['windows'][:2]
+    step = report['velocity_step']
+    early, late = step['Drone2'], step['Drone1']
+    return (step['start_ns'] <= first['start_ns']
+            and max(s['sample_ns'] for s in first['states'].values()) < late['begin_ns']
+            <= late['end_ns'] <= second['start_ns']
+            and all(abs(x['requested_delta_mps']-x['observed_delta_mps']) < .05 for x in (early, late)))
+
+
 def stage_audit(report, healthy):
     first, second = report['windows']
     a, b = (first['risk'][v] for v in AMPLITUDES)
     c, d = (second['risk'][v] for v in AMPLITUDES)
-    step = report['velocity_step']
-    early, late = step['Drone2'], step['Drone1']
-    stage_ok = (step['start_ns'] <= first['start_ns']
-                and max(s['sample_ns'] for s in first['states'].values()) < late['begin_ns']
-                <= late['end_ns'] <= second['start_ns']
-                and all(abs(x['requested_delta_mps']-x['observed_delta_mps']) < .05 for x in (early, late)))
     return dict(first_gap_m=b-a, second_gap_m=c-d, still_eligible=d > healthy[1]['Drone2'],
-                stage_ok=stage_ok, timing_ok=timing_ok(report), adoption=adopted_order(report),
+                stage_ok=staged_timing_ok(report), timing_ok=timing_ok(report), adoption=adopted_order(report),
                 gate3_m=gate3(report), contacts=report['contacts'], pass_gates=report['pass_gates'])
 
 
