@@ -46,17 +46,45 @@ def trigger(target, stop):
     raise RuntimeError('Control window did not trigger')
 
 
+def trigger_staged(stop, start_ps, amplitudes, gate_x, threshold, first_step, second_step):
+    world = require_airsim().MultirotorClient(ip='127.0.0.1', port=PORT, timeout_value=3)
+    events = {}
+    try:
+        with LocalRpc(PORT) as rpc, DeadlineWaiter() as timer:
+            while not stop.is_set():
+                timer.wait([], perf_counter()+.004)
+                positions = {v: sample(rpc, v)[1].position[0] for v in amplitudes}
+                if 'Drone2' not in events and positions['Drone2'] >= threshold-.26:
+                    events['Drone2'] = kick(world, 'Drone2', amplitudes['Drone2']*math.sin(.6*gate_x), first_step)
+                    continue
+                if 'start_ns' not in events and min(positions.values()) >= threshold:
+                    events['start_ns'] = rpc.call('falconTraceClock')
+                    start_ps()
+                if 'start_ns' in events and positions['Drone1'] >= threshold+.075:
+                    begin_ns = rpc.call('falconTraceClock')
+                    event = kick(world, 'Drone1', amplitudes['Drone1']*math.sin(.6*gate_x), second_step)
+                    events['Drone1'] = dict(event, begin_ns=begin_ns, end_ns=rpc.call('falconTraceClock'))
+                    return events
+    finally:
+        world.client.close()
+    raise RuntimeError('Staged control windows did not trigger')
+
+
 def run_case(args, client, gates, name, *, policy, calls, reserve, target=None, fixed='Drone2',
-             overlap=False, recovery_commands=1, recovery_schedule=None):
+             overlap=False, recovery_commands=1, recovery_schedule=None, staged=None):
     path = args.output/name
+    amplitudes, distances, threshold = AMPLITUDES, GATES, THRESHOLD
+    if staged is not None:
+        amplitudes, distances, threshold, steps = staged
+    gate_x = distances[-1]
     spec = dict(policy='deadline_pair', fixed_period_slots=1, fixed_model=11, request_budget=2,
                 pair_policy=policy, pair_static=fixed, pair_background_calls=calls, pair_reserve_ms=reserve,
                 pair_overlap_sample=overlap, pair_recovery_commands=recovery_commands,
-                gate_x_m=GATES[-1], port=PORT, calibration=read(DEFAULT_CALIBRATION_PATH),
-                probes=dict(g2_early=0., g3_early=THRESHOLD, g3_near=GATES[-1]-.8),
-                fleet=[dict(vehicle=v, amplitude=a) for v, a in AMPLITUDES.items()])
+                gate_x_m=gate_x, port=PORT, calibration=read(DEFAULT_CALIBRATION_PATH),
+                probes=dict(g2_early=0., g3_early=threshold, g3_near=gate_x-.8),
+                fleet=[dict(vehicle=v, amplitude=a) for v, a in amplitudes.items()])
     if recovery_schedule is not None:
-        spec['recovery_schedule'] = dict(recovery_schedule, background_calls=calls, gate_x_m=GATES[-1],
+        spec['recovery_schedule'] = dict(recovery_schedule, background_calls=calls, gate_x_m=gate_x,
                                          reserve_ms=reserve, policy=policy)
     with path.with_suffix('.ps.log').open('w', encoding='utf-8') as diagnostic:
         with subprocess.Popen(ssh_command(args), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=diagnostic,
@@ -73,8 +101,16 @@ def run_case(args, client, gates, name, *, policy, calls, reserve, target=None, 
                     raise RuntimeError(f'PS failed to warm in {name}')
 
                 def feed(stop):
-                    event = trigger(target, stop)
-                    stdout, _ = ps.communicate(input='GO\n', timeout=5)
+                    if staged is None:
+                        event = trigger(target, stop)
+                        stdout, _ = ps.communicate(input='GO\n', timeout=5)
+                    else:
+                        def start_ps():
+                            ps.stdin.write('GO\n')
+                            ps.stdin.flush()
+
+                        event = trigger_staged(stop, start_ps, amplitudes, gate_x, threshold, *steps)
+                        stdout, _ = ps.communicate(timeout=5)
                     if ps.returncode:
                         raise RuntimeError(f'PS window failed in {name}')
                     native = json.loads(stdout.splitlines()[-1])
@@ -82,14 +118,14 @@ def run_case(args, client, gates, name, *, policy, calls, reserve, target=None, 
                     save(path/'native_ps.json', native)
                     return {}, native['requests']
 
-                flight = trial(client, PORT, path, gates, 3, False, feed, amplitudes=AMPLITUDES)
+                flight = trial(client, PORT, path, gates, 3, False, feed, amplitudes=amplitudes)
             finally:
                 if ps.poll() is None:
                     ps.kill()
     native = read(path/'native_ps.json')
     requests = {r['slot']: r for r in native['requests']}
     adopted = {}
-    for v in AMPLITUDES:
+    for v in amplitudes:
         for absolute, _, _, _, source, slot, sample_ns in read(path/f'{v}.json'):
             if source == 3:
                 row = requests[slot]
@@ -109,7 +145,7 @@ def run_case(args, client, gates, name, *, policy, calls, reserve, target=None, 
                    timely=sum(a['since_start_ms'] <= DEADLINE_MS for a in adopted.values()),
                    contacts={v: r['contact'] for v, r in flight.items()},
                    pass_gates=all(r['pass_gates'] for r in flight.values()),
-                   **trial_margins(path, amplitudes=AMPLITUDES, distances=GATES))
+                   **trial_margins(path, amplitudes=amplitudes, distances=distances))
     if recovery_schedule is not None:
         summary['timely'] = sum(a['on_time'] for a in adopted.values())
         summary['background_calls'] = expected_calls
