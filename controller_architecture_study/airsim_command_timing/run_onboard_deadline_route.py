@@ -27,7 +27,7 @@ ROOMY = 6
 DEADLINE_MS = 30.
 
 
-def trigger(target, stop):
+def trigger(target, stop, pulse_offset_m=.26):
     world = require_airsim().MultirotorClient(ip='127.0.0.1', port=PORT, timeout_value=3)
     event = None
     try:
@@ -35,7 +35,7 @@ def trigger(target, stop):
             while not stop.is_set():
                 timer.wait([], perf_counter()+.004)
                 positions = {v: sample(rpc, v)[1].position[0] for v in AMPLITUDES}
-                if target and event is None and positions[target] >= THRESHOLD-.26:
+                if target and event is None and positions[target] >= THRESHOLD-pulse_offset_m:
                     center = AMPLITUDES[target]*math.sin(.6*GATES[-1])
                     event = kick(world, target, center, STEP_MPS)
                     continue
@@ -76,7 +76,7 @@ def trigger_staged(stop, start_ps, amplitudes, gate_x, threshold, first_step, se
 
 
 def run_case(args, client, gates, name, *, policy, calls, reserve, target=None, fixed='Drone2',
-             overlap=False, recovery_commands=1, recovery_schedule=None, staged=None):
+             overlap=False, recovery_commands=1, recovery_schedule=None, staged=None, pulse_offset_m=.26):
     path = args.output/name
     amplitudes, distances, threshold = AMPLITUDES, GATES, THRESHOLD
     if staged is not None:
@@ -107,7 +107,7 @@ def run_case(args, client, gates, name, *, policy, calls, reserve, target=None, 
 
                 def feed(stop):
                     if staged is None:
-                        event = trigger(target, stop)
+                        event = trigger(target, stop, pulse_offset_m)
                         stdout, _ = ps.communicate(input='GO\n', timeout=5)
                     else:
                         def start_ps():

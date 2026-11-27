@@ -4,9 +4,11 @@
 #include "rpc/airsim_rpc.hpp"
 #include <rpc/client.h>
 #include <algorithm>
+#include <atomic>
 #include <chrono>
 #include <cmath>
 #include <fstream>
+#include <functional>
 #include <future>
 #include <iostream>
 #include <limits>
@@ -147,7 +149,7 @@ constexpr double deadline_budget_ms = 30.;
 
 Json deadline_update(const Vehicle& v, int slot, rpc::client& pilot_rpc, psdpu::LocalDpu& dpu,
                      const f::Calibration& calibration, Clock::time_point start, Clock::time_point window_start,
-                     double reserve_ms, bool probe_late) {
+                     double reserve_ms, bool probe_late, const std::function<void()>& after_inference = {}) {
     const double before_ms = duration_ms(start);
     const double slack = deadline_budget_ms-duration_ms(window_start);
     Json row = {{"vehicle",v.name}, {"slot",slot}, {"sample_ns",v.sample}, {"before_ms",before_ms},
@@ -162,6 +164,7 @@ Json deadline_update(const Vehicle& v, int slot, rpc::client& pilot_rpc, psdpu::
     const auto input = make_input(state, v.amplitude);
     row["encode_ms"] = duration_ms(start)-before_ms;
     const auto r = dpu.infer(11, input);
+    if (after_inference) after_inference();
     row["dpu_run_us"] = r.run_end_us-r.run_start_us;
     row["dpu_interval_us"] = {r.run_start_us, r.run_end_us};
     row["status"] = "dpu_rejected";
@@ -265,6 +268,8 @@ Json run_recovery_schedule(const Json& settings, std::vector<Vehicle>& fleet, ps
     const bool deadline = policy == "deadline";
     const int second_batch = settings.value("second_background_calls", calls);
     const bool protect = settings.value("protect_followup", false);
+    const auto test = settings.value("capacity_policy", std::string{});
+    const bool compare_capacity = !test.empty();
     require(fleet.size() == 2 && windows >= 2 && windows <= 3 && calls == 17 &&
             reserve_ms >= 0. && reserve_ms < deadline_budget_ms, "invalid schedule settings");
     require(policy == "observe" || policy == "queue" || policy == "risk" || policy == "reserve" ||
@@ -283,7 +288,12 @@ Json run_recovery_schedule(const Json& settings, std::vector<Vehicle>& fleet, ps
                 fleet[0].name == "Drone1" && fleet[1].name == "Drone2" &&
                 (policy == "fixed" || policy == "risk" || yield || deadline), "invalid shared windows");
     require(!(yield || deadline) || shared_windows, "policy requires shared windows");
-    if (second_batch != calls || protect)
+    if (compare_capacity)
+        require(policy == "fixed" && windows == 2 && spacing_ms == 75 && !protect &&
+                (second_batch == 14 || second_batch == 17 || second_batch == 19) &&
+                recipients == std::vector<std::string>{"Drone2", "Drone2"} && fleet[1].name == "Drone2" &&
+                (test == "boundary" || test == "fixed_reserve" || test == "on_demand"), "invalid capacity comparison");
+    else if (second_batch != calls || protect)
         require(policy == "fixed" && windows == 2 && spacing_ms == 75 && second_batch == 19 &&
                 recipients == std::vector<std::string>{"Drone2", "Drone2"} && fleet[1].name == "Drone2",
                 "invalid follow-up capacity test");
@@ -292,6 +302,7 @@ Json run_recovery_schedule(const Json& settings, std::vector<Vehicle>& fleet, ps
     std::array<int, 2> last_sent{{-1, -1}};
     int reserved = -1;
     bool followup_owed = false;
+    bool need_followup = false;
     Json all_states, requests = Json::array(), phases = Json::array(), background = Json::array();
     const auto start = Clock::now();
     for (int w = 0; w < windows; ++w) {
@@ -300,19 +311,41 @@ Json run_recovery_schedule(const Json& settings, std::vector<Vehicle>& fleet, ps
         Json batch = Json::array(), states = Json::object(), risks = Json::object();
         std::array<double, 2> score{};
         std::future<void> pending;
-        const int deferred = protect && w == 1 && last_sent[1] == 0 ? second_batch - calls : 0;
-        const int prefix = (w == 1 ? second_batch : calls) - deferred;
+        const bool compare = compare_capacity && w == 1;
+        const int total = w == 1 ? second_batch : calls;
+        const bool cap = compare && (test == "fixed_reserve" || (test == "on_demand" && need_followup));
+        const bool interrupt_on_ready = compare && test == "boundary" && need_followup;
+        const bool old_reserve = protect && w == 1 && last_sent[1] == 0;
+        const int limit = cap || old_reserve ? std::min(calls, total) : total;
+        std::atomic<bool> sampled{false};
         for (int i = 0; i < 2; ++i) {
             auto& v = fleet[i];
             v.sample = pilot_rpc.call("falconTraceClock").as<std::uint64_t>();
-            if (i == 0) pending = std::async(std::launch::async, [&] { append_background(dpu, inputs, prefix, batch); });
+            if (i == 0) pending = std::async(std::launch::async, [&] {
+                if (!interrupt_on_ready) {
+                    append_background(dpu, inputs, limit, batch);
+                    return;
+                }
+                for (int k = 0; k < limit && !sampled.load(); ++k)
+                    append_background(dpu, inputs, 1, batch, k);
+            });
             v.state = state_rpc.get_state(v.name);
             states[v.name] = state_record(v);
             score[i] = projected_error(v, gate_x);
             risks[v.name] = score[i];
         }
         const auto sample_ms = duration_ms(window_start);
+        sampled.store(true);
         pending.get();
+        const int prefix = int(batch.size());
+        const int deferred = total - prefix;
+        Json tail = Json::array();
+        std::future<void> tail_pending;
+        auto resume_background = [&] {
+            tail_pending = std::async(std::launch::async, [&] { append_background(dpu, inputs, deferred, tail, prefix); });
+        };
+        const std::function<void()> resume_on_return = compare && deferred ? std::function<void()>(resume_background) :
+                                                                            std::function<void()>{};
         const auto ready_ms = duration_ms(window_start);
         background.insert(background.end(), batch.begin(), batch.end());
 
@@ -352,30 +385,36 @@ Json run_recovery_schedule(const Json& settings, std::vector<Vehicle>& fleet, ps
             {"first_candidate",first < 0 ? "" : fleet[first].name}, {"released",released},
             {"background",std::move(batch)}});
         if (yield) phases.back()["followup_owed"] = followup_owed;
+        if (compare) {
+            phases.back()["followup_required"] = need_followup;
+            phases.back()["background_deadline_us"] = clock_us(window_start) + 30000;
+        }
         if (policy == "observe" || first < 0) continue;
         const int count = policy == "fixed" || shared_windows ? 1 : 2;
         for (int option = 0; option < count; ++option) {
             const int i = option == 0 ? first : 1-first;
             auto row = deadline_update(fleet[i], int(requests.size())+1, pilot_rpc, dpu, calibration,
-                                       start, window_start, reserve_ms, false);
+                                       start, window_start, reserve_ms, false, resume_on_return);
             row["window"] = w;
             row["window_start_ns"] = fleet.front().sample;
             if (row.at("accepted").get<bool>()) {
                 last_sent[i] = w;
                 if (w == 0 && i == first && policy == "reserve") reserved = i;
+                if (w == 0 && compare_capacity)
+                    need_followup = score[i] > settings.at("capacity_trigger_m").get<double>();
             }
             const bool exhausted = row.at("status") == "insufficient_time";
             requests.push_back(std::move(row));
             if (exhausted) break;
         }
         if (deferred) {
-            Json tail = Json::array();
-            append_background(dpu, inputs, deferred, tail, prefix);
+            if (tail_pending.valid()) tail_pending.get();
+            else append_background(dpu, inputs, deferred, tail, prefix);
             background.insert(background.end(), tail.begin(), tail.end());
             auto& phase_background = phases.back().at("background");
             phase_background.insert(phase_background.end(), tail.begin(), tail.end());
         }
-        if (second_batch != calls) phases.back()["deferred_background_calls"] = deferred;
+        if (second_batch != calls || compare) phases.back()["deferred_background_calls"] = deferred;
     }
     const auto start_ns = all_states.at(fleet.front().name).at("sample_ns");
     return {{"states",std::move(all_states)}, {"requests",std::move(requests)}, {"windows",std::move(phases)},
