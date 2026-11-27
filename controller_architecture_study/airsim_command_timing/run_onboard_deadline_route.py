@@ -153,6 +153,8 @@ def run_case(args, client, gates, name, *, policy, calls, reserve, target=None, 
     expected_calls = calls if recovery_schedule is None else calls*recovery_schedule['windows']
     if recovery_schedule is not None:
         expected_calls += recovery_schedule.get('second_background_calls', calls) - calls
+        if recovery_schedule.get('device_booking'):
+            expected_calls += 1 - calls
     if len(native['background']) != expected_calls or any(a[1] > b[0] for a, b in zip(intervals, intervals[1:])):
         raise RuntimeError('Real DPU execution trace differs from the requested workload')
     summary = dict(native, policy=policy, target=target, background_calls=calls, adopted=adopted,

@@ -46,7 +46,13 @@ void require(bool ok, const char* reason) {
     if (!ok) throw std::runtime_error(reason);
 }
 
-Json verify_models(psdpu::LocalDpu& dpu, const std::string& package, std::vector<f::Raw237>& background_inputs) {
+const char* pilot_models(bool include_long) {
+    return include_long ? "main18_plain_mlp_h2_w128_seed0,main18_plain_mlp_h4_w1024_seed0,main18_plain_mlp_h33_w1024_seed0"
+                        : "main18_plain_mlp_h2_w128_seed0,main18_plain_mlp_h4_w1024_seed0";
+}
+
+Json verify_models(psdpu::LocalDpu& dpu, const std::string& package, std::vector<f::Raw237>& background_inputs,
+                   std::vector<f::Raw237>* long_inputs = nullptr) {
     std::ifstream registry_file(package + "/dpu_model_registry.json");
     Json registry;
     registry_file >> registry;
@@ -54,7 +60,7 @@ Json verify_models(psdpu::LocalDpu& dpu, const std::string& package, std::vector
     Json checks = Json::object();
     for (const auto& model : registry.at("models")) {
         const int id = model.at("numeric_id");
-        if (id != 5 && id != 11) continue;
+        if (id != 5 && id != 11 && !(id == 6 && long_inputs)) continue;
         std::ifstream golden(package + "/" + model.at("golden_file").get<std::string>());
         double error = 0.;
         std::vector<f::Raw237> inputs;
@@ -76,9 +82,10 @@ Json verify_models(psdpu::LocalDpu& dpu, const std::string& package, std::vector
         for (std::size_t step = 0; step < 100; ++step)
             require(dpu.infer(id, inputs[step % inputs.size()]).status == 0, "warmup failed");
         if (id == 11) background_inputs = std::move(inputs);
+        if (id == 6) *long_inputs = std::move(inputs);
         checks[std::to_string(id)] = error;
     }
-    require(checks.size() == 2, "both candidate models required");
+    require(checks.size() == (long_inputs ? 3u : 2u), "required models missing");
     return checks;
 }
 
@@ -146,6 +153,81 @@ void append_background(psdpu::LocalDpu& dpu, const std::vector<f::Raw237>& input
 }
 
 constexpr double deadline_budget_ms = 30.;
+constexpr int booked_ready_us = 22000;
+
+using Us = std::chrono::microseconds;
+
+std::array<long long, 4> timed_job(psdpu::LocalDpu& dpu, int model, const f::Raw237& input) {
+    const auto begin = Clock::now();
+    const auto result = dpu.infer(model, input);
+    const auto end = Clock::now();
+    require(result.status == 0 && result.run_start_us < result.run_end_us, "invalid device benchmark result");
+    return {{clock_us(begin), clock_us(end), static_cast<long long>(result.run_start_us),
+             static_cast<long long>(result.run_end_us)}};
+}
+
+bool before_booked_job(Clock::time_point now, Clock::time_point ready, int budget_us,
+                       bool protect, Clock::time_point latest) {
+    return now < ready && (!protect || now + Us(budget_us) <= latest);
+}
+
+Json run_booking_bench(const std::string& package) {
+    psdpu::LocalDpu dpu(pilot_models(true));
+    std::vector<f::Raw237> short_inputs, long_inputs;
+    auto checks = verify_models(dpu, package, short_inputs, &long_inputs);
+    Json costs = Json::object(), rows = Json::array();
+    std::array<int, 2> budget{};
+    const std::array<int, 2> models{{11, 6}};
+    const auto& foreground = short_inputs.front();
+    for (int kind = 0; kind < 2; ++kind) {
+        const auto& inputs = kind == 0 ? short_inputs : long_inputs;
+        std::vector<long long> measured;
+        for (int i = 0; i < 96; ++i) {
+            const auto job = timed_job(dpu, models[kind], inputs[i % inputs.size()]);
+            measured.push_back(job[1]-job[0]);
+        }
+        budget[kind] = *std::max_element(measured.begin(), measured.end()) + 250;
+        costs[std::to_string(models[kind])] = {{"samples_us", measured}, {"guard_us", budget[kind]}};
+    }
+    constexpr int deadline_us = 30000, post_budget_us = 2500;
+    const int latest_us = deadline_us - post_budget_us - budget[0];
+    for (int rep = 0; rep < 20; ++rep) {
+        for (int kind = 0; kind < 2; ++kind) {
+            const auto& inputs = kind == 0 ? short_inputs : long_inputs;
+            for (int release_us : {4000, 10000, 12000, 14000, 18000, 20000, 24000}) {
+                for (int arm = 0; arm < 3; ++arm) {
+                    const int policy = (rep + arm) % 3;
+                    const bool protect = policy != 0;
+                    const auto origin = Clock::now(), ready = origin + Us(booked_ready_us);
+                    const auto latest = policy == 2 ? origin + Us(latest_us) : ready;
+                    const auto release = origin + Us(release_us);
+                    bool ran_before = false;
+                    std::array<long long, 4> background{};
+                    const auto& input = inputs[rep % inputs.size()];
+                    if (release < ready) {
+                        std::this_thread::sleep_until(release);
+                        ran_before = before_booked_job(Clock::now(), ready, budget[kind], protect, latest);
+                        if (ran_before) background = timed_job(dpu, models[kind], input);
+                    }
+                    std::this_thread::sleep_until(ready);
+                    const auto command = timed_job(dpu, 11, foreground);
+                    if (!ran_before) {
+                        std::this_thread::sleep_until(release);
+                        background = timed_job(dpu, models[kind], input);
+                    }
+                    rows.push_back({{"rep",rep}, {"model",models[kind]}, {"protected",protect},
+                                    {"arm", policy == 0 ? "boundary" : (policy == 1 ? "protected" : "latest")},
+                                    {"origin_us",clock_us(origin)}, {"release_us",release_us}, {"ran_before",ran_before},
+                                    {"protection_limit_us", clock_us(latest)},
+                                    {"foreground",command}, {"background",background}});
+                }
+            }
+        }
+    }
+    return {{"goldens",checks}, {"costs",costs}, {"ready_us",booked_ready_us},
+            {"deadline_us",deadline_us}, {"post_budget_us",post_budget_us}, {"latest_start_us",latest_us},
+            {"trials",std::move(rows)}};
+}
 
 Json deadline_update(const Vehicle& v, int slot, rpc::client& pilot_rpc, psdpu::LocalDpu& dpu,
                      const f::Calibration& calibration, Clock::time_point start, Clock::time_point window_start,
@@ -314,7 +396,7 @@ int choose_pair(int window, const PairState& state, const std::string& policy, b
 
 Json run_recovery_schedule(const Json& settings, std::vector<Vehicle>& fleet, psairsim::Client& state_rpc,
                            rpc::client& pilot_rpc, psdpu::LocalDpu& dpu, const std::vector<f::Raw237>& inputs,
-                           const f::Calibration& calibration) {
+                           const f::Calibration& calibration, const std::vector<f::Raw237>& long_inputs) {
     const int windows = settings.at("windows");
     const int calls = settings.at("background_calls");
     const double gate_x = settings.at("gate_x_m");
@@ -334,9 +416,23 @@ Json run_recovery_schedule(const Json& settings, std::vector<Vehicle>& fleet, ps
     const auto pair_policy = settings.value("pair_choice", std::string{});
     const bool compare_pairs = !pair_policy.empty();
     const bool mixed = settings.value("mixed_recovery", false);
+    const auto booking = settings.value("device_booking", Json::object());
+    const bool test_booking = !booking.empty();
+    const int booking_model = booking.value("model", 11);
+    const int booking_budget = booking.value("guard_us", 0);
+    const bool protect_booking = booking.value("protect", false);
+    const bool latest_booking = booking.value("latest_start", false);
+    const int booking_release_us = booking.value("release_us", 20000);
     require((fleet.size() == 2 || (mixed && fleet.size() == 3)) && windows >= 2 &&
             (windows <= 3 || (windows == 4 && policy == "fixed")) && calls == 17 &&
             reserve_ms >= 0. && reserve_ms < deadline_budget_ms, "invalid schedule settings");
+    if (test_booking)
+        require(policy == "fixed" && windows == 2 && spacing_ms == 75 && !shared_windows &&
+                !mixed && !compare_pairs && !compare_capacity && !protect && second_batch == calls &&
+                recipients == std::vector<std::string>{"Drone2","Drone2"} &&
+                (booking_model == 11 || (booking_model == 6 && !long_inputs.empty())) &&
+                (booking_release_us == 12000 || booking_release_us == 20000) && (!latest_booking || protect_booking) &&
+                booking_budget > 0 && booking_budget < 25000, "invalid device booking comparison");
     if (mixed)
         require(policy == "fixed" && fleet.size() == 3 && windows == 3 && spacing_ms == 125 && !shared_windows &&
                 fleet[0].name == "Drone1" && fleet[1].name == "Drone2" && fleet[2].name == "Drone3" &&
@@ -389,7 +485,8 @@ Json run_recovery_schedule(const Json& settings, std::vector<Vehicle>& fleet, ps
         std::array<double, 3> score{};
         std::future<void> pending;
         const bool compare = compare_capacity && w == 1;
-        const int total = w == 1 ? second_batch : calls;
+        const bool booked = test_booking && w == 1;
+        const int total = booked ? 1 : (w == 1 ? second_batch : calls);
         const bool cap = compare && (test == "fixed_reserve" || (test == "on_demand" && need_followup));
         const bool interrupt_on_ready = compare && test == "boundary" && need_followup;
         const bool old_reserve = protect && w == 1 && last_sent[1] == 0;
@@ -398,7 +495,7 @@ Json run_recovery_schedule(const Json& settings, std::vector<Vehicle>& fleet, ps
         for (int i = 0; i < int(fleet.size()); ++i) {
             auto& v = fleet[i];
             v.sample = pilot_rpc.call("falconTraceClock").as<std::uint64_t>();
-            if (i == 0) pending = std::async(std::launch::async, [&] {
+            if (i == 0 && !booked) pending = std::async(std::launch::async, [&] {
                 if (!interrupt_on_ready) {
                     append_background(dpu, inputs, limit, batch);
                     return;
@@ -413,16 +510,36 @@ Json run_recovery_schedule(const Json& settings, std::vector<Vehicle>& fleet, ps
         }
         const auto sample_ms = duration_ms(window_start);
         sampled.store(true);
-        pending.get();
+        if (pending.valid()) pending.get();
+        const auto carried_release = window_start + Us(booking_release_us);
+        const auto held = window_start + Us(booked_ready_us);
+        const auto protect_until = latest_booking
+            ? window_start + Us(int((deadline_budget_ms-reserve_ms)*1000)) : held;
+        const bool booking_claimed = booked && protect_booking && last_sent[1] == 0;
+        std::array<long long, 4> booked_work{};
+        auto run_booked_background = [&](Json& target) {
+            const auto& input_pool = booking_model == 6 ? long_inputs : inputs;
+            booked_work = timed_job(dpu, booking_model, input_pool.front());
+            target.push_back({booked_work[2], booked_work[3]});
+        };
+        if (booked) {
+            std::this_thread::sleep_until(carried_release);
+            if (before_booked_job(Clock::now(), held, booking_budget, booking_claimed, protect_until))
+                run_booked_background(batch);
+            std::this_thread::sleep_until(held);
+        }
         const int prefix = int(batch.size());
         const int deferred = total - prefix;
         Json tail = Json::array();
         std::future<void> tail_pending;
         auto resume_background = [&] {
-            tail_pending = std::async(std::launch::async, [&] { append_background(dpu, inputs, deferred, tail, prefix); });
+            tail_pending = std::async(std::launch::async, [&] {
+                if (booked) run_booked_background(tail);
+                else append_background(dpu, inputs, deferred, tail, prefix);
+            });
         };
-        const std::function<void()> resume_on_return = compare && deferred ? std::function<void()>(resume_background) :
-                                                                            std::function<void()>{};
+        const std::function<void()> resume_on_return = (compare || booked) && deferred
+            ? std::function<void()>(resume_background) : std::function<void()>{};
         const auto ready_ms = duration_ms(window_start);
         background.insert(background.end(), batch.begin(), batch.end());
 
@@ -499,11 +616,17 @@ Json run_recovery_schedule(const Json& settings, std::vector<Vehicle>& fleet, ps
         }
         if (deferred) {
             if (tail_pending.valid()) tail_pending.get();
+            else if (booked) run_booked_background(tail);
             else append_background(dpu, inputs, deferred, tail, prefix);
             background.insert(background.end(), tail.begin(), tail.end());
             auto& phase_background = phases.back().at("background");
             phase_background.insert(phase_background.end(), tail.begin(), tail.end());
         }
+        if (booked)
+            phases.back()["device_booking"] = {{"claimed",booking_claimed}, {"ready_target_us",clock_us(held)},
+                {"release_us",clock_us(carried_release)}, {"protection_limit_us",clock_us(protect_until)},
+                {"background_model",booking_model},
+                {"background",booked_work}, {"ran_before",prefix != 0}};
         if (second_batch != calls || compare) phases.back()["deferred_background_calls"] = deferred;
     }
     const auto start_ns = all_states.at(fleet.front().name).at("sample_ns");
@@ -513,6 +636,7 @@ Json run_recovery_schedule(const Json& settings, std::vector<Vehicle>& fleet, ps
 
 Json run(const Json& spec, const std::string& host, const std::string& package) {
     const std::string policy = spec.at("policy");
+    if (policy == "booking_bench") return run_booking_bench(package);
     const bool use_table = policy == "route_table";
     const bool adaptive = policy == "adaptive" || policy == "lock_T" ||
                           policy == "lock_c" || policy == "lock_order";
@@ -540,15 +664,17 @@ Json run(const Json& spec, const std::string& host, const std::string& package) 
     psairsim::Client state_rpc(host, port, 100);
     rpc::client pilot_rpc(host, port);
     pilot_rpc.set_timeout(100);
-    psdpu::LocalDpu dpu("main18_plain_mlp_h2_w128_seed0,main18_plain_mlp_h4_w1024_seed0");
-    std::vector<f::Raw237> background_inputs;
-    const auto checks = verify_models(dpu, package, background_inputs);
+    const auto schedule = spec.value("recovery_schedule", Json::object());
+    const bool needs_long = schedule.value("device_booking", Json::object()).value("model", 11) == 6;
+    psdpu::LocalDpu dpu(pilot_models(needs_long));
+    std::vector<f::Raw237> background_inputs, long_inputs;
+    const auto checks = verify_models(dpu, package, background_inputs, needs_long ? &long_inputs : nullptr);
     std::cout << Json{{"ready", true}, {"goldens", checks}}.dump() << std::endl;
     std::string start;
     require(bool(std::getline(std::cin, start)) && start == "GO", "start signal missing");
     if (spec.count("recovery_schedule"))
         return run_recovery_schedule(spec.at("recovery_schedule"), fleet, state_rpc, pilot_rpc, dpu,
-                                     background_inputs, calibration);
+                                     background_inputs, calibration, long_inputs);
     if (policy == "deadline_pair")
         return run_deadline_pair(spec, fleet, state_rpc, pilot_rpc, dpu, background_inputs, calibration);
     const auto origin = Clock::now() + std::chrono::milliseconds(450);
