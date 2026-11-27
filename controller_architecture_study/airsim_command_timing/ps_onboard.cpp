@@ -258,9 +258,12 @@ Json run_recovery_schedule(const Json& settings, std::vector<Vehicle>& fleet, ps
     const auto healthy = settings.at("healthy_error_m");
     const auto recipients = settings.value("fixed_recipients", std::vector<std::string>{});
     const int spacing_ms = settings.value("spacing_ms", 75);
+    const auto offsets = settings.value("window_offsets_ms", std::vector<int>{});
+    const bool shared_windows = !offsets.empty();
+    const bool yield = policy == "yield";
     require(fleet.size() == 2 && windows >= 2 && windows <= 3 && calls == 17 &&
             reserve_ms >= 0. && reserve_ms < deadline_budget_ms, "invalid schedule settings");
-    require(policy == "observe" || policy == "queue" || policy == "risk" || policy == "reserve" || policy == "fixed",
+    require(policy == "observe" || policy == "queue" || policy == "risk" || policy == "reserve" || policy == "fixed" || yield,
             "invalid schedule policy");
     if (policy == "fixed") {
         require(recipients.size() == std::size_t(windows), "wrong number of fixed windows");
@@ -270,13 +273,20 @@ Json run_recovery_schedule(const Json& settings, std::vector<Vehicle>& fleet, ps
                     "unknown fixed recipient");
     }
     require(policy == "fixed" || spacing_ms == 75, "custom spacing requires fixed dispatch");
+    if (shared_windows)
+        require(windows == 3 && offsets == std::vector<int>{0, 75, 300} &&
+                fleet[0].name == "Drone1" && fleet[1].name == "Drone2" &&
+                (policy == "fixed" || policy == "risk" || yield), "invalid shared windows");
+    require(!yield || shared_windows, "yield requires a reserved follow-up window");
+    const double peer_trigger_m = yield ? settings.at("peer_trigger_m").get<double>() : 0.;
 
     std::array<int, 2> last_sent{{-1, -1}};
     int reserved = -1;
+    bool followup_owed = false;
     Json all_states, requests = Json::array(), phases = Json::array(), background = Json::array();
     const auto start = Clock::now();
     for (int w = 0; w < windows; ++w) {
-        std::this_thread::sleep_until(start + std::chrono::milliseconds(spacing_ms*w));
+        std::this_thread::sleep_until(start + std::chrono::milliseconds(shared_windows ? offsets[w] : spacing_ms*w));
         const auto window_start = Clock::now();
         Json batch = Json::array(), states = Json::object(), risks = Json::object();
         std::array<double, 2> score{};
@@ -305,13 +315,22 @@ Json run_recovery_schedule(const Json& settings, std::vector<Vehicle>& fleet, ps
         int first = w == 0 || policy == "risk" ? by_risk : (reserved >= 0 ? reserved : by_wait);
         if (policy == "fixed")
             first = recipients[w].empty() ? -1 : (recipients[w] == fleet[0].name ? 0 : 1);
+        else if (shared_windows) {
+            if (w == 0) first = 1;
+            if (yield && w == 1) {
+                followup_owed = last_sent[1] == 0 && score[0] > peer_trigger_m;
+                first = followup_owed ? 0 : 1;
+            }
+            if (yield && w == 2) first = followup_owed ? 1 : 0;
+        }
         if (w == 0) all_states = states;
         phases.push_back({{"window",w}, {"start_ns",fleet.front().sample}, {"states",std::move(states)},
             {"risk",std::move(risks)}, {"sample_ms",sample_ms}, {"ready_ms",ready_ms},
             {"first_candidate",first < 0 ? "" : fleet[first].name}, {"released",released},
             {"background",std::move(batch)}});
+        if (yield) phases.back()["followup_owed"] = followup_owed;
         if (policy == "observe" || first < 0) continue;
-        const int count = policy == "fixed" ? 1 : 2;
+        const int count = policy == "fixed" || shared_windows ? 1 : 2;
         for (int option = 0; option < count; ++option) {
             const int i = option == 0 ? first : 1-first;
             auto row = deadline_update(fleet[i], int(requests.size())+1, pilot_rpc, dpu, calibration,
