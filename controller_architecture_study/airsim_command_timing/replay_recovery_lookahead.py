@@ -52,7 +52,10 @@ def score_actions(requests, state, now, capacity, candidates):
     return values, score.cache_info().misses
 
 
-def play(requests, available, horizon, policy):
+def play(requests, available, horizon, policy, announced=None):
+    promised = available if announced is None else announced
+    if len(promised) != len(available):
+        raise ValueError('The announced and actual windows must have the same length')
     state, schedule = (UNSTARTED,) * len(requests), []
     changes = nodes = 0
     for now, opening in enumerate(available):
@@ -60,9 +63,10 @@ def play(requests, available, horizon, policy):
             schedule.append(None)
             continue
         end = min(now + horizon + 1, len(available))
+        capacity = (True, *promised[now+1:end])
 
         def possible(t):
-            return t < len(available) and (t >= end or available[t])
+            return t < len(available) and (t >= end or capacity[t-now])
 
         candidates = visible_candidates(requests, state, now, possible)
         if not candidates:
@@ -71,9 +75,18 @@ def play(requests, available, horizon, policy):
         choice = candidates[0]
         if policy == 'finish_first':
             choice = next((i for i in candidates if state[i] >= 0), choice)
-        if policy == 'complete_visible' and len(candidates) > 1:
-            values, visited = score_actions(requests, state, now, available[now:end], candidates)
-            choice = max(candidates, key=values.__getitem__)
+        if policy in ('complete_visible', 'one_loss') and len(candidates) > 1:
+            values, visited = score_actions(requests, state, now, capacity, candidates)
+            worst = values.copy()
+            if policy == 'one_loss':
+                for j, free in enumerate(capacity[1:], 1):
+                    if not free:
+                        continue
+                    lost = (*capacity[:j], False, *capacity[j+1:])
+                    after_loss, checked = score_actions(requests, state, now, lost, candidates)
+                    worst = {i: min(worst[i], after_loss[i]) for i in candidates}
+                    visited += checked
+            choice = max(candidates, key=lambda i: (worst[i], values[i]))
             changes += choice != candidates[0]
             nodes = max(nodes, visited)
         schedule.append(choice)
