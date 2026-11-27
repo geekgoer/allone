@@ -134,8 +134,9 @@ double projected_error(const Vehicle& v, double gate_x) {
     return std::abs(v.state.position[1] + .25*v.state.velocity[1] - v.amplitude*std::sin(.6*gate_x));
 }
 
-void append_background(psdpu::LocalDpu& dpu, const std::vector<f::Raw237>& inputs, int count, Json& intervals) {
-    for (int i = 0; i < count; ++i) {
+void append_background(psdpu::LocalDpu& dpu, const std::vector<f::Raw237>& inputs, int count, Json& intervals,
+                       int offset = 0) {
+    for (int i = offset; i < offset + count; ++i) {
         const auto r = dpu.infer(11, inputs[i % inputs.size()]);
         require(r.status == 0 && r.run_end_us > r.run_start_us, "background inference failed");
         intervals.push_back({r.run_start_us, r.run_end_us});
@@ -262,6 +263,8 @@ Json run_recovery_schedule(const Json& settings, std::vector<Vehicle>& fleet, ps
     const bool shared_windows = !offsets.empty();
     const bool yield = policy == "yield";
     const bool deadline = policy == "deadline";
+    const int second_batch = settings.value("second_background_calls", calls);
+    const bool protect = settings.value("protect_followup", false);
     require(fleet.size() == 2 && windows >= 2 && windows <= 3 && calls == 17 &&
             reserve_ms >= 0. && reserve_ms < deadline_budget_ms, "invalid schedule settings");
     require(policy == "observe" || policy == "queue" || policy == "risk" || policy == "reserve" ||
@@ -280,6 +283,10 @@ Json run_recovery_schedule(const Json& settings, std::vector<Vehicle>& fleet, ps
                 fleet[0].name == "Drone1" && fleet[1].name == "Drone2" &&
                 (policy == "fixed" || policy == "risk" || yield || deadline), "invalid shared windows");
     require(!(yield || deadline) || shared_windows, "policy requires shared windows");
+    if (second_batch != calls || protect)
+        require(policy == "fixed" && windows == 2 && spacing_ms == 75 && second_batch == 19 &&
+                recipients == std::vector<std::string>{"Drone2", "Drone2"} && fleet[1].name == "Drone2",
+                "invalid follow-up capacity test");
     const double peer_trigger_m = (yield || deadline) ? settings.at("peer_trigger_m").get<double>() : 0.;
 
     std::array<int, 2> last_sent{{-1, -1}};
@@ -293,10 +300,12 @@ Json run_recovery_schedule(const Json& settings, std::vector<Vehicle>& fleet, ps
         Json batch = Json::array(), states = Json::object(), risks = Json::object();
         std::array<double, 2> score{};
         std::future<void> pending;
+        const int deferred = protect && w == 1 && last_sent[1] == 0 ? second_batch - calls : 0;
+        const int prefix = (w == 1 ? second_batch : calls) - deferred;
         for (int i = 0; i < 2; ++i) {
             auto& v = fleet[i];
             v.sample = pilot_rpc.call("falconTraceClock").as<std::uint64_t>();
-            if (i == 0) pending = std::async(std::launch::async, [&] { append_background(dpu, inputs, calls, batch); });
+            if (i == 0) pending = std::async(std::launch::async, [&] { append_background(dpu, inputs, prefix, batch); });
             v.state = state_rpc.get_state(v.name);
             states[v.name] = state_record(v);
             score[i] = projected_error(v, gate_x);
@@ -359,6 +368,14 @@ Json run_recovery_schedule(const Json& settings, std::vector<Vehicle>& fleet, ps
             requests.push_back(std::move(row));
             if (exhausted) break;
         }
+        if (deferred) {
+            Json tail = Json::array();
+            append_background(dpu, inputs, deferred, tail, prefix);
+            background.insert(background.end(), tail.begin(), tail.end());
+            auto& phase_background = phases.back().at("background");
+            phase_background.insert(phase_background.end(), tail.begin(), tail.end());
+        }
+        if (second_batch != calls) phases.back()["deferred_background_calls"] = deferred;
     }
     const auto start_ns = all_states.at(fleet.front().name).at("sample_ns");
     return {{"states",std::move(all_states)}, {"requests",std::move(requests)}, {"windows",std::move(phases)},
