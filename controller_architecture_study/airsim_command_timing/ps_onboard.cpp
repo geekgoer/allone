@@ -251,58 +251,62 @@ Json run_deadline_pair(const Json& spec, std::vector<Vehicle>& fleet, psairsim::
             {"reserve_ms",reserve_ms}, {"start_ns",start_ns}};
 }
 
-using PairState = std::array<int, 2>;
+using PairState = std::array<int, 3>;
 constexpr int pair_unstarted = -1;
 constexpr int pair_finished = -2;
 constexpr int pair_windows = 4;
 
-bool pair_qualified(int vehicle, int start, int finish) {
+bool pair_qualified(int vehicle, int start, int finish, bool mixed) {
+    if (mixed && vehicle == 1) return start <= 1 && finish == 2;
     return (start == 0 && (finish == 2 || (vehicle == 0 && finish == 1))) ||
            (start == 1 && finish == 3);
 }
 
-int pair_due(int vehicle, int state, int now) {
+int pair_due(int vehicle, int state, int now, bool mixed) {
+    if (vehicle == 2) return mixed && state == pair_unstarted && (now == 1 || now == 2) ? 2 : -1;
+    if (mixed && vehicle == 0 && state == pair_unstarted) return now == 0 ? 0 : -1;
     if (state == pair_unstarted) return now <= 1 ? 1 : -1;
-    if (state < 0 || !pair_qualified(vehicle, state, now)) return -1;
+    if (state < 0 || !pair_qualified(vehicle, state, now, mixed)) return -1;
+    if (mixed) return 2;
     return state == 0 ? 2 : 3;
 }
 
 void pair_record(PairState& state, int vehicle, int window) {
-    state[vehicle] = state[vehicle] == pair_unstarted ? window : pair_finished;
+    state[vehicle] = vehicle != 2 && state[vehicle] == pair_unstarted ? window : pair_finished;
 }
 
-int pair_max_completions(int window, PairState state) {
-    if (window == pair_windows)
-        return (state[0] == pair_finished) + (state[1] == pair_finished);
-    int best = pair_max_completions(window + 1, state);
-    for (int i = 0; i < 2; ++i) {
-        if (pair_due(i, state[i], window) < 0) continue;
+int pair_max_completions(int window, PairState state, bool mixed) {
+    if (window == (mixed ? 3 : pair_windows))
+        return std::count(state.begin(), state.begin() + (mixed ? 3 : 2), pair_finished);
+    int best = pair_max_completions(window + 1, state, mixed);
+    for (int i = 0; i < (mixed ? 3 : 2); ++i) {
+        if (pair_due(i, state[i], window, mixed) < 0) continue;
         auto next = state;
         pair_record(next, i, window);
-        best = std::max(best, pair_max_completions(window + 1, next));
+        best = std::max(best, pair_max_completions(window + 1, next, mixed));
     }
     return best;
 }
 
-int choose_pair(int window, const PairState& state, const std::string& policy) {
+int choose_pair(int window, const PairState& state, const std::string& policy, bool mixed) {
     int chosen = -1, best_value = -1;
-    for (int i = 0; i < 2; ++i) {
-        const int due = pair_due(i, state[i], window);
+    for (int i = 0; i < (mixed ? 3 : 2); ++i) {
+        const int due = pair_due(i, state[i], window, mixed);
         if (due < 0) continue;
         auto next = state;
         pair_record(next, i, window);
-        const int value = policy == "complete" ? pair_max_completions(window + 1, next) :
+        const int value = policy == "complete" ? pair_max_completions(window + 1, next, mixed) :
                           int(policy == "finish_first" && state[i] >= 0);
         const auto order = std::make_tuple(due, state[i] == pair_unstarted, i);
         if (chosen < 0 || value > best_value ||
-                (value == best_value && order < std::make_tuple(pair_due(chosen, state[chosen], window),
+                (value == best_value && order < std::make_tuple(pair_due(chosen, state[chosen], window, mixed),
                                                               state[chosen] == pair_unstarted, chosen))) {
             chosen = i;
             best_value = value;
         }
     }
     // A missed pair may still receive best-effort commands at the same request budget.
-    if (chosen < 0)
+    if (chosen < 0 && !mixed)
         for (int i = 0; i < 2; ++i)
             if (state[i] != pair_finished) return i;
     return chosen;
@@ -329,10 +333,16 @@ Json run_recovery_schedule(const Json& settings, std::vector<Vehicle>& fleet, ps
     const bool compare_capacity = !test.empty();
     const auto pair_policy = settings.value("pair_choice", std::string{});
     const bool compare_pairs = !pair_policy.empty();
-    require(fleet.size() == 2 && windows >= 2 && (windows <= 3 || (windows == 4 && policy == "fixed")) && calls == 17 &&
+    const bool mixed = settings.value("mixed_recovery", false);
+    require((fleet.size() == 2 || (mixed && fleet.size() == 3)) && windows >= 2 &&
+            (windows <= 3 || (windows == 4 && policy == "fixed")) && calls == 17 &&
             reserve_ms >= 0. && reserve_ms < deadline_budget_ms, "invalid schedule settings");
+    if (mixed)
+        require(policy == "fixed" && fleet.size() == 3 && windows == 3 && spacing_ms == 125 && !shared_windows &&
+                fleet[0].name == "Drone1" && fleet[1].name == "Drone2" && fleet[2].name == "Drone3" &&
+                !compare_capacity && !protect && second_batch == calls, "invalid mixed correction comparison");
     if (compare_pairs)
-        require(policy == "fixed" && windows == pair_windows && spacing_ms == 125 && !shared_windows &&
+        require(policy == "fixed" && windows == (mixed ? 3 : pair_windows) && spacing_ms == 125 && !shared_windows &&
                 !compare_capacity && !protect && second_batch == calls &&
                 fleet[0].name == "Drone1" && fleet[1].name == "Drone2" &&
                 (pair_policy == "edf" || pair_policy == "finish_first" || pair_policy == "complete"),
@@ -344,8 +354,9 @@ Json run_recovery_schedule(const Json& settings, std::vector<Vehicle>& fleet, ps
         require(compare_pairs || recipients.size() == std::size_t(windows), "wrong number of fixed windows");
         require(spacing_ms >= 75 && spacing_ms <= 800, "invalid fixed window spacing");
         for (const auto& recipient : recipients)
-            require(recipient.empty() || recipient == fleet[0].name || recipient == fleet[1].name,
-                    "unknown fixed recipient");
+            require(recipient.empty() || std::any_of(fleet.begin(), fleet.end(), [&](const Vehicle& v) {
+                return recipient == v.name;
+            }), "unknown fixed recipient");
     }
     require(policy == "fixed" || spacing_ms == 75, "custom spacing requires fixed dispatch");
     if (shared_windows)
@@ -364,8 +375,8 @@ Json run_recovery_schedule(const Json& settings, std::vector<Vehicle>& fleet, ps
                 "invalid follow-up capacity test");
     const double peer_trigger_m = (yield || deadline) ? settings.at("peer_trigger_m").get<double>() : 0.;
 
-    std::array<int, 2> last_sent{{-1, -1}};
-    PairState pair_state{{pair_unstarted, pair_unstarted}};
+    PairState last_sent{{-1, -1, -1}};
+    PairState pair_state{{pair_unstarted, pair_unstarted, mixed ? pair_unstarted : pair_finished}};
     int reserved = -1;
     bool followup_owed = false;
     bool need_followup = false;
@@ -375,7 +386,7 @@ Json run_recovery_schedule(const Json& settings, std::vector<Vehicle>& fleet, ps
         std::this_thread::sleep_until(start + std::chrono::milliseconds(shared_windows ? offsets[w] : spacing_ms*w));
         const auto window_start = Clock::now();
         Json batch = Json::array(), states = Json::object(), risks = Json::object();
-        std::array<double, 2> score{};
+        std::array<double, 3> score{};
         std::future<void> pending;
         const bool compare = compare_capacity && w == 1;
         const int total = w == 1 ? second_batch : calls;
@@ -384,7 +395,7 @@ Json run_recovery_schedule(const Json& settings, std::vector<Vehicle>& fleet, ps
         const bool old_reserve = protect && w == 1 && last_sent[1] == 0;
         const int limit = cap || old_reserve ? std::min(calls, total) : total;
         std::atomic<bool> sampled{false};
-        for (int i = 0; i < 2; ++i) {
+        for (int i = 0; i < int(fleet.size()); ++i) {
             auto& v = fleet[i];
             v.sample = pilot_rpc.call("falconTraceClock").as<std::uint64_t>();
             if (i == 0) pending = std::async(std::launch::async, [&] {
@@ -426,10 +437,13 @@ Json run_recovery_schedule(const Json& settings, std::vector<Vehicle>& fleet, ps
         double choose_us = 0.;
         if (compare_pairs) {
             const auto begin = Clock::now();
-            first = choose_pair(w, pair_state, pair_policy);
+            first = choose_pair(w, pair_state, pair_policy, mixed);
             choose_us = std::chrono::duration<double, std::micro>(Clock::now() - begin).count();
-        } else if (policy == "fixed")
-            first = recipients[w].empty() ? -1 : (recipients[w] == fleet[0].name ? 0 : 1);
+        } else if (policy == "fixed") {
+            const auto target = std::find_if(fleet.begin(), fleet.end(),
+                                             [&](const Vehicle& v) { return recipients[w] == v.name; });
+            first = target == fleet.end() ? -1 : int(target - fleet.begin());
+        }
         else if (shared_windows) {
             if (w == 0) first = 1;
             if (yield && w == 1) {
