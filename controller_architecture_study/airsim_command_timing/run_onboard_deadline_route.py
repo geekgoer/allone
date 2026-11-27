@@ -27,20 +27,23 @@ ROOMY = 6
 DEADLINE_MS = 30.
 
 
-def trigger(target, stop, pulse_offset_m=.26):
+def trigger(target, stop, pulse_offset_m=.26, *, amplitudes=AMPLITUDES, paired_steps=None):
     world = require_airsim().MultirotorClient(ip='127.0.0.1', port=PORT, timeout_value=3)
-    event = None
+    steps = paired_steps if paired_steps is not None else ({target: STEP_MPS} if target else {})
+    events = {}
     try:
         with LocalRpc(PORT) as rpc, DeadlineWaiter() as timer:
             while not stop.is_set():
                 timer.wait([], perf_counter()+.004)
-                positions = {v: sample(rpc, v)[1].position[0] for v in AMPLITUDES}
-                if target and event is None and positions[target] >= THRESHOLD-pulse_offset_m:
-                    center = AMPLITUDES[target]*math.sin(.6*GATES[-1])
-                    event = kick(world, target, center, STEP_MPS)
+                positions = {v: sample(rpc, v)[1].position[0] for v in amplitudes}
+                pending = [v for v in steps if v not in events and positions[v] >= THRESHOLD-pulse_offset_m]
+                if pending:
+                    for v in pending:
+                        center = amplitudes[v]*math.sin(.6*GATES[-1])
+                        events[v] = kick(world, v, center, steps[v])
                     continue
-                if min(positions.values()) >= THRESHOLD:
-                    return event
+                if len(events) == len(steps) and min(positions.values()) >= THRESHOLD:
+                    return events if paired_steps is not None else events.get(target)
     finally:
         world.client.close()
     raise RuntimeError('Control window did not trigger')
@@ -76,11 +79,14 @@ def trigger_staged(stop, start_ps, amplitudes, gate_x, threshold, first_step, se
 
 
 def run_case(args, client, gates, name, *, policy, calls, reserve, target=None, fixed='Drone2',
-             overlap=False, recovery_commands=1, recovery_schedule=None, staged=None, pulse_offset_m=.26):
+             overlap=False, recovery_commands=1, recovery_schedule=None, staged=None, pulse_offset_m=.26,
+             paired_steps=None):
     path = args.output/name
     amplitudes, distances, threshold = AMPLITUDES, GATES, THRESHOLD
     if staged is not None:
         amplitudes, distances, threshold, steps = staged
+    if paired_steps is not None:
+        amplitudes, perturbations = paired_steps
     gate_x = distances[-1]
     spec = dict(policy='deadline_pair', fixed_period_slots=1, fixed_model=11, request_budget=2,
                 pair_policy=policy, pair_static=fixed, pair_background_calls=calls, pair_reserve_ms=reserve,
@@ -107,7 +113,8 @@ def run_case(args, client, gates, name, *, policy, calls, reserve, target=None, 
 
                 def feed(stop):
                     if staged is None:
-                        event = trigger(target, stop, pulse_offset_m)
+                        event = trigger(target, stop, pulse_offset_m, amplitudes=amplitudes,
+                                        paired_steps=perturbations if paired_steps is not None else None)
                         stdout, _ = ps.communicate(input='GO\n', timeout=5)
                     else:
                         def start_ps():

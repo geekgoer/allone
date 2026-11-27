@@ -270,7 +270,7 @@ Json run_recovery_schedule(const Json& settings, std::vector<Vehicle>& fleet, ps
     const bool protect = settings.value("protect_followup", false);
     const auto test = settings.value("capacity_policy", std::string{});
     const bool compare_capacity = !test.empty();
-    require(fleet.size() == 2 && windows >= 2 && windows <= 3 && calls == 17 &&
+    require(fleet.size() == 2 && windows >= 2 && (windows <= 3 || (windows == 4 && policy == "fixed")) && calls == 17 &&
             reserve_ms >= 0. && reserve_ms < deadline_budget_ms, "invalid schedule settings");
     require(policy == "observe" || policy == "queue" || policy == "risk" || policy == "reserve" ||
             policy == "fixed" || yield || deadline,
