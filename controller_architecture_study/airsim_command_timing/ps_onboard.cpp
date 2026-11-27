@@ -251,6 +251,63 @@ Json run_deadline_pair(const Json& spec, std::vector<Vehicle>& fleet, psairsim::
             {"reserve_ms",reserve_ms}, {"start_ns",start_ns}};
 }
 
+using PairState = std::array<int, 2>;
+constexpr int pair_unstarted = -1;
+constexpr int pair_finished = -2;
+constexpr int pair_windows = 4;
+
+bool pair_qualified(int vehicle, int start, int finish) {
+    return (start == 0 && (finish == 2 || (vehicle == 0 && finish == 1))) ||
+           (start == 1 && finish == 3);
+}
+
+int pair_due(int vehicle, int state, int now) {
+    if (state == pair_unstarted) return now <= 1 ? 1 : -1;
+    if (state < 0 || !pair_qualified(vehicle, state, now)) return -1;
+    return state == 0 ? 2 : 3;
+}
+
+void pair_record(PairState& state, int vehicle, int window) {
+    state[vehicle] = state[vehicle] == pair_unstarted ? window : pair_finished;
+}
+
+int pair_max_completions(int window, PairState state) {
+    if (window == pair_windows)
+        return (state[0] == pair_finished) + (state[1] == pair_finished);
+    int best = pair_max_completions(window + 1, state);
+    for (int i = 0; i < 2; ++i) {
+        if (pair_due(i, state[i], window) < 0) continue;
+        auto next = state;
+        pair_record(next, i, window);
+        best = std::max(best, pair_max_completions(window + 1, next));
+    }
+    return best;
+}
+
+int choose_pair(int window, const PairState& state, const std::string& policy) {
+    int chosen = -1, best_value = -1;
+    for (int i = 0; i < 2; ++i) {
+        const int due = pair_due(i, state[i], window);
+        if (due < 0) continue;
+        auto next = state;
+        pair_record(next, i, window);
+        const int value = policy == "complete" ? pair_max_completions(window + 1, next) :
+                          int(policy == "finish_first" && state[i] >= 0);
+        const auto order = std::make_tuple(due, state[i] == pair_unstarted, i);
+        if (chosen < 0 || value > best_value ||
+                (value == best_value && order < std::make_tuple(pair_due(chosen, state[chosen], window),
+                                                              state[chosen] == pair_unstarted, chosen))) {
+            chosen = i;
+            best_value = value;
+        }
+    }
+    // A missed pair may still receive best-effort commands at the same request budget.
+    if (chosen < 0)
+        for (int i = 0; i < 2; ++i)
+            if (state[i] != pair_finished) return i;
+    return chosen;
+}
+
 Json run_recovery_schedule(const Json& settings, std::vector<Vehicle>& fleet, psairsim::Client& state_rpc,
                            rpc::client& pilot_rpc, psdpu::LocalDpu& dpu, const std::vector<f::Raw237>& inputs,
                            const f::Calibration& calibration) {
@@ -270,13 +327,21 @@ Json run_recovery_schedule(const Json& settings, std::vector<Vehicle>& fleet, ps
     const bool protect = settings.value("protect_followup", false);
     const auto test = settings.value("capacity_policy", std::string{});
     const bool compare_capacity = !test.empty();
+    const auto pair_policy = settings.value("pair_choice", std::string{});
+    const bool compare_pairs = !pair_policy.empty();
     require(fleet.size() == 2 && windows >= 2 && (windows <= 3 || (windows == 4 && policy == "fixed")) && calls == 17 &&
             reserve_ms >= 0. && reserve_ms < deadline_budget_ms, "invalid schedule settings");
+    if (compare_pairs)
+        require(policy == "fixed" && windows == pair_windows && spacing_ms == 125 && !shared_windows &&
+                !compare_capacity && !protect && second_batch == calls &&
+                fleet[0].name == "Drone1" && fleet[1].name == "Drone2" &&
+                (pair_policy == "edf" || pair_policy == "finish_first" || pair_policy == "complete"),
+                "invalid paired correction comparison");
     require(policy == "observe" || policy == "queue" || policy == "risk" || policy == "reserve" ||
             policy == "fixed" || yield || deadline,
             "invalid schedule policy");
     if (policy == "fixed") {
-        require(recipients.size() == std::size_t(windows), "wrong number of fixed windows");
+        require(compare_pairs || recipients.size() == std::size_t(windows), "wrong number of fixed windows");
         require(spacing_ms >= 75 && spacing_ms <= 800, "invalid fixed window spacing");
         for (const auto& recipient : recipients)
             require(recipient.empty() || recipient == fleet[0].name || recipient == fleet[1].name,
@@ -300,6 +365,7 @@ Json run_recovery_schedule(const Json& settings, std::vector<Vehicle>& fleet, ps
     const double peer_trigger_m = (yield || deadline) ? settings.at("peer_trigger_m").get<double>() : 0.;
 
     std::array<int, 2> last_sent{{-1, -1}};
+    PairState pair_state{{pair_unstarted, pair_unstarted}};
     int reserved = -1;
     bool followup_owed = false;
     bool need_followup = false;
@@ -357,7 +423,12 @@ Json run_recovery_schedule(const Json& settings, std::vector<Vehicle>& fleet, ps
             reserved = -1;
         }
         int first = w == 0 || policy == "risk" ? by_risk : (reserved >= 0 ? reserved : by_wait);
-        if (policy == "fixed")
+        double choose_us = 0.;
+        if (compare_pairs) {
+            const auto begin = Clock::now();
+            first = choose_pair(w, pair_state, pair_policy);
+            choose_us = std::chrono::duration<double, std::micro>(Clock::now() - begin).count();
+        } else if (policy == "fixed")
             first = recipients[w].empty() ? -1 : (recipients[w] == fleet[0].name ? 0 : 1);
         else if (shared_windows) {
             if (w == 0) first = 1;
@@ -385,6 +456,10 @@ Json run_recovery_schedule(const Json& settings, std::vector<Vehicle>& fleet, ps
             {"first_candidate",first < 0 ? "" : fleet[first].name}, {"released",released},
             {"background",std::move(batch)}});
         if (yield) phases.back()["followup_owed"] = followup_owed;
+        if (compare_pairs) {
+            phases.back()["pair_state_before"] = pair_state;
+            phases.back()["pair_choose_us"] = choose_us;
+        }
         if (compare) {
             phases.back()["followup_required"] = need_followup;
             phases.back()["background_deadline_us"] = clock_us(window_start) + 30000;
@@ -399,6 +474,7 @@ Json run_recovery_schedule(const Json& settings, std::vector<Vehicle>& fleet, ps
             row["window_start_ns"] = fleet.front().sample;
             if (row.at("accepted").get<bool>()) {
                 last_sent[i] = w;
+                if (compare_pairs) pair_record(pair_state, i, w);
                 if (w == 0 && i == first && policy == "reserve") reserved = i;
                 if (w == 0 && compare_capacity)
                     need_followup = score[i] > settings.at("capacity_trigger_m").get<double>();
