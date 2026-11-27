@@ -46,23 +46,28 @@ def trigger(target, stop):
     raise RuntimeError('Control window did not trigger')
 
 
-def trigger_staged(stop, start_ps, amplitudes, gate_x, threshold, first_step, second_step):
+def trigger_staged(stop, start_ps, amplitudes, gate_x, threshold, first_step, second_step, second_offset_m=.075):
     world = require_airsim().MultirotorClient(ip='127.0.0.1', port=PORT, timeout_value=3)
     events = {}
     try:
         with LocalRpc(PORT) as rpc, DeadlineWaiter() as timer:
             while not stop.is_set():
                 timer.wait([], perf_counter()+.004)
-                positions = {v: sample(rpc, v)[1].position[0] for v in amplitudes}
+                samples = {v: sample(rpc, v)[1] for v in amplitudes}
+                positions = {v: s.position[0] for v, s in samples.items()}
                 if 'Drone2' not in events and positions['Drone2'] >= threshold-.26:
                     events['Drone2'] = kick(world, 'Drone2', amplitudes['Drone2']*math.sin(.6*gate_x), first_step)
                     continue
                 if 'start_ns' not in events and min(positions.values()) >= threshold:
                     events['start_ns'] = rpc.call('falconTraceClock')
                     start_ps()
-                if 'start_ns' in events and positions['Drone1'] >= threshold+.075:
+                if 'start_ns' in events and positions['Drone1'] >= threshold+second_offset_m:
                     begin_ns = rpc.call('falconTraceClock')
-                    event = kick(world, 'Drone1', amplitudes['Drone1']*math.sin(.6*gate_x), second_step)
+                    if second_step:
+                        event = kick(world, 'Drone1', amplitudes['Drone1']*math.sin(.6*gate_x), second_step)
+                    else:
+                        x, y, _ = samples['Drone1'].position
+                        event = dict(x_m=float(x), y_m=float(y), requested_delta_mps=0., observed_delta_mps=0.)
                     events['Drone1'] = dict(event, begin_ns=begin_ns, end_ns=rpc.call('falconTraceClock'))
                     return events
     finally:

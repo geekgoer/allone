@@ -261,9 +261,11 @@ Json run_recovery_schedule(const Json& settings, std::vector<Vehicle>& fleet, ps
     const auto offsets = settings.value("window_offsets_ms", std::vector<int>{});
     const bool shared_windows = !offsets.empty();
     const bool yield = policy == "yield";
+    const bool deadline = policy == "deadline";
     require(fleet.size() == 2 && windows >= 2 && windows <= 3 && calls == 17 &&
             reserve_ms >= 0. && reserve_ms < deadline_budget_ms, "invalid schedule settings");
-    require(policy == "observe" || policy == "queue" || policy == "risk" || policy == "reserve" || policy == "fixed" || yield,
+    require(policy == "observe" || policy == "queue" || policy == "risk" || policy == "reserve" ||
+            policy == "fixed" || yield || deadline,
             "invalid schedule policy");
     if (policy == "fixed") {
         require(recipients.size() == std::size_t(windows), "wrong number of fixed windows");
@@ -276,9 +278,9 @@ Json run_recovery_schedule(const Json& settings, std::vector<Vehicle>& fleet, ps
     if (shared_windows)
         require(windows == 3 && offsets == std::vector<int>{0, 75, 300} &&
                 fleet[0].name == "Drone1" && fleet[1].name == "Drone2" &&
-                (policy == "fixed" || policy == "risk" || yield), "invalid shared windows");
-    require(!yield || shared_windows, "yield requires a reserved follow-up window");
-    const double peer_trigger_m = yield ? settings.at("peer_trigger_m").get<double>() : 0.;
+                (policy == "fixed" || policy == "risk" || yield || deadline), "invalid shared windows");
+    require(!(yield || deadline) || shared_windows, "policy requires shared windows");
+    const double peer_trigger_m = (yield || deadline) ? settings.at("peer_trigger_m").get<double>() : 0.;
 
     std::array<int, 2> last_sent{{-1, -1}};
     int reserved = -1;
@@ -322,6 +324,18 @@ Json run_recovery_schedule(const Json& settings, std::vector<Vehicle>& fleet, ps
                 first = followup_owed ? 0 : 1;
             }
             if (yield && w == 2) first = followup_owed ? 1 : 0;
+            if (deadline && w > 0) {
+                // A job that would finish past its deadline leaves the mandatory queue.
+                // Use the other aircraft for a best-effort update if this queue is empty.
+                const int finish_ms = offsets[w] + static_cast<int>(deadline_budget_ms);
+                const int peer_deadline_ms = 105;
+                const int followup_deadline_ms = 330;
+                const bool peer_due = score[0] > peer_trigger_m && last_sent[0] < 0 &&
+                                      finish_ms <= peer_deadline_ms;
+                const bool followup_due = last_sent[1] == 0 && finish_ms <= followup_deadline_ms;
+                first = peer_due && (!followup_due || peer_deadline_ms < followup_deadline_ms) ? 0 :
+                        (followup_due ? 1 : (last_sent[1] != 0 ? 0 : by_risk));
+            }
         }
         if (w == 0) all_states = states;
         phases.push_back({{"window",w}, {"start_ns",fleet.front().sample}, {"states",std::move(states)},

@@ -23,7 +23,7 @@ ORDERS = (
 )
 
 
-def audit_trial(report):
+def audit_trial(report, *, kick_after_window=0):
     by_window = {r['window']: r for r in report['adopted'].values()}
     adoption = [by_window[w]['vehicle'] if w in by_window else None for w in range(len(WINDOWS))]
     sampled = [w['start_ns'] for w in report['windows']]
@@ -32,7 +32,7 @@ def audit_trial(report):
                  all(abs((ns-sampled[0])/1e6-ms) <= 5. for ns, ms in zip(sampled, WINDOWS)))
     planned = [phase['first_candidate'] for phase in report['windows']]
     return dict(adoption=adoption, timing_ok=timing_ok and adoption == planned,
-                stage_ok=staged_timing_ok(report), pass_gates=report['pass_gates'],
+                stage_ok=staged_timing_ok(report, kick_after_window), pass_gates=report['pass_gates'],
                 contacts=report['contacts'], gate3_m=gate3(report),
                 background_calls=report['background_calls'],
                 background_dpu_ms=sum(end-start for start, end in report['background'])/1000,
@@ -40,11 +40,11 @@ def audit_trial(report):
                 followup_owed=[phase.get('followup_owed') for phase in report['windows']])
 
 
-def audit_group(reports, reference):
+def audit_group(reports, reference, *, kick_after_window=0):
     base = reports[reference]
     rows = {}
     for name, report in reports.items():
-        row = audit_trial(report)
+        row = audit_trial(report, kick_after_window=kick_after_window)
         state_ok = all(state_match(base['windows'][w], report['windows'][w]) for w in (0, 1))
         kick_dx = {v: abs(base['velocity_step'][v]['x_m']-report['velocity_step'][v]['x_m']) for v in AMPLITUDES}
         row.update(state_matched=state_ok, kick_dx_m=kick_dx,

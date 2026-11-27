@@ -26,8 +26,8 @@ def timing_ok(report):
             and {row['window'] for row in report['adopted'].values() if row['on_time']} == {0, 1})
 
 
-def staged_timing_ok(report):
-    first, second = report['windows'][:2]
+def staged_timing_ok(report, after_window=0):
+    first, second = report['windows'][after_window:after_window+2]
     step = report['velocity_step']
     early, late = step['Drone2'], step['Drone1']
     return (step['start_ns'] <= first['start_ns']
