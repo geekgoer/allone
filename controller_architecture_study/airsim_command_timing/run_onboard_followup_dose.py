@@ -35,6 +35,13 @@ CRITICAL_ORDERS = (
     ('late', 'both', 'early', 'none'),
     ('both', 'none', 'late', 'early'),
 )
+SWEEP_SPACING = {'early': 75, **{f'ms{ms}': ms for ms in (75, 150, 300, 450, 600, 750)}}
+SWEEP_ARMS = {name: CRITICAL_ARMS['early' if name == 'early' else 'both'] for name in SWEEP_SPACING}
+SWEEP_ORDERS = (
+    ('early', 'ms75', 'ms150', 'ms300', 'ms450', 'ms600', 'ms750'),
+    ('ms750', 'ms600', 'ms450', 'ms300', 'ms150', 'ms75', 'early'),
+    ('ms300', 'ms75', 'ms600', 'early', 'ms750', 'ms150', 'ms450'),
+)
 
 
 def verify_delivery(report, recipients):
@@ -44,11 +51,13 @@ def verify_delivery(report, recipients):
             and adopted == planned and len(report['adopted']) == len(planned))
 
 
-def audit_round(reports, *, critical=False):
-    base = reports['none']
+def audit_round(reports, *, critical=False, sweep=False):
+    reference = 'early' if sweep else 'none'
+    base = reports[reference]
+    arms = SWEEP_ARMS if sweep else CRITICAL_ARMS
     output = {}
     for name, report in reports.items():
-        recipients = CRITICAL_ARMS[name] if critical else (TARGET, *ARMS[name])
+        recipients = arms[name] if critical else (TARGET, *ARMS[name])
         delivery = verify_delivery(report, recipients)
         if critical:
             match = state_match(base, report)
@@ -74,7 +83,13 @@ def audit_round(reports, *, critical=False):
         if critical:
             output[name].update(perturbation_ok=stage_ok, window_spacing_ms=
                                 (report['windows'][1]['start_ns']-report['windows'][0]['start_ns'])/1e6)
-    if not output['none']['comparable']:
+        if sweep:
+            spacing_ok = abs(output[name]['window_spacing_ms'] - SWEEP_SPACING[name]) <= 5.
+            output[name]['spacing_ok'] = spacing_ok
+            output[name]['comparable'] &= spacing_ok
+            output[name]['adoption_since_trigger_ms'] = {
+                r['window']: r['since_start_ms'] for r in report['adopted'].values()}
+    if not output[reference]['comparable']:
         for row in output.values():
             row['comparable'] = False
     return output
@@ -115,20 +130,25 @@ def run(args):
 
 
 def run_critical(args):
+    sweep = args.second_window_sweep
+    arms = SWEEP_ARMS if sweep else CRITICAL_ARMS
+    orders = SWEEP_ORDERS if sweep else CRITICAL_ORDERS
     with scenario(PORT, args.output, amplitudes=original.AMPLITUDES, distances=original.GATES) as (client, gates):
         save(args.output/'design.json', dict(gates_m=original.GATES, amplitudes=original.AMPLITUDES,
-             perturbation_vehicle=TARGET, perturbation_abs_mps=original.STEP_MPS, order=CRITICAL_ORDERS,
-             recipients=CRITICAL_ARMS, windows_ms=(0, 75), calls_per_window=CALLS,
+             perturbation_vehicle=TARGET, perturbation_abs_mps=original.STEP_MPS, order=orders,
+             recipients=arms, windows_ms=(0, 75) if not sweep else {n: (0, ms) for n, ms in SWEEP_SPACING.items()},
+             calls_per_window=CALLS,
              deadline_ms=DEADLINE_MS, reserve_ms=RESERVE_MS))
         audits = {}
-        for rep, order in enumerate(CRITICAL_ORDERS, 1):
+        for rep, order in enumerate(orders, 1):
             reports = {name: run_case(args, client, gates, f'r{rep}_{name}', policy='fixed', calls=CALLS,
                                       reserve=RESERVE_MS, target=TARGET, recovery_schedule=dict(
-                                          windows=2, healthy_error_m=[], fixed_recipients=CRITICAL_ARMS[name]))
+                                          windows=2, healthy_error_m=[], fixed_recipients=arms[name],
+                                          spacing_ms=SWEEP_SPACING[name] if sweep else 75))
                        for name in order}
-            audits[rep] = audit_round(reports, critical=True)
+            audits[rep] = audit_round(reports, critical=True, sweep=sweep)
             save(args.output/'rounds.json', audits)
-            save(args.output/'summary.json', summarize(audits, CRITICAL_ARMS))
+            save(args.output/'summary.json', summarize(audits, arms))
 
 
 if __name__ == '__main__':
@@ -139,6 +159,8 @@ if __name__ == '__main__':
     parser.add_argument('--windows-ip', default='192.168.77.1')
     parser.add_argument('--board', default='axu3egb')
     parser.add_argument('--ssh-hop', default='vitis-vm')
-    parser.add_argument('--critical-state', action='store_true', help='Use the earlier two-window Drone2 recovery scene.')
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument('--critical-state', action='store_true', help='Compare zero, one, and two correction commands.')
+    mode.add_argument('--second-window-sweep', action='store_true', help='Vary the second window on the same critical route.')
     args = parser.parse_args()
-    (run_critical if args.critical_state else run)(args)
+    (run_critical if args.critical_state or args.second_window_sweep else run)(args)

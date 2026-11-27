@@ -257,23 +257,26 @@ Json run_recovery_schedule(const Json& settings, std::vector<Vehicle>& fleet, ps
     const std::string policy = settings.at("policy");
     const auto healthy = settings.at("healthy_error_m");
     const auto recipients = settings.value("fixed_recipients", std::vector<std::string>{});
+    const int spacing_ms = settings.value("spacing_ms", 75);
     require(fleet.size() == 2 && windows >= 2 && windows <= 3 && calls == 17 &&
             reserve_ms >= 0. && reserve_ms < deadline_budget_ms, "invalid schedule settings");
     require(policy == "observe" || policy == "queue" || policy == "risk" || policy == "reserve" || policy == "fixed",
             "invalid schedule policy");
     if (policy == "fixed") {
         require(recipients.size() == std::size_t(windows), "wrong number of fixed windows");
+        require(spacing_ms >= 75 && spacing_ms <= 800, "invalid fixed window spacing");
         for (const auto& recipient : recipients)
             require(recipient.empty() || recipient == fleet[0].name || recipient == fleet[1].name,
                     "unknown fixed recipient");
     }
+    require(policy == "fixed" || spacing_ms == 75, "custom spacing requires fixed dispatch");
 
     std::array<int, 2> last_sent{{-1, -1}};
     int reserved = -1;
     Json all_states, requests = Json::array(), phases = Json::array(), background = Json::array();
     const auto start = Clock::now();
     for (int w = 0; w < windows; ++w) {
-        std::this_thread::sleep_until(start + std::chrono::milliseconds(75*w));
+        std::this_thread::sleep_until(start + std::chrono::milliseconds(spacing_ms*w));
         const auto window_start = Clock::now();
         Json batch = Json::array(), states = Json::object(), risks = Json::object();
         std::array<double, 2> score{};
